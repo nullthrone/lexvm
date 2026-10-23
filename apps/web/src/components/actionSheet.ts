@@ -47,7 +47,7 @@ export interface ActionSheetOptions {
 
 /** Open the action sheet for a present object. Returns null if the object is not present. */
 export function openActionSheet(options: ActionSheetOptions): SheetHandle | null {
-  const model = sheetFor(options.view, options.objectId);
+  const model = sheetFor(options.view, options.objectId, options.lang);
   if (!model) return null;
   const { lang } = options;
   const sheet = openSheet({
@@ -82,7 +82,7 @@ export function openActionSheet(options: ActionSheetOptions): SheetHandle | null
                   finish({ verb: v.verb, object: model.object.id });
                   return;
                 }
-                const target = targetModel(options.view, model.object.id, v.verb);
+                const target = targetModel(options.view, model.object.id, v.verb, lang);
                 if (target) showTargets(target);
               },
             },

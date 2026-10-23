@@ -91,9 +91,41 @@ function watchForUpdates(reg: ServiceWorkerRegistration): void {
   });
 }
 
+const SW_URL = "./sw.js";
+
+/** The parts of the Trusted Types API used here (not in every TypeScript DOM library). */
+interface TrustedTypesLike {
+  createPolicy(
+    name: string,
+    rules: { createScriptURL(input: string): string },
+  ): { createScriptURL(input: string): unknown };
+}
+
+/**
+ * The service worker URL. The page's Content-Security-Policy requires Trusted
+ * Types for script URLs; the "lexvm" policy allows exactly this one.
+ */
+let trustedSwUrl: string | null = null;
+
+function serviceWorkerUrl(): string {
+  if (trustedSwUrl !== null) return trustedSwUrl;
+  const trustedTypes = (window as unknown as { trustedTypes?: TrustedTypesLike }).trustedTypes;
+  if (!trustedTypes) return SW_URL;
+  // A policy name can be created once per page.
+  const policy = trustedTypes.createPolicy("lexvm", {
+    createScriptURL(input) {
+      if (input !== SW_URL) throw new TypeError(`LexVM: script URL not allowed: ${input}`);
+      return input;
+    },
+  });
+  // A TrustedScriptURL; register() accepts it where a string is typed.
+  trustedSwUrl = policy.createScriptURL(SW_URL) as string;
+  return trustedSwUrl;
+}
+
 async function register(): Promise<void> {
   try {
-    registration = await navigator.serviceWorker.register("./sw.js", { scope: "./", updateViaCache: "none" });
+    registration = await navigator.serviceWorker.register(serviceWorkerUrl(), { scope: "./", updateViaCache: "none" });
     lastUpdateCheck = Date.now();
     watchForUpdates(registration);
     await markReadyWhenCached();

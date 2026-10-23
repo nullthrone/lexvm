@@ -3,10 +3,10 @@
  * time. The compiler (which pulls in the YAML parser) is loaded on demand so
  * it stays out of the main chunk.
  */
-import { formatCommand, hint, newGame, parseCanonical, step, view } from "@lexvm/engine";
+import { formatCommand, hint, newGame, parseCanonical, step, validateState, view } from "@lexvm/engine";
 import type { EngineApi } from "../game/session.ts";
 
-export const engine: EngineApi = { newGame, step, view, hint, formatCommand, parseCanonical };
+export const engine: EngineApi = { newGame, step, view, hint, formatCommand, parseCanonical, validateState };
 
 export type CompileFn = typeof import("@lexvm/engine/compile")["compile"];
 

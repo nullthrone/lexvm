@@ -4,6 +4,7 @@
  */
 import { parse } from "yaml";
 import { parseCanonical } from "../../../src/commands.ts";
+import { compile } from "../../../src/compile.ts";
 import { newGame, step } from "../../../src/runtime.ts";
 import { type Pack, PackSchema } from "../../../src/schema.ts";
 import type { GameState, OutputBlock, StepResult } from "../../../src/types.ts";
@@ -54,6 +55,22 @@ export function loadFixture(name: string): Pack {
 
 export function loadLockedStudy(): Pack {
   return packFromYaml(readRepoFile("packs/locked-study/pack.yaml"));
+}
+
+/** A repository pack of several YAML files (packs/<id>/*.yaml), compiled. */
+export function loadRepoPack(id: string): Pack {
+  const proc = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process;
+  const fs = proc.getBuiltinModule("node:fs") as NodeFs & { readdirSync(path: string): string[] };
+  const dir = ["", "../", "../../", "../../../"].map((prefix) => `${prefix}packs/${id}`).find((d) => fs.existsSync(d));
+  if (dir === undefined) throw new Error(`pack not found: ${id}`);
+  const files = fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith(".yaml"))
+    .sort()
+    .map((name) => ({ name, text: fs.readFileSync(`${dir}/${name}`, "utf8") }));
+  const result = compile(files);
+  if (result.pack === null) throw new Error(`pack ${id} does not compile`);
+  return result.pack;
 }
 
 /** Recursively freeze a value so any mutation throws in strict mode. */

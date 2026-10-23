@@ -79,6 +79,17 @@ export function plainText(pack: Pack, text: string): string {
     .join("");
 }
 
+/**
+ * The paragraphs of an object's current description as plain text (markup
+ * resolved to names), without running a turn; [] for unknown objects and when
+ * no variant applies. For UIs that show a description outside the
+ * transcript, such as a clue in the notebook.
+ */
+export function objectDescription(pack: Pack, state: GameState, id: string): string[] {
+  const text = resolveText(pack, state, objectDef(pack, id)?.description);
+  return text === null ? [] : paragraphs(text).map((p) => plainText(pack, p));
+}
+
 /** A tappable reference to an object, showing its name. */
 export function objectSpan(pack: Pack, id: string): Span[] {
   return [{ text: objectDef(pack, id)?.name ?? id, ref: id }];

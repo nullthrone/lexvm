@@ -7,6 +7,7 @@ import {
   commandLabel,
   type MetaCommand,
   type OutputBlock,
+  objectDescription,
   PackError,
   parseCommand,
   type SaveGame,
@@ -22,17 +23,17 @@ import { closeAllSheets, openSheet, type SheetHandle } from "../components/sheet
 import { toast } from "../components/toast.ts";
 import { Transcript } from "../components/transcript.ts";
 import { h, replaceChildren } from "../dom.ts";
-import { GameSession, replayLog, restoreSession, sameState } from "../game/session.ts";
+import { GameSession, replayLog, restoreSession, UNDO_LIMIT } from "../game/session.ts";
 import { type StringKey, t } from "../i18n.ts";
 import { type IconName, icon } from "../icons.ts";
-import { findObject, optionByNumber, showNotebook } from "../logic/actions.ts";
-import { parseSaveFile, type StoredSave, saveFileName, serializeSave } from "../logic/saves.ts";
+import { clueTexts, findObject, optionByNumber, showNotebook } from "../logic/actions.ts";
+import { MAX_SAVE_FILE, parseSaveFile, type StoredSave, saveFileName, serializeSave } from "../logic/saves.ts";
 import { blockText, disambiguate, stripMarkup } from "../logic/text.ts";
 import { engine } from "../services/engine.ts";
 import { downloadText, pickFiles, readText } from "../services/files.ts";
 import { rejectFeedback, tapFeedback } from "../services/haptics.ts";
 import { findEntry, type LibraryEntry, loadEntryPack } from "../services/packs.ts";
-import { readSave, writeSave } from "../services/saves.ts";
+import { readSave, writeSave, writeSaveIfCurrent } from "../services/saves.ts";
 import { settings, updateSettings } from "../services/settings.ts";
 
 const MAX_TURNS = 400;
@@ -45,10 +46,39 @@ interface ActiveGame {
   turns: OutputBlock[][];
   /** Number of clues the player has seen in the notebook. */
   seenClues: number;
+  /**
+   * `savedAt` of the stored save this tab last read or wrote (null: none). A
+   * different one in storage means another tab or window has played on.
+   */
+  savedAt: string | null;
+  /** turns.length before each undoable command, so undo also takes its output back. */
+  undoTurns: number[];
 }
 
 /** The last played game survives navigation to settings/about and back. */
 let active: ActiveGame | null = null;
+
+/** Keys of games the player chose to start anew in the library (it asked already). */
+const freshConfirmed = new Set<string>();
+
+/**
+ * The library calls this before opening #/play/…/new: the player confirmed
+ * there (or had no save). The route alone (a link from anywhere) asks first.
+ */
+export function confirmFreshStart(key: string): void {
+  freshConfirmed.add(key);
+}
+
+function newActive(
+  key: string,
+  entry: LibraryEntry,
+  session: GameSession,
+  turns: OutputBlock[][],
+  seenClues: number,
+  savedAt: string | null,
+): ActiveGame {
+  return { key, entry, session, turns, seenClues, savedAt, undoTurns: [] };
+}
 
 const KIND_ICON: Record<string, IconName> = {
   npc: "npc",
@@ -175,15 +205,56 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
   // Rendering
   // ---------------------------------------------------------------------------
 
+  let conflictOpen = false;
+
+  /**
+   * Autosave. Writes only over the save this tab knows: if another tab or
+   * window played on in the meantime, the player decides which game to keep.
+   */
   function persist(): void {
-    if (!game) return;
-    void writeSave(game.key, game.session.toStored(new Date()));
+    if (!game || conflictOpen) return;
+    const current = game;
+    const stored = current.session.toStored(new Date());
+    const expected = current.savedAt;
+    current.savedAt = stored.save.savedAt;
+    void writeSaveIfCurrent(current.key, stored, expected).then((result) => {
+      if (result === "conflict") void resolveConflict(current);
+    });
+  }
+
+  async function resolveConflict(conflicted: ActiveGame): Promise<void> {
+    if (conflictOpen || destroyed || game !== conflicted) return;
+    conflictOpen = true;
+    const answer = await choiceDialog({
+      title: t("game.otherTabTitle"),
+      message: t("game.otherTabText"),
+      choices: [
+        { id: "keep", label: t("game.otherTabKeep") },
+        { id: "load", label: t("game.otherTabLoad"), primary: true },
+      ],
+    });
+    conflictOpen = false;
+    if (destroyed || game !== conflicted) return;
+    if (answer === "keep") {
+      const stored = conflicted.session.toStored(new Date());
+      conflicted.savedAt = stored.save.savedAt;
+      void writeSave(conflicted.key, stored);
+    } else if (answer === "load") {
+      // Drop this tab's game and continue from the stored one.
+      if (active === conflicted) active = null;
+      navigate({ name: "play", key: conflicted.key, fresh: false }, { replace: true });
+    }
+    // Dismissed: nothing is written; the next move asks again.
   }
 
   function pushTurn(output: OutputBlock[]): void {
     if (!game) return;
     game.turns.push(output);
-    if (game.turns.length > MAX_TURNS) game.turns.splice(0, game.turns.length - MAX_TURNS);
+    if (game.turns.length > MAX_TURNS) {
+      const dropped = game.turns.length - MAX_TURNS;
+      game.turns.splice(0, dropped);
+      game.undoTurns = game.undoTurns.map((n) => Math.max(0, n - dropped));
+    }
   }
 
   function refRenderable(id: string): boolean {
@@ -248,7 +319,8 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     });
   }
 
-  function mount(newGame: ActiveGame, extraLine?: string): void {
+  /** Show a game. False when the engine fails on it (the error screen is shown instead). */
+  function mount(newGame: ActiveGame, extraLine?: string): boolean {
     game = newGame;
     active = newGame;
     const { entry } = newGame;
@@ -276,7 +348,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     });
     replaceChildren(stage, transcript.el, dock.el);
     const current = guard(() => newGame.session.view());
-    if (!current) return;
+    if (!current) return false;
     view = current;
     // Clues already held when a saved game is restored count as seen.
     if (!Number.isFinite(newGame.seenClues)) {
@@ -286,6 +358,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     if (extraLine) transcript.appendUiLine("system", extraLine);
     refresh();
     if (view?.ended) showEnding();
+    return view !== null;
   }
 
   // ---------------------------------------------------------------------------
@@ -302,6 +375,8 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     dock?.hideCandidates();
     if (result.status === "ok") {
       tapFeedback();
+      game.undoTurns.push(game.turns.length);
+      if (game.undoTurns.length > UNDO_LIMIT) game.undoTurns.splice(0, game.undoTurns.length - UNDO_LIMIT);
       persist();
     } else {
       rejectFeedback();
@@ -335,14 +410,11 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     else run({ verb: "look", object: id });
   }
 
-  /** A clue's description, by previewing "look <clue>" (only if that changes nothing in the game). */
+  /** A clue's current description, read from the pack without running a turn. */
   function clueParagraphs(id: string): string[] {
     if (!game) return [];
     try {
-      const session = game.session;
-      const result = session.preview({ verb: "look", object: id });
-      if (result.status !== "ok" || !sameState({ ...result.state, turn: 0 }, { ...session.state, turn: 0 })) return [];
-      return result.output.filter((b) => b.kind === "text").map(blockText);
+      return objectDescription(game.session.pack, game.session.state, id);
     } catch {
       return [];
     }
@@ -379,7 +451,13 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
       sheet.focusFirst();
       return;
     }
+    // Combining entries is how deductions are made; say so where the entries are (in the pack's language,
+    // like the "Combine with …" button it names).
+    const combinable = notebook && items.length >= 2 && items.some((o) => o.verbs.includes("use"));
     sheet.setBody(
+      combinable
+        ? h("p", { class: "notebook__explainer muted", lang: lang(), text: clueTexts(lang()).explainer })
+        : null,
       h(
         "ul",
         { class: "inventory" },
@@ -427,7 +505,10 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
       hint: current,
       revealed: current ? session.revealedHints(current.id) : 0,
       lang: lang(),
-      stepText: (step) => stripMarkup(step, (id) => session.pack.objects[id]?.name),
+      stepText: (step) =>
+        stripMarkup(step, (id) =>
+          Object.hasOwn(session.pack.objects, id) ? session.pack.objects[id]?.name : undefined,
+        ),
       onReveal: (id, count) => {
         session.setRevealed(id, count);
         persist();
@@ -449,6 +530,12 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     }
     endingSheet?.close();
     persist();
+    // Take the undone command's output back too, so the transcript matches the state (and a re-mount or
+    // reload, which rebuild it from the log).
+    const mark = game.undoTurns.pop();
+    if (mark !== undefined && mark < game.turns.length) game.turns.length = mark;
+    view = guard(() => game?.session.view()) ?? view;
+    transcript.renderAll(game.turns, endingTitle());
     transcript.appendUiLine("system", t("game.undone"));
     refresh();
   }
@@ -472,6 +559,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
       if (!output) return;
       endingSheet?.close();
       game.turns = [output];
+      game.undoTurns = [];
       game.seenClues = 0;
       persist();
       refresh();
@@ -492,6 +580,10 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     if (!game) return;
     const [file] = await pickFiles(".json,.lexsave.json,application/json");
     if (!file || !game) return;
+    if (file.size > MAX_SAVE_FILE) {
+      toast(t("game.saveInvalid"));
+      return;
+    }
     const parsed = parseSaveFile(await readText(file));
     if (!parsed.ok) {
       toast(t("game.saveInvalid"));
@@ -502,10 +594,16 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
       return;
     }
     try {
-      const next = await restoreFrom(game.entry, game.session, { save: parsed.save, hints: game.session.hints });
+      const current = game;
+      const next = await restoreFrom(current.entry, current.session, {
+        save: parsed.save,
+        hints: current.session.hints,
+      });
       if (next && !destroyed) {
-        mount(next.game, next.line ?? t("game.saveImported"));
-        persist();
+        // The imported game replaces the stored one of this tab.
+        next.game.savedAt = current.savedAt;
+        // Only a game that could be shown is saved: a broken one must not become the autosave.
+        if (mount(next.game, next.line ?? t("game.saveImported"))) persist();
       }
     } catch (error) {
       showFatal("game.engineError", error);
@@ -633,17 +731,23 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     stored: StoredSave,
   ): Promise<{ game: ActiveGame; line?: string } | null> {
     const result = restoreSession(engine, base.pack, base.hash, stored);
+    const savedAt = stored.save.savedAt;
     if (result.kind === "restored") {
-      return {
-        game: { key, entry, session: result.session, turns: result.turns, seenClues: Number.POSITIVE_INFINITY },
-      };
+      return { game: newActive(key, entry, result.session, result.turns, Number.POSITIVE_INFINITY, savedAt) };
     }
     if (result.kind === "state-only") {
       const look = result.session.preview({ verb: "look" });
       const turns = look.status === "ok" ? [look.output.filter((b) => b.kind !== "echo")] : [];
-      return { game: { key, entry, session: result.session, turns, seenClues: Number.POSITIVE_INFINITY } };
+      return { game: newActive(key, entry, result.session, turns, Number.POSITIVE_INFINITY, savedAt) };
     }
-    return replayChanged(entry, base, result.save, stored.hints);
+    if (result.kind === "repaired") {
+      console.warn("LexVM: saved state rejected", result.problems);
+      return {
+        game: newActive(key, entry, result.session, result.turns, Number.POSITIVE_INFINITY, savedAt),
+        line: t("game.saveRepaired", { n: result.session.log.length }),
+      };
+    }
+    return replayChanged(entry, base, result.save, stored.hints, savedAt);
   }
 
   async function replayChanged(
@@ -651,6 +755,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     base: { pack: GameSession["pack"]; hash: string },
     save: SaveGame,
     hints: Record<string, number>,
+    savedAt: string,
   ): Promise<{ game: ActiveGame; line?: string } | null> {
     const answer = await choiceDialog({
       title: t("game.packChangedTitle"),
@@ -668,12 +773,12 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     if (answer === null || answer === "cancel") return null;
     if (answer === "new") {
       const started = GameSession.start(engine, base.pack, base.hash);
-      return { game: { key, entry, session: started.session, turns: [started.output], seenClues: 0 } };
+      return { game: newActive(key, entry, started.session, [started.output], 0, savedAt) };
     }
     const replay = replayLog(engine, base.pack, save.log);
     const session = new GameSession(engine, base.pack, base.hash, replay.state, replay.log, hints);
     return {
-      game: { key, entry, session, turns: replay.turns, seenClues: Number.POSITIVE_INFINITY },
+      game: newActive(key, entry, session, replay.turns, Number.POSITIVE_INFINITY, savedAt),
       line: t("game.replayResult", { applied: replay.applied, total: replay.total }),
     };
   }
@@ -702,24 +807,37 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     }
     if (destroyed) return;
     try {
-      if (!fresh) {
-        const stored = await readSave(key);
+      const stored = await readSave(key);
+      if (destroyed) return;
+      if (fresh && stored && !freshConfirmed.has(key)) {
+        // #/play/…/new from a link or a bookmark: ask before the saved game is overwritten, as the library does.
+        const ok = await confirmDialog({
+          title: t("library.confirmNewTitle"),
+          message: t("library.confirmNewText", { title: entry.title }),
+          confirm: t("library.confirmNewOk"),
+          danger: true,
+        });
         if (destroyed) return;
-        if (stored) {
-          const restored = await restoreFrom(entry, loaded, stored);
-          if (destroyed) return;
-          if (!restored) {
-            navigate({ name: "library" }, { replace: true });
-            return;
-          }
-          mount(restored.game, restored.line);
-          if (restored.line) persist();
+        if (!ok) {
+          navigate({ name: "play", key, fresh: false }, { replace: true });
           return;
         }
       }
+      freshConfirmed.delete(key);
+      if (!fresh && stored) {
+        const restored = await restoreFrom(entry, loaded, stored);
+        if (destroyed) return;
+        if (!restored) {
+          navigate({ name: "library" }, { replace: true });
+          return;
+        }
+        if (mount(restored.game, restored.line) && restored.line) persist();
+        return;
+      }
       const started = GameSession.start(engine, loaded.pack, loaded.hash);
-      mount({ key, entry, session: started.session, turns: [started.output], seenClues: 0 });
-      persist();
+      // A new game replaces the stored one the player agreed to overwrite.
+      const savedAt = stored?.save.savedAt ?? null;
+      if (mount(newActive(key, entry, started.session, [started.output], 0, savedAt))) persist();
       if (fresh) replaceRouteSilently({ name: "play", key, fresh: false });
     } catch (error) {
       showFatal("game.engineError", error);

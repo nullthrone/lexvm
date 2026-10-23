@@ -329,6 +329,110 @@ describe("lexvm play", () => {
   );
 });
 
+const GERMAN_PACK = `format: lexvm-pack/1
+id: zollkanal
+version: 1.0.0
+title: Zollkanal
+description: Ein Test.
+language: de
+author: tests
+license: CC0-1.0
+start: { room: kai, intro: "Regen." }
+flags: { rudert: false }
+rooms:
+  kai:
+    name: Am Kai
+    description: "Am Kai wartet {tadeusz}."
+    exits:
+      down: { to: keller }
+      ueberfahrt: { to: speicher, label: Mit Tadeusz übersetzen, synonyms: [Boot], visibleWhen: { flag: rudert } }
+  keller: { name: Keller, description: Dunkel., exits: { up: { to: kai } } }
+  speicher: { name: Speicher, description: Staub. }
+objects:
+  tadeusz: { name: Tadeusz, location: kai, npc: true, dialogue: tadeusz_talk }
+  los: { name: Los 4471, location: inventory, clue: true, description: Eine Losnummer. }
+  liste: { name: Löschliste, location: inventory, clue: true, description: Zweihundert Kisten. }
+rules:
+  - { on: { verb: use, object: los, with: liste }, do: [{ set: rudert }, { say: "Das passt zusammen." }] }
+  - { on: { event: enter, room: speicher }, do: { end: gewonnen } }
+dialogues:
+  tadeusz_talk:
+    with: tadeusz
+    start: a
+    nodes:
+      a: { say: "Ja?", options: [{ id: nichts, text: Nichts. }] }
+hints:
+  - { id: h, until: { flag: rudert }, steps: [Lies die Liste., Kombiniere das Los mit der Liste.] }
+endings:
+  gewonnen: { title: Drüben, text: Geschafft., win: true }
+walkthrough: [use los liste, go ueberfahrt]
+`;
+
+describe("lexvm play in the pack's language", () => {
+  const dir = join(tmp, "zollkanal");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "pack.yaml"), GERMAN_PACK);
+
+  it.skipIf(!parserReady)(
+    "prints help, hints, endings and dialogue errors in German and shows the verbs of clues",
+    () => {
+      const r = lexvm(
+        ["play", dir],
+        "hilfe\nhinweis\nhinweis\nsprich mit tadeusz\n3\n1\ngo down\ngo up\nvergleiche los mit liste\nueberfahrt\n",
+      );
+      expect(r.code, r.stdout + r.stderr).toBe(0);
+      expect(r.stdout).toContain("Verben: Untersuchen <Objekt> [look]");
+      expect(r.stdout).toContain("Einträge im Notizbuch lassen sich kombinieren");
+      expect(r.stdout).toContain("Hinweis 1/2: Lies die Liste. (»hinweis« für mehr)");
+      expect(r.stdout).toContain("Hinweis 2/2: Kombiniere das Los mit der Liste.\n");
+      expect(r.stdout).toContain("-- Gespräch mit Tadeusz; wähle eine Nummer");
+      expect(r.stdout).toContain("Antwort 3 gibt es nicht. Wähle eine Antwort (1–1).");
+      expect(r.stdout).toMatch(/Notizbuch: los "Los 4471" \[look use[^\]]*\]; liste "Löschliste" \[look use/);
+      expect(r.stdout).toContain("-- Keller (keller) | Ausgänge: up (hinauf)");
+      expect(r.stdout).toContain("Das passt zusammen.");
+      expect(r.stdout).toContain("-- ENDE: Drüben (gewonnen). Tippe »neustart«");
+      for (const english of ["Hint ", "type hint", "There is no option", "THE END", "exits:", "inventory:"]) {
+        expect(r.stdout).not.toContain(english);
+      }
+    },
+    TIMEOUT,
+  );
+
+  it(
+    "never writes control characters from a pack to the terminal",
+    () => {
+      const evil = join(tmp, "evil");
+      mkdirSync(evil, { recursive: true });
+      writeFileSync(
+        join(evil, "pack.yaml"),
+        GERMAN_PACK.replace('intro: "Regen."', 'intro: "Regen.\\e]0;PWNED\\a\\e]52;c;ZWNobw==\\a\\e[2K\\u202e"'),
+      );
+      const play = lexvm(["play", evil], "quit\n");
+      expect(play.stdout).toContain("Regen.\\u{1b}]0;PWNED\\u{7}");
+      expect(play.stdout).toContain("\\u{202e}");
+      // A diagnostic quoting pack text: an unknown reference with an escape sequence in it.
+      writeFileSync(
+        join(evil, "pack.yaml"),
+        GERMAN_PACK.replace("description: Dunkel.", 'description: "Dunkel. {nix\\e[2K}"'),
+      );
+      const check = lexvm(["check", "--no-explore", evil]);
+      expect(check.stdout).toContain("{nix\\u{1b}[2K}");
+      for (const out of [play.stdout, check.stdout, check.stderr]) {
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: looking for control characters
+        expect(out).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u202a-\u202e]/);
+      }
+    },
+    TIMEOUT,
+  );
+
+  it("treats inherited property names as unknown commands and options", () => {
+    expect(lexvm(["constructor"]).code).toBe(2);
+    const option = lexvm(["check", "--constructor", "packs/locked-study"]);
+    expect(option.code).toBe(2);
+    expect(option.stderr).toContain("unknown option --constructor");
+  });
+});
+
 describe("lexvm check", () => {
   it.skipIf(!verifierReady)(
     "verifies the reference pack",

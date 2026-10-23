@@ -1,9 +1,7 @@
 import {
   type Diagnostic,
-  type ExploreOptions,
   type ExploreReport,
   estimatePlaytime,
-  explore,
   type Pack,
   type PlaytimeOptions,
   type PlaytimeReport,
@@ -11,9 +9,10 @@ import {
   type WalkthroughReport,
 } from "@lexvm/engine";
 import { flag, intOption, parseArgs, UsageError } from "../args.ts";
-import { exploreFallbacks, walkthroughFallbacks } from "../fallbacks.ts";
+import { type ExplorationOptions, verifyExploration } from "../exploration.ts";
+import { walkthroughFallbacks } from "../fallbacks.ts";
 import { compileSource, expandTargets, readPackSource } from "../sources.ts";
-import { color, countDiagnostics, formatDiagnostic, out, plural, summarizeCounts } from "../term.ts";
+import { clean, color, countDiagnostics, formatDiagnostic, out, plural, summarizeCounts } from "../term.ts";
 
 export const CHECK_HELP = `Usage: lexvm check <packDir|packsDir|file>... [options]
 
@@ -25,7 +24,9 @@ content).
 Options:
   --json                 Machine-readable output
   --max-states <n>       Exploration limit (default: engine default, 200000)
-  --include-drop         Also explore 'drop' commands (much larger state space)
+  --include-drop         Explore 'drop' commands in the main exploration (by default a
+                         second, smaller exploration covers them)
+  --allow-incomplete     Accept an exploration that hits the state limit (warning, not error)
   --no-explore           Skip the state-space exploration
   --wpm <n>              Reading speed for the play time estimate (default by language: de 200, en 230, other 220)
   --target-minutes <n>   Target play time; overrides the pack's playtime
@@ -74,7 +75,7 @@ function summarizeWalkthrough(
   report: WalkthroughReport,
   diagnostics: Diagnostic[],
 ): CheckReport["walkthrough"] {
-  diagnostics.push(...report.diagnostics, ...walkthroughFallbacks(pack, report));
+  diagnostics.push(...report.diagnostics, ...walkthroughFallbacks(pack, report, diagnostics));
   const failedIndex = report.steps.findIndex((s) => s.status !== "ok");
   const failed = failedIndex >= 0 ? report.steps[failedIndex]! : null;
   return {
@@ -94,7 +95,7 @@ function summarizePlaytime(report: PlaytimeReport, diagnostics: Diagnostic[]): C
 }
 
 function summarizeExplore(report: ExploreReport, diagnostics: Diagnostic[]): CheckReport["explore"] {
-  diagnostics.push(...report.diagnostics, ...exploreFallbacks(report));
+  diagnostics.push(...report.diagnostics);
   return {
     complete: report.complete,
     states: report.states,
@@ -108,7 +109,7 @@ function summarizeExplore(report: ExploreReport, diagnostics: Diagnostic[]): Che
 
 function checkTarget(
   target: string,
-  options: ExploreOptions,
+  options: ExplorationOptions,
   playtimeOptions: PlaytimeOptions,
   noExplore: boolean,
 ): { report: CheckReport; baseDir: string } {
@@ -138,7 +139,7 @@ function checkTarget(
     }
     if (!noExplore) {
       try {
-        report.explore = summarizeExplore(explore(pack, options), diagnostics);
+        report.explore = summarizeExplore(verifyExploration(pack, options), diagnostics);
       } catch (e) {
         diagnostics.push(engineFailure("check.explore-crashed", "Exploration", e));
       }
@@ -150,23 +151,25 @@ function checkTarget(
 
 function listOrNone(items: readonly string[]): string {
   if (items.length === 0) return "none";
-  const shown = items.slice(0, 8).join(", ");
+  const shown = clean(items.slice(0, 8).join(", "));
   return items.length > 8 ? `${items.length} (${shown}, …)` : `${items.length} (${shown})`;
 }
 
 function printReport(report: CheckReport, baseDir: string): void {
-  out(color.bold(`== ${report.pack ?? "(invalid pack)"}  ${color.dim(report.target)}`));
+  out(color.bold(`== ${clean(report.pack ?? "(invalid pack)")}  ${color.dim(clean(report.target))}`));
   for (const d of report.diagnostics) out(formatDiagnostic(d, baseDir, report.target));
   out(`  diagnostics   ${summarizeCounts(report.diagnostics)}`);
   const w = report.walkthrough;
   if (w !== null) {
     const score = w.maxScore === null ? `score ${w.score}` : `score ${w.score}/${w.maxScore}`;
     out(
-      `  walkthrough   ${w.ok ? color.green("ok") : color.red("FAILED")}, ${plural(w.steps, "step")}, ending ${w.ending ?? "none"}, ${score}`,
+      `  walkthrough   ${w.ok ? color.green("ok") : color.red("FAILED")}, ${plural(w.steps, "step")}, ending ${clean(w.ending ?? "none")}, ${score}`,
     );
     if (w.failedStep !== null) {
-      out(`                step ${w.failedStep.index + 1} "${w.failedStep.command}" was ${w.failedStep.status}:`);
-      for (const line of w.failedStep.output.trim().split("\n").slice(0, 8)) out(`                  ${line}`);
+      out(
+        `                step ${w.failedStep.index + 1} "${clean(w.failedStep.command)}" was ${w.failedStep.status}:`,
+      );
+      for (const line of w.failedStep.output.trim().split("\n").slice(0, 8)) out(`                  ${clean(line)}`);
     }
   }
   const p = report.playtime;
@@ -195,9 +198,10 @@ function printReport(report: CheckReport, baseDir: string): void {
       x.losingEndings.length > 0 ? color.red(plural(x.losingEndings.length, "losing ending")) : "0 losing endings",
     ];
     out(`  explore       ${parts.join(", ")}`);
-    for (const d of x.deadEnds.slice(0, 3)) out(`                dead end after: ${d.path.join("; ") || "(start)"}`);
+    for (const d of x.deadEnds.slice(0, 3))
+      out(`                dead end after: ${clean(d.path.join("; ")) || "(start)"}`);
     for (const l of x.losingEndings.slice(0, 3))
-      out(`                losing ending ${l.ending} after: ${l.path.join("; ")}`);
+      out(`                losing ending ${clean(l.ending)} after: ${clean(l.path.join("; "))}`);
     const u = x.unreached;
     out(
       `  unreached     rooms: ${listOrNone(u.rooms)}; endings: ${listOrNone(u.endings)}; rules: ${listOrNone(u.rules)}; options: ${listOrNone(u.options)}`,
@@ -211,6 +215,7 @@ export function runCheck(argv: string[]): number {
     json: { type: "boolean" },
     "max-states": { type: "string" },
     "include-drop": { type: "boolean" },
+    "allow-incomplete": { type: "boolean" },
     "no-explore": { type: "boolean" },
     wpm: { type: "string" },
     "target-minutes": { type: "string" },
@@ -221,10 +226,11 @@ export function runCheck(argv: string[]): number {
     return 0;
   }
   if (args.positionals.length === 0) throw new UsageError("check needs at least one pack, packs directory or file");
-  const options: ExploreOptions = {};
+  const options: ExplorationOptions = {};
   const maxStates = intOption(args, "max-states");
   if (maxStates !== undefined) options.maxStates = maxStates;
   if (flag(args, "include-drop")) options.includeDrop = true;
+  if (flag(args, "allow-incomplete")) options.allowIncomplete = true;
   const playtimeOptions: PlaytimeOptions = {};
   const wpm = intOption(args, "wpm");
   if (wpm !== undefined) playtimeOptions.wordsPerMinute = wpm;

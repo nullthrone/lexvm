@@ -108,8 +108,12 @@ export function validateSave(value: unknown): SaveValidation {
   return { ok: true, save };
 }
 
+/** Largest save file accepted (characters); real saves are a few KB, a long game's log well under 1 MB. */
+export const MAX_SAVE_FILE = 5_000_000;
+
 /** Parse save file text. Never throws. */
 export function parseSaveFile(text: string): SaveValidation {
+  if (text.length > MAX_SAVE_FILE) return { ok: false, reason: "file too large" };
   let json: unknown;
   try {
     json = JSON.parse(text);

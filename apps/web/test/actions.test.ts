@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clueTexts,
   findObject,
   inventoryCounts,
   needsTarget,
@@ -133,5 +134,56 @@ describe("misc view helpers", () => {
     expect(optionByNumber(view, "3")).toBeNull();
     expect(optionByNumber(view, "take key")).toBeNull();
     expect(optionByNumber(sampleView(), "1")).toBeNull();
+  });
+});
+
+describe("combining clues", () => {
+  const withClues = () =>
+    sampleView({
+      inventory: [
+        { id: "brass_key", name: "brass key", kind: "item", verbs: ["look", "drop", "use", "give", "show"] },
+        { id: "clue_lot", name: "Lot 4471", kind: "clue", verbs: ["look", "use", "show"] },
+        { id: "clue_list", name: "Shipping list", kind: "clue", verbs: ["look", "use", "show"] },
+      ],
+    });
+
+  it("labels use on a clue as combining, in the pack's language", () => {
+    expect(sheetFor(withClues(), "clue_lot")?.verbs).toContainEqual({
+      verb: "use",
+      label: "Combine with",
+      needsTarget: true,
+    });
+    expect(sheetFor(withClues(), "clue_lot", "de")?.verbs).toContainEqual({
+      verb: "use",
+      label: "Kombinieren mit",
+      needsTarget: true,
+    });
+    // Other objects keep the pack's label.
+    expect(sheetFor(withClues(), "brass_key", "de")?.verbs).toContainEqual({
+      verb: "use",
+      label: "Use",
+      needsTarget: true,
+    });
+  });
+
+  it("lists the other clues first and still sends use", () => {
+    const model = targetModel(withClues(), "clue_lot", "use", "de");
+    expect(model?.prompt).toEqual({ before: "Lot 4471 kombinieren mit", after: "" });
+    expect(model?.groups.map((g) => [g.group, g.items.map((i) => i.id)])).toEqual([
+      ["notebook", ["clue_list"]],
+      ["inventory", ["brass_key"]],
+      ["here", ["graves", "study_door"]],
+    ]);
+    expect(model && targetCommand(model, "clue_list")).toEqual({ verb: "use", object: "clue_lot", with: "clue_list" });
+    expect(targetModel(withClues(), "clue_lot", "use")?.prompt.before).toBe("Combine Lot 4471 with");
+  });
+
+  it("explains combining in the notebook in the pack's language", () => {
+    expect(clueTexts("de").explainer).toBe(
+      "Tippe einen Eintrag an und wähle »Kombinieren mit …«, um Schlüsse zu ziehen.",
+    );
+    expect(clueTexts("de-AT").combine).toBe("Kombinieren mit");
+    expect(clueTexts("en").explainer).toContain("Combine with …");
+    expect(clueTexts("fr").combine).toBe("Combine with");
   });
 });

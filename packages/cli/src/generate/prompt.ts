@@ -11,6 +11,7 @@
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { clean } from "../term.ts";
 import {
   assemblePrompt,
   DEFAULT_MINUTES,
@@ -86,8 +87,10 @@ function languageOf(yaml: string): string | null {
 }
 
 export async function runPrompt(argv: string[], deps: PromptCliDeps = {}): Promise<number> {
-  const log = deps.log ?? ((line: string) => process.stderr.write(`${line}\n`));
-  const stdout = deps.stdout ?? ((text: string) => process.stdout.write(text));
+  // A pack's text is untrusted: no control characters reach a terminal (a file or pipe gets the prompt as is).
+  const log = deps.log ?? ((line: string) => process.stderr.write(`${clean(line)}\n`));
+  const stdout =
+    deps.stdout ?? ((text: string) => process.stdout.write(process.stdout.isTTY === true ? clean(text) : text));
   const cwd = deps.cwd ?? process.cwd();
 
   let values: ReturnType<typeof parse>["values"];

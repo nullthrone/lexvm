@@ -5,16 +5,9 @@
  * first gate with errors, so a repair round focuses on the earliest problems
  * (as `lexvm check` does).
  */
-import {
-  analyze,
-  compile,
-  type Diagnostic,
-  estimatePlaytime,
-  explore,
-  runWalkthrough,
-  type SourceFile,
-} from "@lexvm/engine";
-import { exploreFallbacks, walkthroughFallbacks } from "../fallbacks.ts";
+import { analyze, compile, type Diagnostic, estimatePlaytime, runWalkthrough, type SourceFile } from "@lexvm/engine";
+import { verifyExploration } from "../exploration.ts";
+import { walkthroughFallbacks } from "../fallbacks.ts";
 
 export const GATES = ["compile", "walkthrough", "exploration"] as const;
 export type Gate = (typeof GATES)[number];
@@ -115,7 +108,7 @@ export const engineVerify: VerifyFn = (files, options) => {
   // Gate 2: walkthrough replay, then the play time estimate (it replays the walkthrough as well).
   try {
     const report = runWalkthrough(pack);
-    diags = [...report.diagnostics, ...walkthroughFallbacks(pack, report)];
+    diags = [...report.diagnostics, ...walkthroughFallbacks(pack, report, all)];
     if (count(diags, "error") === 0) {
       const estimate = estimatePlaytime(
         pack,
@@ -133,11 +126,9 @@ export const engineVerify: VerifyFn = (files, options) => {
     return { ok: false, diagnostics: all, gates };
   }
 
-  // Gate 3: exploration (no dead ends, no losing endings, winnable). The engine reports these itself;
-  // the fallbacks only fill in what its result fields show without a diagnostic of the same code.
+  // Gate 3: exploration (no dead ends, no losing endings, winnable, complete), the same as `lexvm check`.
   try {
-    const report = explore(pack, { maxStates: options.maxStates });
-    diags = [...report.diagnostics, ...exploreFallbacks(report)];
+    diags = verifyExploration(pack, { maxStates: options.maxStates }).diagnostics;
   } catch (err) {
     diags = [crash("exploration", err)];
   }
@@ -153,7 +144,7 @@ export const engineVerify: VerifyFn = (files, options) => {
 /** Lower rank = more important. Unknown warning codes sit in the middle. */
 function warningRank(code: string): number {
   if (/^playtime\./.test(code)) return -1; // the pack misses its target length
-  if (/^explore\./.test(code)) return 0; // incomplete exploration, unreached content
+  if (/^explore\./.test(code)) return 0; // exploration findings (incomplete with --allow-incomplete)
   if (/^walkthrough\./.test(code)) return 1;
   if (/shadow|unreach|unused|unreferenced|score/i.test(code)) return 2;
   if (/^(ref|semantic|dialogue|rule|exit|hint)/.test(code)) return 3;

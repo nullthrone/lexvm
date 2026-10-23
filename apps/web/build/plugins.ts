@@ -3,11 +3,14 @@
  * - builtinPacks: virtual module with the built-in packs, inlined only in the single-file build.
  * - singlefileHtml: strips manifest/icon links that cannot work from file:// and inlines an SVG favicon.
  * - pwa: copies the single-file build into dist and generates dist/sw.js with a precache list of every emitted file.
+ * - csp: adds the Content-Security-Policy meta tag to the written index.html (see csp.ts); it runs before pwa,
+ *   so the precache list and the copied single-file build carry the final HTML.
  */
 import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { type Plugin, transformWithOxc } from "vite";
 import { isSafeRelativePath } from "../src/logic/catalog.ts";
+import { withContentSecurityPolicy } from "./csp.ts";
 import { type BuiltFile, precacheManifest, renderServiceWorker, SW_FILE } from "./precache.ts";
 
 const VIRTUAL_PACKS = "virtual:lexvm-builtin-packs";
@@ -113,6 +116,30 @@ export function pwaPlugin(options: { swSource: string; offlineHtml: string; offl
         const { code } = await transformWithOxc(source, options.swSource, { lang: "ts" });
         writeFileSync(join(outDir, SW_FILE), renderServiceWorker(code, manifest));
         this.info(`${SW_FILE}: ${manifest.urls.length} files precached in cache ${manifest.cacheName}`);
+      },
+    },
+  };
+}
+
+export function cspPlugin(options: { singlefile: boolean }): Plugin {
+  let outDir = "";
+  return {
+    name: "lexvm-csp",
+    apply: "build",
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    // After generateBundle, where vite-plugin-singlefile inlines the bundle: the hashes cover the final code.
+    writeBundle: {
+      sequential: true,
+      order: "pre",
+      handler() {
+        const file = join(outDir, "index.html");
+        if (!existsSync(file)) {
+          this.warn(`${file} not found: no Content-Security-Policy added`);
+          return;
+        }
+        writeFileSync(file, withContentSecurityPolicy(readFileSync(file, "utf8"), options.singlefile));
       },
     },
   };

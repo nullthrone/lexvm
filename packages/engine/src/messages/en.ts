@@ -124,6 +124,7 @@ export const en: Messages = {
     incompleteWhere: "Where to?",
     alreadyHere: "You are already there.",
     chooseOption: "Choose a reply (1–{n}).",
+    noSuchOption: "There is no reply {n}. Choose a reply (1–{max}).",
   },
 
   vocab: {
@@ -195,12 +196,17 @@ export const en: Messages = {
       ["head", "go"],
       ["climb", "go"],
       ["enter", "go"],
+      // vehicles: "ride the tram", "board the boat" ("take the tram": see the parser)
+      ["ride", "go"],
+      ["board", "go"],
       // wait / inventory
       ["wait", "wait"],
       ["z", "wait"],
       ["inventory", "inventory"],
       ["inv", "inventory"],
       ["i", "inventory"],
+      ["notebook", "inventory"],
+      ["notes", "inventory"],
     ],
     readWords: ["read"],
     directions: {

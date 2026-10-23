@@ -12,6 +12,7 @@ import {
   parseCanonical,
   type StepResult,
   step,
+  validateState,
   view,
 } from "@lexvm/engine";
 import { describe, expect, it } from "vitest";
@@ -43,6 +44,7 @@ function fakeEngine(): EngineApi {
     hint: () => null,
     formatCommand: (c: Command) => [c.verb, c.object, c.with].filter(Boolean).join(" "),
     parseCanonical: (text: string) => (text.trim() ? { verb: text.split(" ")[0] ?? "" } : null),
+    validateState: () => [],
   };
 }
 
@@ -109,7 +111,7 @@ function demoPack(): Pack {
   return result.pack;
 }
 
-const realEngine: EngineApi = { newGame, step, view, hint, formatCommand, parseCanonical };
+const realEngine: EngineApi = { newGame, step, view, hint, formatCommand, parseCanonical, validateState };
 
 describe("GameSession with the engine and the demo pack", () => {
   const pack = demoPack();
@@ -150,6 +152,37 @@ describe("GameSession with the engine and the demo pack", () => {
     const tampered: GameState = { ...stored.save.state, score: 2 };
     const result = restoreSession(realEngine, pack, hash, { ...stored, save: { ...stored.save, state: tampered } });
     expect(result.kind).toBe("state-only");
+  });
+
+  it("does not trust a saved state with unknown ids or a dialogue without options", () => {
+    const { session } = GameSession.start(realEngine, pack, hash);
+    session.exec({ verb: "go", object: "west" });
+    const stored = session.toStored(new Date());
+    const tampered = (patch: Partial<GameState>) => ({
+      ...stored,
+      save: { ...stored.save, state: { ...stored.save.state, ...patch } },
+    });
+    for (const patch of [
+      { dialogue: { id: "constructor", node: "x" } },
+      { room: "constructor" },
+      { objects: {} },
+      { ended: "constructor" },
+    ] as Array<Partial<GameState>>) {
+      const result = restoreSession(realEngine, pack, hash, tampered(patch));
+      expect(result.kind, JSON.stringify(patch)).toBe("repaired");
+      if (result.kind !== "repaired") continue;
+      // The game continues from what the log reproduces, and the engine can show it.
+      expect(result.session.state.room).toBe("library");
+      expect(result.problems.length).toBeGreaterThan(0);
+      expect(() => result.session.view()).not.toThrow();
+    }
+  });
+
+  it("does not let a hint id such as 'constructor' find Object's constructor", () => {
+    const { session } = GameSession.start(realEngine, pack, hash);
+    expect(session.revealedHints("constructor")).toBe(0);
+    session.setRevealed("constructor", 2);
+    expect(session.revealedHints("constructor")).toBe(2);
   });
 
   it("reports a changed pack so the player can choose to replay", () => {

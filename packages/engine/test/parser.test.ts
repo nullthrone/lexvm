@@ -3,7 +3,7 @@ import { fold, foldWord, parseCommand } from "../src/parser.ts";
 import { newGame, step } from "../src/runtime.ts";
 import type { Pack } from "../src/schema.ts";
 import type { Command, GameState, ParseResult } from "../src/types.ts";
-import { loadFixture, loadLockedStudy, makePack, play } from "./fixtures/runtime/helpers.ts";
+import { loadFixture, loadLockedStudy, loadRepoPack, makePack, play } from "./fixtures/runtime/helpers.ts";
 
 function cmd(r: ParseResult): Command | string {
   if (!r.ok) return `error:${r.error}`;
@@ -541,5 +541,168 @@ describe("English parser", () => {
       objects: { cle: { name: "clé", location: "r", portable: true } },
     });
     expect(parser(pack, newGame(pack).state)("take cle")).toEqual({ verb: "take", object: "cle" });
+  });
+});
+
+describe("exits and vehicles from playtests", () => {
+  const rooms = {
+    kai: {
+      name: "Am Kai",
+      description: "Der Kai.",
+      exits: {
+        strassenbahn: { to: "siedlung", label: "Straßenbahn zur Siedlung", synonyms: ["Straßenbahn", "Bahn", "Tram"] },
+        ueberfahrt: {
+          to: "speicher",
+          label: "Mit Tadeusz übersetzen",
+          synonyms: ["Boot", "übersetzen"],
+          visibleWhen: { flag: "rudert" },
+        },
+        hintertuer: { to: "hof", label: "Durch die Hintertür" },
+      },
+    },
+    siedlung: { name: "Siedlung", description: "S." },
+    speicher: { name: "Speicher", description: "S." },
+    hof: { name: "Hof", description: "H." },
+  };
+  const de = makePack({
+    language: "de",
+    start: { room: "kai" },
+    flags: { rudert: false },
+    rooms,
+    objects: {
+      laterne: { name: "Sturmlaterne", synonyms: ["Laterne"], location: "inventory", portable: true },
+      streichhoelzer: { name: "Streichhölzer", synonyms: ["Streichholz"], location: "inventory", portable: true },
+      anweisung: { name: "Anweisung", location: "inventory", clue: true },
+      persilschein: { name: "Persilschein", location: "inventory", clue: true },
+    },
+  });
+  const start = newGame(de).state;
+  const rowing: GameState = { ...start, flags: { ...start.flags, rudert: true } };
+
+  it("accepts bare ids and labels of listed exits, also exits revealed later", () => {
+    const d = parser(de, start);
+    expect(d("ueberfahrt")).toBe("error:unknown-verb");
+    const r = parser(de, rowing);
+    expect(r("ueberfahrt")).toEqual({ verb: "go", object: "ueberfahrt" });
+    expect(r("Überfahrt")).toEqual({ verb: "go", object: "ueberfahrt" });
+    expect(r("Mit Tadeusz übersetzen")).toEqual({ verb: "go", object: "ueberfahrt" });
+    expect(r("geh ueberfahrt")).toEqual({ verb: "go", object: "ueberfahrt" });
+    expect(d("hintertuer")).toEqual({ verb: "go", object: "hintertuer" });
+    expect(d("durch die Hintertür")).toEqual({ verb: "go", object: "hintertuer" });
+    expect(d("Straßenbahn zur Siedlung")).toEqual({ verb: "go", object: "strassenbahn" });
+  });
+
+  it("every exit listed in a room of the repository packs parses on its own", () => {
+    for (const pack of [loadLockedStudy(), loadRepoPack("letzte-nacht-der-reichsmark")]) {
+      const state = newGame(pack).state;
+      for (const [roomId, room] of Object.entries(pack.rooms)) {
+        // Every exit as if visible: the parser must take exits that appear mid-game the same way.
+        const here: GameState = { ...state, room: roomId, dialogue: null };
+        for (const [id, exit] of Object.entries(room.exits ?? {})) {
+          const visible = {
+            ...pack,
+            rooms: { ...pack.rooms, [roomId]: { ...room, exits: { [id]: { ...exit, visibleWhen: undefined } } } },
+          };
+          const q = parser(visible as Pack, here);
+          expect(q(id), `${pack.id}: ${roomId}.${id}`).toEqual({ verb: "go", object: id });
+          if (exit.label !== undefined)
+            expect(q(exit.label), `${pack.id}: ${exit.label}`).toEqual({ verb: "go", object: id });
+        }
+      }
+    }
+  });
+
+  it("maps lighting, comparing and connecting to use", () => {
+    const d = parser(de, start);
+    expect(d("zünde die Laterne mit den Streichhölzern an")).toEqual({
+      verb: "use",
+      object: "laterne",
+      with: "streichhoelzer",
+    });
+    expect(d("zünde ein Streichholz an")).toEqual({ verb: "use", object: "streichhoelzer" });
+    expect(d("zünde Laterne an")).toEqual({ verb: "use", object: "laterne" });
+    expect(d("entzünde das Streichholz")).toEqual({ verb: "use", object: "streichhoelzer" });
+    expect(d("vergleiche die Anweisung mit dem Persilschein")).toEqual({
+      verb: "use",
+      object: "anweisung",
+      with: "persilschein",
+    });
+    expect(d("verbinde Anweisung mit Persilschein")).toEqual({
+      verb: "use",
+      object: "anweisung",
+      with: "persilschein",
+    });
+    expect(d("notizbuch")).toEqual({ verb: "inventory" });
+  });
+
+  it("lights in either order: use a b falls back to the rule for use b a", () => {
+    const pack = makePack({
+      ...{ language: "de", start: { room: "kai" }, flags: { rudert: false, an: false }, rooms },
+      objects: (de as Pack).objects,
+      rules: [
+        { on: { verb: "use", object: "streichhoelzer", with: "laterne" }, do: [{ set: "an" }, { say: "Brennt." }] },
+      ],
+    });
+    const q = parser(pack, newGame(pack).state);
+    const cmdLight = q("zünde die Laterne mit den Streichhölzern an") as Command;
+    const r = step(pack, newGame(pack).state, cmdLight);
+    expect(r.state.flags.an).toBe(true);
+  });
+
+  it("takes vehicles named like a listed exit", () => {
+    const d = parser(de, rowing);
+    expect(d("fahr mit der Straßenbahn")).toEqual({ verb: "go", object: "strassenbahn" });
+    expect(d("fahre mit der Bahn")).toEqual({ verb: "go", object: "strassenbahn" });
+    expect(d("steig in die Straßenbahn")).toEqual({ verb: "go", object: "strassenbahn" });
+    expect(d("steig in die Tram ein")).toEqual({ verb: "go", object: "strassenbahn" });
+    expect(d("steig ins Boot")).toEqual({ verb: "go", object: "ueberfahrt" });
+    expect(d("nimm die Straßenbahn")).toEqual({ verb: "go", object: "strassenbahn" });
+    expect(d("nimm die Laterne")).toEqual({ verb: "take", object: "laterne" });
+    // No such exit here: the take error stays.
+    expect(d("nimm den Bus")).toBe("error:unknown-object");
+
+    const en = makePack({
+      start: { room: "stop" },
+      rooms: {
+        stop: {
+          name: "Tram stop",
+          description: "A stop.",
+          exits: {
+            tram: { to: "town", label: "Tram to town", synonyms: ["tram"] },
+            ferry: { to: "isle", label: "Ferry", synonyms: ["boat"] },
+          },
+        },
+        town: { name: "Town", description: "T." },
+        isle: { name: "Isle", description: "I." },
+      },
+      objects: { ticket: { name: "ticket", location: "stop", portable: true } },
+    });
+    const q = parser(en, newGame(en).state);
+    expect(q("take the tram")).toEqual({ verb: "go", object: "tram" });
+    expect(q("ride the tram")).toEqual({ verb: "go", object: "tram" });
+    expect(q("board the boat")).toEqual({ verb: "go", object: "ferry" });
+    expect(q("get in the boat")).toEqual({ verb: "go", object: "ferry" });
+    expect(q("take the ticket")).toEqual({ verb: "take", object: "ticket" });
+  });
+
+  it("says which dialogue number does not exist, in the pack's language", () => {
+    const talk = makePack({
+      language: "de",
+      start: { room: "r" },
+      rooms: { r: { name: "R", description: "R." } },
+      objects: { anni: { name: "Anni", location: "r", npc: true, dialogue: "d" } },
+      dialogues: {
+        d: { with: "anni", start: "a", nodes: { a: { say: "Ja?", options: [{ id: "x", text: "Nichts." }] } } },
+      },
+    });
+    const state = step(talk, newGame(talk).state, { verb: "talk", object: "anni" }).state;
+    expect(parseCommand(talk, state, "3")).toMatchObject({
+      ok: false,
+      message: "Antwort 3 gibt es nicht. Wähle eine Antwort (1–1).",
+    });
+    expect(parseCommand({ ...talk, language: "en" }, state, "3")).toMatchObject({
+      ok: false,
+      message: "There is no reply 3. Choose a reply (1–1).",
+    });
   });
 });

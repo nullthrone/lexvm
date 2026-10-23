@@ -8,7 +8,7 @@
  * only when the engine's own diagnostics lack that code, so a problem is never
  * reported twice. explore.not-winnable is only meaningful for a complete
  * exploration: an incomplete one that found no win proves nothing, and the
- * engine's explore.incomplete warning covers it.
+ * engine's explore.incomplete error covers it.
  */
 import type { Diagnostic, ExploreReport, Pack, WalkthroughReport } from "@lexvm/engine";
 
@@ -16,8 +16,18 @@ function missing(diagnostics: readonly Diagnostic[], code: string): boolean {
   return !diagnostics.some((d) => d.code === code);
 }
 
-/** Fallbacks for a walkthrough replay, plus the score check (walkthrough.score-mismatch). */
-export function walkthroughFallbacks(pack: Pack, report: WalkthroughReport): Diagnostic[] {
+/**
+ * Fallbacks for a walkthrough replay, plus the score check
+ * (walkthrough.score-mismatch). `earlier` are the diagnostics already
+ * reported for the pack (compile and analysis): when the analyzer found that
+ * maxScore cannot be reached at all (score.maxScore-unreachable), the
+ * walkthrough's lower score is the same mistake and not reported again.
+ */
+export function walkthroughFallbacks(
+  pack: Pack,
+  report: WalkthroughReport,
+  earlier: readonly Diagnostic[] = [],
+): Diagnostic[] {
   const out: Diagnostic[] = [];
   const known = report.diagnostics;
   if (!report.ok && !known.some((d) => d.severity === "error")) {
@@ -39,7 +49,12 @@ export function walkthroughFallbacks(pack: Pack, report: WalkthroughReport): Dia
       });
     }
   }
-  if (report.ok && pack.maxScore !== undefined && report.score !== pack.maxScore) {
+  if (
+    report.ok &&
+    pack.maxScore !== undefined &&
+    report.score !== pack.maxScore &&
+    missing(earlier, "score.maxScore-unreachable")
+  ) {
     out.push({
       severity: "warning",
       code: "walkthrough.score-mismatch",
@@ -82,7 +97,7 @@ export function exploreFallbacks(report: ExploreReport): Diagnostic[] {
   }
   if (!report.complete && missing(known, "explore.incomplete")) {
     out.push({
-      severity: "warning",
+      severity: "error",
       code: "explore.incomplete",
       path: "",
       message: `The state space was not fully explored (${report.states} states). Raise the state limit or bound counters and flags.`,

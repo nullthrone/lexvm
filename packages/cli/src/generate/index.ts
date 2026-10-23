@@ -11,6 +11,7 @@
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { clean } from "../term.ts";
 import { DEFAULT_LICENSE, DEFAULT_MINUTES, PACK_LANGUAGES, type PackLanguage } from "./assemble.ts";
 import { loadPromptKit, type PromptKit } from "./kit.ts";
 import { type CompleteFn, createAnthropicComplete, EFFORTS, type Effort, LlmError } from "./llm.ts";
@@ -90,7 +91,8 @@ export function parseLang(value: string | undefined): PackLanguage | null {
 
 export async function runGenerate(argv: string[], deps: GenerateCliDeps = {}): Promise<number> {
   const env = deps.env ?? process.env;
-  const log = deps.log ?? ((line: string) => process.stderr.write(`${line}\n`));
+  // Generated text is untrusted: no control characters reach the terminal.
+  const log = deps.log ?? ((line: string) => process.stderr.write(`${clean(line)}\n`));
   const cwd = deps.cwd ?? process.cwd();
 
   let values: ReturnType<typeof parse>["values"];

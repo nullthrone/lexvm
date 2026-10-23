@@ -319,3 +319,11 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* index.html <noscript> (no inline style: the Content-Security-Policy allows none). */
+.noscript {
+  font-family: Georgia, serif;
+  padding: 2rem;
+  max-width: 36rem;
+  margin: auto;
+}

@@ -60,7 +60,8 @@ async function main(argv: string[]): Promise<number> {
     out(version());
     return 0;
   }
-  const run = COMMANDS[command];
+  // Own properties only: "constructor" or "toString" are not commands.
+  const run = Object.hasOwn(COMMANDS, command) ? COMMANDS[command] : undefined;
   if (run === undefined) {
     err(`lexvm: unknown command "${command}". Run "lexvm help" for the list of commands.`);
     return 2;

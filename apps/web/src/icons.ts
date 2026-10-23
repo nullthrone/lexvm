@@ -68,7 +68,8 @@ const EXIT_ROTATION: Record<string, number> = {
 
 /** Icon for an exit chip: a compass arrow for standard directions, stairs/doors for up/down/in/out. */
 export function exitIcon(exitId: string): SVGSVGElement {
-  const rotation = EXIT_ROTATION[exitId];
+  // Own properties only: a custom exit named "constructor" gets the chevron.
+  const rotation = Object.hasOwn(EXIT_ROTATION, exitId) ? EXIT_ROTATION[exitId] : undefined;
   if (rotation !== undefined) return icon("arrow", { rotate: rotation });
   if (exitId === "up") return icon("stairsUp");
   if (exitId === "down") return icon("stairsDown");

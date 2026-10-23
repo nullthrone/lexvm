@@ -45,7 +45,7 @@ export function parseArgs(argv: readonly string[], spec: Record<string, OptionSp
       positionals.push(arg);
       continue;
     }
-    const option = spec[name];
+    const option = Object.hasOwn(spec, name) ? spec[name] : undefined;
     if (option === undefined) throw new UsageError(`unknown option --${name}`);
     if (option.type === "boolean") {
       if (inline !== undefined) throw new UsageError(`option --${name} does not take a value`);

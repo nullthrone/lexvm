@@ -16,8 +16,9 @@ import {
   view,
 } from "@lexvm/engine";
 import { flag, parseArgs, stringOption, UsageError } from "../args.ts";
+import { fillText, type PlayText, playText } from "../play-text.ts";
 import { compileSource, readPackSource } from "../sources.ts";
-import { color, err, formatDiagnostic } from "../term.ts";
+import { clean, color, err, formatDiagnostic } from "../term.ts";
 
 export const PLAY_HELP = `Usage: lexvm play <packDir|file.yaml|file.lexpack.json> [options]
 
@@ -28,7 +29,8 @@ or the numbered dialogue options.
 Input: free text in the pack's language ("take the key"), canonical commands
 with ids ("use brass_key study_door", "go north", "choose ask_uncle"), a
 number to pick a dialogue option, or a meta command: undo, restart, hint,
-help, quit.
+help, quit (or the pack language's words for them). Game texts are in the
+pack's language.
 
 Without a terminal (piped stdin) or with --commands/--file, all lines are run
 and the full transcript is printed.
@@ -54,27 +56,32 @@ function objectLabel(o: ObjectView): string {
   return `${o.id} "${o.name}"${o.verbs.length > 0 ? ` [${o.verbs.join(" ")}]` : ""}`;
 }
 
-/** The affordance block printed after each turn: what a tap UI would offer. */
-export function affordances(v: View): string[] {
+/**
+ * The affordance block printed after each turn: what a tap UI would offer,
+ * labelled in the pack's language (`t`, English by default). Clues show their
+ * verbs like every other object: `use` combines two of them.
+ */
+export function affordances(v: View, t: PlayText = playText("en")): string[] {
   if (v.ended !== null) {
-    const score = v.score === null ? "" : `, score ${v.score.value}/${v.score.max}`;
-    return [`-- THE END: ${v.ended.title} (${v.ended.win ? "won" : "lost"}${score}). Type restart, undo or quit.`];
+    const score = v.score === null ? "" : fillText(t.endScore, { value: v.score.value, max: v.score.max });
+    return [fillText(t.ended, { title: v.ended.title, result: v.ended.win ? t.won : t.lost, score })];
   }
   if (v.dialogue !== null) {
-    const lines = [`-- talking${v.dialogue.npc ? ` to ${v.dialogue.npc}` : ""}; pick a number or "choose <id>":`];
+    const npc = v.dialogue.npc ? fillText(t.talkingWith, { npc: v.dialogue.npc }) : "";
+    const lines = [fillText(t.talking, { npc })];
     v.dialogue.options.forEach((o, i) => {
       lines.push(`   ${i + 1}) ${o.id}: ${o.text}`);
     });
     return lines;
   }
-  const exits = v.exits.map((e) => (e.label === e.id ? e.id : `${e.id} (${e.label})`)).join(", ") || "none";
-  const score = v.score === null ? "" : ` | score ${v.score.value}/${v.score.max}`;
+  const exits = v.exits.map((e) => (e.label === e.id ? e.id : `${e.id} (${e.label})`)).join(", ") || t.none;
+  const score = v.score === null ? "" : ` | ${t.score} ${v.score.value}/${v.score.max}`;
   const items = v.inventory.filter((o) => o.kind !== "clue");
   const clues = v.inventory.filter((o) => o.kind === "clue");
-  const lines = [`-- ${v.room.name} (${v.room.id}) | exits: ${exits}${score}`];
-  lines.push(`   here: ${v.objects.map(objectLabel).join("; ") || "nothing"}`);
-  lines.push(`   inventory: ${items.map(objectLabel).join("; ") || "empty"}`);
-  if (clues.length > 0) lines.push(`   clues: ${clues.map((o) => `${o.id} "${o.name}"`).join("; ")}`);
+  const lines = [`-- ${v.room.name} (${v.room.id}) | ${t.exits}: ${exits}${score}`];
+  lines.push(`   ${t.here}: ${v.objects.map(objectLabel).join("; ") || t.nothing}`);
+  lines.push(`   ${t.inventory}: ${items.map(objectLabel).join("; ") || t.empty}`);
+  if (clues.length > 0) lines.push(`   ${t.clues}: ${clues.map(objectLabel).join("; ")}`);
   return lines;
 }
 
@@ -82,6 +89,7 @@ export function affordances(v: View): string[] {
 class Session {
   readonly pack: Pack;
   readonly canonical: boolean;
+  readonly t: PlayText;
   state!: GameState;
   history: GameState[] = [];
   hintProgress = new Map<string, number>();
@@ -93,11 +101,14 @@ class Session {
   constructor(pack: Pack, canonical: boolean) {
     this.pack = pack;
     this.canonical = canonical;
+    this.t = playText(pack.language);
   }
 
+  /** Print a line (pack text included, so control characters are made visible first). */
   emit(text: string, style?: (s: string) => string): void {
-    this.transcript.push(text);
-    process.stdout.write(`${style ? style(text) : text}\n`);
+    const safe = clean(text);
+    this.transcript.push(safe);
+    process.stdout.write(`${style ? style(safe) : safe}\n`);
   }
 
   start(): void {
@@ -110,7 +121,7 @@ class Session {
   }
 
   status(): void {
-    for (const line of affordances(view(this.pack, this.state))) this.emit(line, color.dim);
+    for (const line of affordances(view(this.pack, this.state), this.t)) this.emit(line, color.dim);
   }
 
   /** Handle one input line. `echo`: print the line (non-interactive mode). */
@@ -119,9 +130,10 @@ class Session {
     if (text === "" || text.startsWith("#")) return;
     // "»" marks raw input; the engine's own echo block shows how it was understood.
     if (echo) this.emit(`» ${text}`, color.bold);
-    else this.transcript.push(`» ${text}`);
+    else this.transcript.push(clean(`» ${text}`));
 
-    const meta = META_WORDS[text.toLowerCase()];
+    const word = text.toLowerCase();
+    const meta = Object.hasOwn(META_WORDS, word) ? META_WORDS[word] : undefined;
     if (meta !== undefined) {
       this.meta(meta);
       return;
@@ -131,18 +143,18 @@ class Session {
   }
 
   private resolve(text: string): Command | null {
-    // A number picks a dialogue option, like tapping it.
+    // A number picks a dialogue option, like tapping it; the engine's parser knows the options
+    // and words its error in the pack's language.
     if (this.state.dialogue !== null && /^\d+$/.test(text)) {
-      const options = view(this.pack, this.state).dialogue?.options ?? [];
-      const option = options[Number(text) - 1];
-      if (option !== undefined) return { verb: "choose", object: option.id };
-      this.emit(`There is no option ${text}.`);
+      const parsed = parseCommand(this.pack, this.state, text);
+      if (parsed.ok && "command" in parsed) return parsed.command;
+      if (!parsed.ok) this.emit(parsed.message);
       return null;
     }
     if (this.canonical) {
       const command = parseCanonical(text);
       if (command === null) {
-        this.emit(`Malformed canonical command: "${text}" (expected "verb [object [with]]" with ids).`);
+        this.emit(fillText(this.t.malformed, { text }));
         this.failed = true;
       }
       return command;
@@ -169,10 +181,11 @@ class Session {
   }
 
   private isKnownCommand(command: Command): boolean {
+    // "go <exit>" and "choose <option>" are canonical in every language, like the ids they take.
+    if (command.verb === "go" || command.verb === "choose") return command.object !== undefined;
     const verbs = new Set(view(this.pack, this.state).verbs.map((v) => v.id));
     if (!verbs.has(command.verb)) return false;
-    if (command.verb === "go" || command.verb === "choose") return true;
-    return [command.object, command.with].every((id) => id === undefined || this.pack.objects[id] !== undefined);
+    return [command.object, command.with].every((id) => id === undefined || Object.hasOwn(this.pack.objects, id));
   }
 
   private execute(command: Command): void {
@@ -193,16 +206,16 @@ class Session {
       case "undo": {
         const previous = this.history.pop();
         if (previous === undefined) {
-          this.emit("Nothing to undo.");
+          this.emit(this.t.nothingToUndo);
           return;
         }
         this.state = previous;
-        this.emit("Undone.");
+        this.emit(this.t.undone);
         this.status();
         return;
       }
       case "restart":
-        this.emit("Restarting.");
+        this.emit(this.t.restarting);
         this.start();
         return;
       case "hint":
@@ -215,37 +228,38 @@ class Session {
         this.quit = true;
         return;
       default:
-        this.emit("Saving and loading are not available in the terminal player; use undo and restart.");
+        this.emit(this.t.noSaving);
     }
   }
 
   private showHint(): void {
     const current = hint(this.pack, this.state);
     if (current === null || current.steps.length === 0) {
-      this.emit("No hint right now.");
+      this.emit(this.t.noHint);
       return;
     }
     const shown = this.hintProgress.get(current.id) ?? 0;
     const index = Math.min(shown, current.steps.length - 1);
     this.hintProgress.set(current.id, index + 1);
-    const more = index + 1 < current.steps.length ? " (type hint again for more)" : "";
-    this.emit(`Hint ${index + 1}/${current.steps.length}: ${current.steps[index]}${more}`);
+    const more = index + 1 < current.steps.length ? this.t.hintMore : "";
+    const text = fillText(this.t.hint, { i: index + 1, n: current.steps.length, text: current.steps[index] ?? "" });
+    this.emit(`${text}${more}`);
   }
 
   private showHelp(): void {
+    const h = this.t.help;
     const v = view(this.pack, this.state);
     const verbs = v.verbs.map((verb) => {
       const shape =
-        verb.arity === 0 ? "" : verb.arity === 1 ? " <object>" : ` <object> ${verb.prep ?? "with"} <object>`;
-      return `${verb.id}${shape} (${verb.label})`;
+        verb.arity === 0 ? "" : verb.arity === 1 ? ` ${h.object}` : ` ${h.object} ${verb.prep ?? h.with} ${h.object}`;
+      return `${verb.label}${shape} [${verb.id}]`;
     });
-    this.emit("Type a command in the pack's language, a canonical command with ids, or a meta command.");
-    this.emit(`Verbs: ${verbs.join(", ")}`);
-    this.emit(
-      'Canonical examples: "look", "look brass_key", "take brass_key", "use brass_key study_door", "go north".',
-    );
-    this.emit('In a dialogue: type the option number or "choose <option_id>".');
-    this.emit("Meta: undo, restart, hint (repeat for the next step), help, quit.");
+    this.emit(h.intro);
+    this.emit(`${h.verbs}: ${verbs.join(", ")}`);
+    this.emit(h.canonical);
+    this.emit(h.dialogue);
+    if (Object.values(this.pack.objects).some((o) => o.clue === true)) this.emit(h.clues);
+    this.emit(h.meta);
   }
 }
 
@@ -277,7 +291,7 @@ export async function runPlay(argv: string[]): Promise<number> {
   const result = compileSource(source);
   if (result.pack === null) {
     for (const d of result.diagnostics) if (d.severity === "error") err(formatDiagnostic(d, source.baseDir, target));
-    err(`${target} is not a valid pack; run "lexvm validate ${target}" for details.`);
+    err(clean(`${target} is not a valid pack; run "lexvm validate ${target}" for details.`));
     return 1;
   }
 
@@ -307,7 +321,7 @@ export async function runPlay(argv: string[]): Promise<number> {
       rl.close();
     }
   } catch (e) {
-    err(`engine error: ${e instanceof Error ? e.message : String(e)}`);
+    err(clean(`engine error: ${e instanceof Error ? e.message : String(e)}`));
     session.failed = true;
   } finally {
     const transcriptPath = stringOption(args, "transcript");

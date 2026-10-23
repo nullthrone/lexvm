@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { explore } from "../src/explore.ts";
+import { explore, exploreWith } from "../src/explore.ts";
 import { step } from "../src/runtime.ts";
 import { loadFixture, loadLockedStudy, makePack, play } from "./fixtures/runtime/helpers.ts";
 
@@ -100,7 +100,8 @@ describe("explore", () => {
     const report = explore(pack, { maxStates: 50 });
     expect(report.complete).toBe(false);
     expect(report.states).toBe(50);
-    expect(report.diagnostics).toEqual([expect.objectContaining({ severity: "warning", code: "explore.incomplete" })]);
+    // Nothing is proven: an error, which `lexvm check --allow-incomplete` downgrades.
+    expect(report.diagnostics).toEqual([expect.objectContaining({ severity: "error", code: "explore.incomplete" })]);
     expect(report.deadEnds).toEqual([]);
   });
 
@@ -231,6 +232,65 @@ describe("explore", () => {
     const withDrop = explore(pack, { includeDrop: true });
     expect(withDrop.winnable).toBe(true);
     expect(withDrop.shortestWin).toEqual(["drop coin"]);
+  });
+
+  it("includeDrop keeps track of non-portable objects carried in a container", () => {
+    // Dropping the letter (not portable, carried in the bag) leaves it behind for good.
+    const pack = makePack({
+      start: { room: "a" },
+      rooms: {
+        a: { name: "A", description: "Room.", exits: { north: { to: "b" } } },
+        b: { name: "B", description: "B.", exits: { south: { to: "a" } } },
+      },
+      objects: {
+        bag: { name: "bag", location: "inventory", portable: true, container: true },
+        letter: { name: "letter", location: "bag" },
+        clerk: { name: "clerk", location: "b", npc: true },
+      },
+      rules: [{ id: "deliver", on: { verb: "give", object: "letter", with: "clerk" }, do: { end: "won" } }],
+    });
+    expect(explore(pack).deadEnds).toEqual([]);
+    const withDrop = explore(pack, { includeDrop: true });
+    expect(withDrop.complete).toBe(true);
+    expect(withDrop.deadEnds).toContainEqual({ path: ["drop letter"] });
+    expect(exploreWith(pack, { includeDrop: true }, false).deadEnds).toContainEqual({ path: ["drop letter"] });
+  });
+
+  it("does not report options of a node reached only through options gated by reduced state", () => {
+    // `asked` only gates `more`, which leads to the answer node and back: the reduction drops it,
+    // so the answer node is never entered in the representative states, although it is in play.
+    const pack = makePack({
+      start: { room: "cell" },
+      flags: { asked: false },
+      rooms: {
+        cell: { name: "Cell", description: "A {guard}.", exits: { out: { to: "yard" } } },
+        yard: { name: "Yard", description: "Yard." },
+      },
+      objects: { guard: { name: "guard", location: "cell", npc: true, dialogue: "d" } },
+      rules: [{ id: "escape", on: { event: "enter", room: "yard" }, do: { end: "won" } }],
+      dialogues: {
+        d: {
+          with: "guard",
+          start: "hub",
+          nodes: {
+            hub: {
+              say: "Yes?",
+              options: [
+                { id: "ask", text: "Ask", once: true, do: { set: "asked" }, goto: "hub" },
+                { id: "more", text: "More", when: { flag: "asked" }, goto: "ans" },
+                { id: "bye", text: "Bye" },
+              ],
+            },
+            ans: { say: "The answer.", options: [{ id: "back", text: "Back", goto: "hub" }] },
+          },
+        },
+      },
+    });
+    for (const reduce of [true, false]) {
+      const report = exploreWith(pack, {}, reduce);
+      expect(report.unreached.options).toEqual([]);
+      expect(report.diagnostics.filter((d) => d.code === "explore.unreached-option")).toEqual([]);
+    }
   });
 
   it("is deterministic", () => {

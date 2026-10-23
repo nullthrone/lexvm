@@ -55,10 +55,33 @@ async function expectWinningEnding(page: Page): Promise<void> {
   await expect(ending.getByRole("button", { name: "Play again" })).toBeVisible();
 }
 
+/** Content-Security-Policy and Trusted Types violations of the current test (both builds carry a policy). */
+let violations: string[] = [];
+
 test.beforeEach(async ({ page }) => {
+  violations = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && /Content.Security.Policy|Trusted.?Type/i.test(message.text())) {
+      violations.push(message.text());
+    }
+  });
+  page.on("pageerror", (error) => {
+    if (/Content.Security.Policy|Trusted.?Type/i.test(error.message)) violations.push(error.message);
+  });
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (event) => {
+      console.error(`Content Security Policy violation: ${event.violatedDirective} ${event.blockedURI}`);
+    });
+  });
   await page.goto("./");
   await expect(packCard(page)).toBeVisible();
 });
+
+test.afterEach(() => {
+  expect(violations).toEqual([]);
+});
+
+const CSP = 'meta[http-equiv="Content-Security-Policy"]';
 
 test("plays the demo to the winning ending using taps only", async ({ page }) => {
   await startNewGame(page);
@@ -178,9 +201,36 @@ test("the single-file offline version runs from file://", async ({ page }) => {
   await page.goto(pathToFileURL(file).href);
   await expect(packCard(page)).toBeVisible();
   await expect(page.getByText(/Offline edition/)).toBeVisible();
+  // Inline code runs by hash only; nothing may be loaded from anywhere.
+  const policy = await page.locator(CSP).getAttribute("content");
+  expect(policy).toContain("default-src 'none'");
+  expect(policy).toMatch(/script-src 'sha256-[^']+' 'sha256-[^']+';/);
+  expect(policy).toContain("require-trusted-types-for 'script'");
   await startNewGame(page);
   await go(page, /west/i);
   await expect(transcript(page)).toContainText("Library");
+  await act(page, "red book", /^Pull/);
+  await page.getByRole("button", { name: "Library", exact: true }).tap();
+  await page.getByRole("button", { name: "Create your own" }).tap();
+  await expect(page.getByRole("heading", { name: "Create your own adventure" })).toBeVisible();
+});
+
+test("the PWA runs under its Content-Security-Policy", async ({ page }) => {
+  const policy = await page.locator(CSP).getAttribute("content");
+  expect(policy).toContain("default-src 'none'");
+  expect(policy).toContain("script-src 'self' 'sha256-");
+  expect(policy).toContain("trusted-types lexvm");
+  // The service worker registers through the Trusted Types policy.
+  await expect
+    .poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration()) !== undefined))
+    .toBe(true);
+  await startNewGame(page);
+  await act(page, "Graves", /^Talk/);
+  await say(page, /Where is my uncle/);
+  // The create screen is a lazily loaded chunk with its own code.
+  await page.getByRole("button", { name: "Library", exact: true }).tap();
+  await page.getByRole("button", { name: "Create your own" }).tap();
+  await expect(page.getByRole("heading", { name: "Create your own adventure" })).toBeVisible();
 });
 
 test("imports a pasted pack, checks its walkthrough and plays it", async ({ page }) => {

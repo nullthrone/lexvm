@@ -11,13 +11,16 @@
  * 1. "?" and meta words (undo, restart, hint, help, save, load, quit).
  * 2. In a dialogue: a digit picks the n-th available option, otherwise the
  *    option whose text shares the most words with the input.
- * 3. A bare direction or exit label ("n", "nach Norden", "Kellertreppe").
+ * 3. A bare direction, or the label, synonym or id of a listed exit ("n",
+ *    "nach Norden", "Kellertreppe", "ueberfahrt").
  * 4. Verb phrase (longest match; separable particles such as "mach … auf"),
  *    then one or two objects. Two-object verbs split on their preposition
  *    (or any known one); give/show without preposition are segmented
  *    greedily and an npc named first is swapped into the second slot.
  *    "open/unlock X with Y" becomes "use Y with X"; "take X from Y" ignores
- *    the source phrase.
+ *    the source phrase. "take X" where X names no present object but a
+ *    listed exit ("nimm die Straßenbahn", "take the tram") goes there.
+ * 5. No known verb: words naming a listed exit ("zur Überfahrt") go there.
  */
 import { listedExits } from "./affordances.ts";
 import { activeOptions } from "./effects.ts";
@@ -76,10 +79,14 @@ function tokenize(text: string): Token[] {
   return out;
 }
 
-/** Light suffix stemmer; applied to both input and vocabulary, so it only needs to be consistent. */
+/**
+ * Light suffix stemmer; applied to both input and vocabulary, so it only needs
+ * to be consistent. German "-ern" goes first so that the dative plural meets
+ * the plural ("Streichhölzern", "Streichhölzer" → "streichhoelz").
+ */
 function stem(word: string, lang: string): string {
   if (lang === "de") {
-    for (const suffix of ["en", "em", "er", "es", "e", "n", "s"]) {
+    for (const suffix of ["ern", "en", "em", "er", "es", "e", "n", "s"]) {
       if (word.length - suffix.length >= 3 && word.endsWith(suffix)) return word.slice(0, -suffix.length);
     }
     return word;
@@ -351,7 +358,11 @@ export function parseCommand(pack: Pack, state: GameState, input: string): Parse
   if (bare) return command({ verb: "go", object: bare });
 
   const vm = matchVerb(t, tokens);
-  if (!vm) return fail("unknown-verb", fill(m.parse.unknownVerb, { word: tokens[0]?.d ?? "" }));
+  if (!vm) {
+    const exit = namedExit(pc, tokens);
+    if (exit !== null) return command({ verb: "go", object: exit });
+    return fail("unknown-verb", fill(m.parse.unknownVerb, { word: tokens[0]?.d ?? "" }));
+  }
   // A known phrase without a matching command ("schließ … ab": there is no lock verb).
   if (vm.verb === "@none") return fail("unknown-verb", fill(m.parse.unknownVerb, { word: vm.words }));
   return parseArgs(pc, vm.verb, vm.rest);
@@ -434,6 +445,16 @@ function parseArgs(pc: PCtx, verb: string, rest: Token[]): ParseResult {
       if (!r.ok) return r;
       // "schließ Tür mit Schlüssel auf" → use key with door; a single object → open it.
       return command(r.b === undefined ? { verb: "open", object: r.a } : { verb: "use", object: r.b, with: r.a });
+    }
+    case "take": {
+      const r = objectArg(pc, rest, label("take"), false);
+      if (r.ok) return command({ verb, object: r.id as string });
+      // "nimm die Straßenbahn", "take the tram": no present object by that name, but a listed exit.
+      if (r.error === "unknown-object" || r.error === "not-here") {
+        const exit = namedExit(pc, rest);
+        if (exit !== null) return command({ verb: "go", object: exit });
+      }
+      return r;
     }
     case "talk": {
       const r = objectArg(pc, rest, label("talk"), false);
@@ -643,17 +664,51 @@ function exactExit(pc: PCtx, tokens: readonly Token[]): string | null {
   return labelledExit(pc, tokens);
 }
 
-/** The listed exit whose label or synonym is exactly the input. */
+/**
+ * The listed exit whose label, synonym or id is exactly the input. Ids count
+ * because the terminal player lists exits by id ("ueberfahrt", "back_door").
+ */
 function labelledExit(pc: PCtx, tokens: readonly Token[]): string | null {
   const phrase = content(pc.t, tokens)
     .map((x) => x.f)
     .join(" ");
   if (phrase === "") return null;
   for (const { id, exit } of listedExits(pc.pack, pc.state)) {
-    const phrases = [exit.label, ...(exit.synonyms ?? [])].filter((p): p is string => p !== undefined).map(fold);
+    const phrases = [exit.label, ...(exit.synonyms ?? []), id.replace(/_/g, " ")]
+      .filter((p): p is string => p !== undefined)
+      .map((p) =>
+        content(pc.t, tokenize(p))
+          .map((x) => x.f)
+          .join(" "),
+      );
     if (phrases.includes(phrase)) return id;
   }
   return null;
+}
+
+/**
+ * The one listed exit that the words name by its label, a synonym or its id
+ * (not by a direction word or the destination's name), after a leading
+ * preposition: "Straßenbahn" for "Straßenbahn zur Siedlung", "ins Boot".
+ */
+function namedExit(pc: PCtx, tokens: readonly Token[]): string | null {
+  const { t } = pc;
+  let words = content(t, tokens);
+  if (words[0] && t.lead.has(words[0].f)) words = words.slice(1);
+  if (words.length === 0) return null;
+  const input = inputWords(t, words);
+  let best = 0;
+  let ids: string[] = [];
+  for (const { id, exit } of listedExits(pc.pack, pc.state)) {
+    const names = [exit.label ?? "", id.replace(/_/g, " ")];
+    const s = score(makeVocab(t, names.join(" "), [...(exit.synonyms ?? []), ...names]), input);
+    if (s === 0 || s < best) continue;
+    if (s > best) {
+      best = s;
+      ids = [id];
+    } else ids.push(id);
+  }
+  return ids.length === 1 ? (ids[0] as string) : null;
 }
 
 /**
@@ -732,7 +787,9 @@ function parseChoice(pc: PCtx, tokens: Token[]): ParseResult {
   const only = tokens[0];
   if (tokens.length === 1 && only && /^\d+$/.test(only.f)) {
     const o = options[Number(only.f) - 1];
-    return o ? command({ verb: "choose", object: o.id }) : fail("unknown-object", chooseMsg);
+    return o
+      ? command({ verb: "choose", object: o.id })
+      : fail("unknown-object", fill(m.parse.noSuchOption, { n: only.f, max: options.length }));
   }
   const words = content(t, tokens).map((x) => stem(x.f, t.lang));
   let best = 0;

@@ -28,6 +28,8 @@ import { importedPackExists, libraryKey, storeImportedPack } from "../services/p
 
 const MAX_SOURCE_BYTES = 2 * 1024 * 1024;
 const PROMPT_FILE = "lexvm-prompt.md";
+/** Diagnostics rendered on the page; the copied report has all of them. */
+const MAX_SHOWN_DIAGNOSTICS = 200;
 
 /** Source name for pasted text: JSON if it looks like JSON, else YAML. */
 export function pastedSourceName(text: string): string {
@@ -272,7 +274,16 @@ export function createCreateScreen(): Screen {
           { class: "results__summary" },
           t("create.summary", { errors: counts.error, warnings: counts.warning, infos: counts.info }),
         ),
-        diagnostics.length > 0 ? h("ul", { class: "diags" }, ...diagnostics.map(renderDiagnostic)) : null,
+        // A hostile or broken pack can produce thousands of messages: show the first ones, copy them all.
+        diagnostics.length > 0
+          ? h("ul", { class: "diags" }, ...diagnostics.slice(0, MAX_SHOWN_DIAGNOSTICS).map(renderDiagnostic))
+          : null,
+        diagnostics.length > MAX_SHOWN_DIAGNOSTICS
+          ? h("p", {
+              class: "muted",
+              text: t("create.moreDiagnostics", { n: diagnostics.length - MAX_SHOWN_DIAGNOSTICS }),
+            })
+          : null,
         result.pack ? null : h("p", { class: "notice notice--error", text: t("create.failed") }),
         walkthroughNode,
         playtimeNode,

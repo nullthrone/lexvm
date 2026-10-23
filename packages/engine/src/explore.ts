@@ -87,7 +87,7 @@ export function exploreWith(pack: Pack, options: ExploreOptions, reduce: boolean
   };
   const run = { quiet: true, trace };
   const rel = reduce ? relevantState(pack, ix) : everything(pack, ix);
-  const keyOf = makeKeyFn(pack, ix, rel);
+  const keyOf = makeKeyFn(pack, ix, rel, options.includeDrop === true);
   // Rules and options gated by state the key leaves out may never fire in the representative states
   // the search keeps, although they can in play: their absence proves nothing, so they are not reported.
   const conclusive = coverageCheck(pack, ix, rel);
@@ -195,12 +195,13 @@ export function exploreWith(pack: Pack, options: ExploreOptions, reduce: boolean
 
   const deadEnds: ExploreReport["deadEnds"] = [];
   if (!complete) {
+    // An error: nothing is proven, so the pack is not verified (`lexvm check --allow-incomplete` accepts it).
     diagnostics.push({
-      severity: "warning",
+      severity: "error",
       code: "explore.incomplete",
       path: "",
       message:
-        `Exploration stopped at ${maxStates} states, so the result is incomplete (dead ends were not checked). ` +
+        `Exploration stopped at ${maxStates} states, so the result is incomplete (winnability and dead ends were not checked). ` +
         "Bound every counter changed by turn rules with a when condition and avoid independent state that never matters.",
     });
   } else if (anyWin < 0) {
@@ -279,7 +280,7 @@ export function exploreWith(pack: Pack, options: ExploreOptions, reduce: boolean
     for (const [nodeId, node] of Object.entries(d.nodes)) {
       (node.options ?? []).forEach((o, j) => {
         const key = optionKey(dId, o.id);
-        if (chosenOptions.has(key) || optionPaths.has(key) || !conclusive.option(o)) return;
+        if (chosenOptions.has(key) || optionPaths.has(key) || !conclusive.option(dId, nodeId, o)) return;
         unreached.options.push(key);
         optionPaths.set(key, `dialogues.${dId}.nodes.${nodeId}.options[${j}]`);
       });
@@ -549,8 +550,13 @@ function makeCandidateGenerator(
 // Compact state keys
 // ---------------------------------------------------------------------------
 
-/** Objects whose state can change at all: effect targets, portable, clues, openable, lockable by default. */
-function mutableObjects(pack: Pack, ix: PackIndex): string[] {
+/**
+ * Objects whose state can change at all: effect targets, portable, clues,
+ * openable, lockable by default. With `includeDrop` also everything that can
+ * be carried inside one of those (a letter in a portable bag): the default
+ * `drop` moves any held object, portable or not.
+ */
+function mutableObjects(pack: Pack, ix: PackIndex, includeDrop: boolean): string[] {
   const ids = new Set<string>();
   const visit = (effects: readonly Effect[] | undefined): void => {
     for (const e of effects ?? []) {
@@ -578,6 +584,21 @@ function mutableObjects(pack: Pack, ix: PackIndex): string[] {
   for (const id of ix.objectIds) {
     const def = pack.objects[id];
     if (def && (def.portable || def.clue || def.openable || def.unlockedBy !== undefined)) ids.add(id);
+  }
+  if (includeDrop) {
+    // Contents of movable containers, transitively (a move effect can put anything into one).
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const id of ix.objectIds) {
+        if (ids.has(id)) continue;
+        const location = pack.objects[id]?.location;
+        if (location !== undefined && ids.has(location)) {
+          ids.add(id);
+          grew = true;
+        }
+      }
+    }
   }
   return ix.objectIds.filter((id) => ids.has(id));
 }
@@ -626,12 +647,12 @@ function memberBits(list: readonly string[], index: Map<string, number>, size: n
   return packBits(values);
 }
 
-function makeKeyFn(pack: Pack, ix: PackIndex, rel: Relevance): (s: GameState) => string {
+function makeKeyFn(pack: Pack, ix: PackIndex, rel: Relevance, includeDrop: boolean): (s: GameState) => string {
   const locIndex = new Map<string, number>();
   for (const id of [...ix.roomIds, ...ix.objectIds, INVENTORY, NOWHERE]) {
     if (!locIndex.has(id)) locIndex.set(id, locIndex.size);
   }
-  const mutable = mutableObjects(pack, ix);
+  const mutable = mutableObjects(pack, ix, includeDrop);
   // Sorted, so states with undeclared flags (unvalidated packs) still get a stable key.
   const flagIds = [...rel.flags].sort();
   const counterIds = [...rel.counters].sort();

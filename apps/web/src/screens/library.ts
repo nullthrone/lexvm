@@ -11,6 +11,7 @@ import { deleteImportedPack, type LibraryEntry, loadLibrary } from "../services/
 import { promptInstall, pwa } from "../services/pwa.ts";
 import { listSaves } from "../services/saves.ts";
 import { storageKind } from "../services/storage.ts";
+import { confirmFreshStart } from "./game.ts";
 
 export const OFFLINE_FILE = "lexvm-offline.html";
 
@@ -77,6 +78,7 @@ function card(entry: LibraryEntry, save: StoredSave | undefined, refresh: () => 
       });
       if (!ok) return;
     }
+    confirmFreshStart(entry.key);
     navigate({ name: "play", key: entry.key, fresh: true });
   };
   const remove = async () => {

@@ -22,6 +22,33 @@ export interface SheetModel {
 
 /** Core verbs that take a second object. `use` also works alone ("just use it"). */
 export const TWO_OBJECT_CORE_VERBS: readonly Id[] = ["use", "give", "show"];
+
+/**
+ * Texts for combining clues, in the pack's language (they sit next to the
+ * pack's verb labels). For clues, `use` is presented as combining: that is
+ * how deductions are made, and "use" alone does not suggest it.
+ */
+const CLUE_TEXTS = {
+  de: {
+    combine: "Kombinieren mit",
+    prompt: (name: string) => `${name} kombinieren mit`,
+    explainer: "Tippe einen Eintrag an und wähle »Kombinieren mit …«, um Schlüsse zu ziehen.",
+  },
+  en: {
+    combine: "Combine with",
+    prompt: (name: string) => `Combine ${name} with`,
+    explainer: "Tap an entry and choose “Combine with …” to draw conclusions.",
+  },
+} as const;
+
+export function clueTexts(lang: string): (typeof CLUE_TEXTS)["de" | "en"] {
+  return lang.toLowerCase().split("-")[0] === "de" ? CLUE_TEXTS.de : CLUE_TEXTS.en;
+}
+
+/** Combining is `use` with a clue: its label and target list differ from other objects. */
+function isCombine(object: ObjectView, verb: Id): boolean {
+  return object.kind === "clue" && verb === "use";
+}
 const NPC_RECEIVER_VERBS: readonly Id[] = ["give", "show"];
 
 export function findObject(view: View, id: Id): { object: ObjectView; placement: Placement } | null {
@@ -44,8 +71,11 @@ export function needsTarget(verb: Id, vv: VerbView | undefined): boolean {
   return TWO_OBJECT_CORE_VERBS.includes(verb) || vv?.arity === 2;
 }
 
-/** The action sheet for an object, or null if the object is not present. */
-export function sheetFor(view: View, objectId: Id): SheetModel | null {
+/**
+ * The action sheet for an object, or null if the object is not present.
+ * `lang` is the pack's language (for the "Combine with" label of clues).
+ */
+export function sheetFor(view: View, objectId: Id, lang = "en"): SheetModel | null {
   const found = findObject(view, objectId);
   if (!found) return null;
   const seen = new Set<Id>();
@@ -54,7 +84,8 @@ export function sheetFor(view: View, objectId: Id): SheetModel | null {
     if (seen.has(verb)) continue;
     seen.add(verb);
     const vv = verbView(view, verb);
-    verbs.push({ verb, label: vv?.label ?? verb, needsTarget: needsTarget(verb, vv) });
+    const label = isCombine(found.object, verb) ? clueTexts(lang).combine : (vv?.label ?? verb);
+    verbs.push({ verb, label, needsTarget: needsTarget(verb, vv) });
   }
   return { object: found.object, placement: found.placement, verbs };
 }
@@ -91,8 +122,11 @@ function joinWords(...parts: Array<string | undefined>): string {
     .join(" ");
 }
 
-/** Model for choosing the second object of a two-object verb, or null if `sourceId` is not present. */
-export function targetModel(view: View, sourceId: Id, verb: Id): TargetModel | null {
+/**
+ * Model for choosing the second object of a two-object verb, or null if
+ * `sourceId` is not present. Combining a clue lists the other clues first.
+ */
+export function targetModel(view: View, sourceId: Id, verb: Id, lang = "en"): TargetModel | null {
   const found = findObject(view, sourceId);
   if (!found) return null;
   const source = found.object;
@@ -141,7 +175,12 @@ export function targetModel(view: View, sourceId: Id, verb: Id): TargetModel | n
     { group: "notebook", items: clues },
   ];
   const hereGroup: TargetGroup = { group: "here", items: here };
-  const ordered = found.placement === "inventory" ? [hereGroup, ...inventoryGroups] : [...inventoryGroups, hereGroup];
+  const combine = isCombine(source, verb);
+  const ordered = combine
+    ? [{ group: "notebook" as const, items: clues }, { group: "inventory" as const, items }, hereGroup]
+    : found.placement === "inventory"
+      ? [hereGroup, ...inventoryGroups]
+      : [...inventoryGroups, hereGroup];
   const groups = nonEmpty(ordered);
   return {
     verb,
@@ -149,7 +188,7 @@ export function targetModel(view: View, sourceId: Id, verb: Id): TargetModel | n
     source,
     groups,
     allowSolo: verb === "use",
-    prompt: { before: joinWords(label, source.name, prep), after: "" },
+    prompt: { before: combine ? clueTexts(lang).prompt(source.name) : joinWords(label, source.name, prep), after: "" },
     empty: groups.length === 0 ? "nothing" : null,
   };
 }

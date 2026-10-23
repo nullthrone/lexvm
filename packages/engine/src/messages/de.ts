@@ -124,6 +124,7 @@ export const de: Messages = {
     incompleteWhere: "Wohin?",
     alreadyHere: "Da bist du schon.",
     chooseOption: "Wähle eine Antwort (1–{n}).",
+    noSuchOption: "Antwort {n} gibt es nicht. Wähle eine Antwort (1–{max}).",
   },
 
   vocab: {
@@ -219,6 +220,21 @@ export const de: Messages = {
       ["kombinier", "use"],
       ["kombinieren", "use"],
       ["gebrauche", "use"],
+      // light: "zünde Laterne (mit Streichhölzern) an", "entzünde Streichholz"
+      ["zünde", "use", "an"],
+      ["zünd", "use", "an"],
+      ["zünde", "use"],
+      ["anzünden", "use"],
+      ["entzünde", "use"],
+      ["entzünd", "use"],
+      ["entzünden", "use"],
+      // compare or connect two things (clues): "vergleiche Anweisung mit Persilschein"
+      ["vergleiche", "use"],
+      ["vergleich", "use"],
+      ["vergleichen", "use"],
+      ["verbinde", "use"],
+      ["verbind", "use"],
+      ["verbinden", "use"],
       // "leg Brief in Schublade", "steck Schlüssel ins Schloss" ("leg … ab" is drop, "steck … ein" is take)
       ["leg", "use"],
       ["lege", "use"],
@@ -275,6 +291,15 @@ export const de: Messages = {
       ["klettere", "go"],
       ["betritt", "go"],
       ["betrete", "go"],
+      // vehicles: "fahr mit der Straßenbahn", "steig ins Boot (ein)"
+      ["fahr", "go"],
+      ["fahre", "go"],
+      ["fahren", "go"],
+      ["steig", "go", "ein"],
+      ["steige", "go", "ein"],
+      ["steig", "go"],
+      ["steige", "go"],
+      ["einsteigen", "go"],
       // wait / inventory
       ["warte", "wait"],
       ["wart", "wait"],
@@ -284,6 +309,8 @@ export const de: Messages = {
       ["inventar", "inventory"],
       ["inv", "inventory"],
       ["i", "inventory"],
+      ["notizbuch", "inventory"],
+      ["notizen", "inventory"],
     ],
     readWords: ["lies", "lese", "lesen"],
     directions: {

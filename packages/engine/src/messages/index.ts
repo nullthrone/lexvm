@@ -148,6 +148,8 @@ export interface Messages {
     /** "go <name of the current room>". */
     alreadyHere: string;
     chooseOption: string;
+    /** A dialogue option number that is not on the list. Placeholders: {n} (typed), {max}. */
+    noSuchOption: string;
   };
 
   vocab: Vocabulary;

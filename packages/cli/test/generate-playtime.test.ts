@@ -209,13 +209,15 @@ describe("engineVerify", () => {
     expect(onTarget.diagnostics.map((d) => d.code)).toContain("playtime.estimate");
   });
 
-  it("never reports an incomplete exploration as unwinnable", async () => {
+  it("reports an incomplete exploration as unverified, never as unwinnable", async () => {
     const report = await engineVerify(await files(), { maxStates: 20 });
     const codes = report.diagnostics.map((d) => d.code);
     expect(codes).toContain("explore.incomplete");
     expect(codes).not.toContain("explore.not-winnable");
     expect(codes).not.toContain("explore.unwinnable");
-    expect(report.ok).toBe(true);
+    // Nothing is proven, so the gate fails (the generator can raise --max-states).
+    expect(report.diagnostics.filter((d) => d.severity === "error").map((d) => d.code)).toEqual(["explore.incomplete"]);
+    expect(report.ok).toBe(false);
   });
 
   it("ranks play time warnings after the errors and before every other warning", () => {
@@ -276,5 +278,13 @@ describe("check and gate fallbacks", () => {
     const won = { ...base, ok: true, ending: "found_uncle", score: 2 };
     expect(walkthroughFallbacks(study, won).map((d) => d.code)).toEqual(["walkthrough.score-mismatch"]);
     expect(walkthroughFallbacks(study, { ...won, score: 3 })).toEqual([]);
+    // One maxScore mistake, one warning: the analyzer's score.maxScore-unreachable already covers it.
+    const unreachable: Diagnostic = {
+      severity: "warning",
+      code: "score.maxScore-unreachable",
+      path: "maxScore",
+      message: "m",
+    };
+    expect(walkthroughFallbacks(study, won, [unreachable])).toEqual([]);
   });
 });

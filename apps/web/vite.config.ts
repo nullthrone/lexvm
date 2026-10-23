@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
-import { builtinPacksPlugin, pwaPlugin, singlefileHtmlPlugin } from "./build/plugins.ts";
+import { builtinPacksPlugin, cspPlugin, pwaPlugin, singlefileHtmlPlugin } from "./build/plugins.ts";
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 const pkg = JSON.parse(readFileSync(here("./package.json"), "utf8")) as { version: string };
@@ -38,8 +38,13 @@ export default defineConfig(({ mode }) => {
     plugins: [
       builtinPacksPlugin({ inline: singlefile, packsDir: here("./public/packs") }),
       ...(singlefile
-        ? [singlefileHtmlPlugin({ iconSvg: here("./public/icons/icon.svg") }), viteSingleFile()]
+        ? [
+            singlefileHtmlPlugin({ iconSvg: here("./public/icons/icon.svg") }),
+            viteSingleFile(),
+            cspPlugin({ singlefile }),
+          ]
         : [
+            cspPlugin({ singlefile }),
             pwaPlugin({
               swSource: here("./src/sw.ts"),
               offlineHtml: here(`./${OFFLINE_DIR}/index.html`),

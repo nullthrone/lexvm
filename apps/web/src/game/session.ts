@@ -14,6 +14,8 @@ export interface EngineApi {
   hint(pack: Pack, state: GameState): HintView | null;
   formatCommand(command: Command): string;
   parseCanonical(text: string): Command | null;
+  /** Problems of a state from outside the engine (a save); empty when it is a valid state of the pack. */
+  validateState(pack: Pack, state: GameState): string[];
 }
 
 export const UNDO_LIMIT = 100;
@@ -163,7 +165,8 @@ export class GameSession {
   }
 
   revealedHints(id: string): number {
-    return this.hints[id] ?? 0;
+    // Own properties only: a hint id such as "constructor" must not find Object's constructor.
+    return Object.hasOwn(this.hints, id) ? (this.hints[id] ?? 0) : 0;
   }
 
   /** Remember how many steps of hint `id` have been revealed (never decreases). */
@@ -185,6 +188,12 @@ export type RestoreResult =
   | { kind: "restored"; session: GameSession; turns: OutputBlock[][] }
   /** The log could not reproduce the saved state; the saved state is used without a transcript. */
   | { kind: "state-only"; session: GameSession }
+  /**
+   * The log could not reproduce the saved state and that state is not a valid
+   * state of the pack (unknown ids, a dialogue without options): the game
+   * continues from what the log reproduces.
+   */
+  | { kind: "repaired"; session: GameSession; turns: OutputBlock[][]; problems: string[] }
   /** The pack changed since the save was made; the caller should offer a replay. */
   | { kind: "pack-changed"; save: SaveGame };
 
@@ -193,12 +202,12 @@ export function restoreSession(engine: EngineApi, pack: Pack, hash: string, stor
   const { save } = stored;
   if (save.pack.hash !== hash) return { kind: "pack-changed", save };
   const replay = replayLog(engine, pack, save.log);
+  const replayed = () => new GameSession(engine, pack, hash, replay.state, replay.log, stored.hints);
   if (replay.stoppedAt === null && sameState(replay.state, save.state)) {
-    return {
-      kind: "restored",
-      session: new GameSession(engine, pack, hash, replay.state, replay.log, stored.hints),
-      turns: replay.turns,
-    };
+    return { kind: "restored", session: replayed(), turns: replay.turns };
   }
+  // The saved state is untrusted (a save file, or storage written by another page of the same origin).
+  const problems = engine.validateState(pack, save.state);
+  if (problems.length > 0) return { kind: "repaired", session: replayed(), turns: replay.turns, problems };
   return { kind: "state-only", session: new GameSession(engine, pack, hash, save.state, [...save.log], stored.hints) };
 }

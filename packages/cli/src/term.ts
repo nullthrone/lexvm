@@ -20,6 +20,24 @@ export const color = {
   bold: style("1", process.stdout),
 };
 
+/**
+ * C0 controls other than tab and newline, DEL, C1 controls, and the Unicode
+ * bidirectional overrides and isolates.
+ */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: finding control characters is the point
+const UNSAFE = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;
+
+/**
+ * Text from a pack (or any other untrusted source) made safe for a terminal:
+ * control characters become visible escapes ("\u{1b}"), so pack text can
+ * neither set the window title, write the clipboard (OSC 52), move the cursor
+ * nor reorder what is shown. Apply it to the untrusted parts before adding
+ * colors, which are escape sequences themselves.
+ */
+export function clean(text: string): string {
+  return text.replace(UNSAFE, (c) => `\\u{${(c.codePointAt(0) ?? 0).toString(16)}}`);
+}
+
 export function out(text = ""): void {
   process.stdout.write(`${text}\n`);
 }
@@ -41,12 +59,12 @@ export function diagnosticFile(d: Diagnostic, baseDir: string, fallback: string)
   return rel === "" ? d.file : rel;
 }
 
-/** "file:line  severity  code  path  message" */
+/** "file:line  severity  code  path  message", with pack-derived parts made safe for the terminal. */
 export function formatDiagnostic(d: Diagnostic, baseDir: string, fallback: string): string {
-  const file = diagnosticFile(d, baseDir, fallback);
+  const file = clean(diagnosticFile(d, baseDir, fallback));
   const where = d.line === undefined ? file : `${file}:${d.line}`;
   const severity = SEVERITY_COLOR[d.severity](d.severity.padEnd(7));
-  return `${where}  ${severity}  ${color.bold(d.code)}  ${d.path === "" ? "-" : d.path}  ${d.message}`;
+  return `${where}  ${severity}  ${color.bold(clean(d.code))}  ${d.path === "" ? "-" : clean(d.path)}  ${clean(d.message)}`;
 }
 
 export function countDiagnostics(diagnostics: readonly Diagnostic[]): Record<Severity, number> {

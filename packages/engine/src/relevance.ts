@@ -95,11 +95,34 @@ export function coverageCheck(
   pack: Pack,
   ix: PackIndex,
   rel: Relevance,
-): { rule: (ref: RuleRef) => boolean; option: (option: DialogueOption) => boolean } {
+): {
+  rule: (ref: RuleRef) => boolean;
+  option: (dialogueId: string, nodeId: string, option: DialogueOption) => boolean;
+} {
   const written = writtenVariables(pack);
   // A variable nothing writes keeps its initial value in every state: reading it is exact.
   const lost = (v: string) =>
     !isRelevant(rel, v) && (v.startsWith("v:") || v.startsWith("r:") || v.startsWith("o:") || written.has(v));
+  const exact = (option: DialogueOption) => !conditionReads(option.when).some(lost);
+  // Nodes entered in the explored states whenever they can be entered in play: the start node, and
+  // nodes an exact option of such a node leads to. A node reached only through options gated by lost
+  // state (an answer node behind "ask again") may never be entered in the representative states.
+  const exactNodes = new Map<string, Set<string>>();
+  for (const [dialogueId, dialogue] of Object.entries(pack.dialogues)) {
+    const reached = new Set<string>();
+    const queue = Object.hasOwn(dialogue.nodes, dialogue.start) ? [dialogue.start] : [];
+    for (const id of queue) reached.add(id);
+    while (queue.length > 0) {
+      const node = dialogue.nodes[queue.shift() as string];
+      for (const option of node?.options ?? []) {
+        const to = option.goto;
+        if (to === undefined || reached.has(to) || !Object.hasOwn(dialogue.nodes, to) || !exact(option)) continue;
+        reached.add(to);
+        queue.push(to);
+      }
+    }
+    exactNodes.set(dialogueId, reached);
+  }
   return {
     rule: (ref) => {
       // Its own conditions, and those of earlier rules that may take the same command first.
@@ -113,7 +136,7 @@ export function coverageCheck(
       }
       return !reads.some(lost);
     },
-    option: (option) => !conditionReads(option.when).some(lost),
+    option: (dialogueId, nodeId, option) => exact(option) && exactNodes.get(dialogueId)?.has(nodeId) === true,
   };
 }
 
