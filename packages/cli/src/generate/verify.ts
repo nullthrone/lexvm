@@ -1,10 +1,20 @@
 /**
  * Verification gates of the generation pipeline, run in-process with the
- * engine API: compile (schema + semantics), walkthrough replay, state-space
- * exploration. Gates run in order and stop at the first gate with errors, so
- * a repair round focuses on the earliest problems (as `lexvm check` does).
+ * engine API: compile (schema + semantics), walkthrough replay (with the play
+ * time estimate), state-space exploration. Gates run in order and stop at the
+ * first gate with errors, so a repair round focuses on the earliest problems
+ * (as `lexvm check` does).
  */
-import { analyze, compile, type Diagnostic, explore, runWalkthrough, type SourceFile } from "@lexvm/engine";
+import {
+  analyze,
+  compile,
+  type Diagnostic,
+  estimatePlaytime,
+  explore,
+  runWalkthrough,
+  type SourceFile,
+} from "@lexvm/engine";
+import { exploreFallbacks, walkthroughFallbacks } from "../fallbacks.ts";
 
 export const GATES = ["compile", "walkthrough", "exploration"] as const;
 export type Gate = (typeof GATES)[number];
@@ -26,6 +36,8 @@ export interface VerifyReport {
 
 export interface VerifyOptions {
   maxStates: number;
+  /** Target play time in minutes (`--minutes`); overrides the pack's playtime in the estimate. */
+  targetMinutes?: number;
 }
 
 export type VerifyFn = (files: SourceFile[], options: VerifyOptions) => VerifyReport | Promise<VerifyReport>;
@@ -100,20 +112,16 @@ export const engineVerify: VerifyFn = (files, options) => {
     return { ok: false, diagnostics: all, gates };
   }
 
-  // Gate 2: walkthrough replay.
+  // Gate 2: walkthrough replay, then the play time estimate (it replays the walkthrough as well).
   try {
     const report = runWalkthrough(pack);
-    diags = [...report.diagnostics];
-    if (!report.ok && count(diags, "error") === 0) {
-      const last = report.steps.at(-1);
-      diags.push({
-        severity: "error",
-        code: "walkthrough.not-won",
-        path: "walkthrough",
-        message: `Replaying the walkthrough did not end in a winning ending${
-          last ? ` (last command: '${last.command}', ${last.status})` : ""
-        }. Make the last command trigger a winning ending.`,
-      });
+    diags = [...report.diagnostics, ...walkthroughFallbacks(pack, report)];
+    if (count(diags, "error") === 0) {
+      const estimate = estimatePlaytime(
+        pack,
+        options.targetMinutes === undefined ? {} : { targetMinutes: options.targetMinutes },
+      );
+      diags.push(...estimate.diagnostics);
     }
   } catch (err) {
     diags = [crash("walkthrough", err)];
@@ -125,38 +133,11 @@ export const engineVerify: VerifyFn = (files, options) => {
     return { ok: false, diagnostics: all, gates };
   }
 
-  // Gate 3: exploration (no dead ends, no losing endings, winnable).
+  // Gate 3: exploration (no dead ends, no losing endings, winnable). The engine reports these itself;
+  // the fallbacks only fill in what its result fields show without a diagnostic of the same code.
   try {
     const report = explore(pack, { maxStates: options.maxStates });
-    diags = [...report.diagnostics];
-    if (count(diags, "error") === 0) {
-      if (!report.winnable) {
-        diags.push({
-          severity: "error",
-          code: "explore.unwinnable",
-          path: "endings",
-          message: "No winning ending is reachable from the start.",
-        });
-      }
-      const dead = report.deadEnds[0];
-      if (dead) {
-        diags.push({
-          severity: "error",
-          code: "explore.dead-end",
-          path: "",
-          message: `${report.deadEnds.length} reachable state(s) can no longer be won. Example path: ${dead.path.join(", ")}.`,
-        });
-      }
-      const losing = report.losingEndings[0];
-      if (losing) {
-        diags.push({
-          severity: "error",
-          code: "explore.losing-ending",
-          path: `endings.${losing.ending}`,
-          message: `Losing ending '${losing.ending}' is reachable via: ${losing.path.join(", ")}. Every ending must be a win.`,
-        });
-      }
-    }
+    diags = [...report.diagnostics, ...exploreFallbacks(report)];
   } catch (err) {
     diags = [crash("exploration", err)];
   }
@@ -171,6 +152,7 @@ export const engineVerify: VerifyFn = (files, options) => {
 
 /** Lower rank = more important. Unknown warning codes sit in the middle. */
 function warningRank(code: string): number {
+  if (/^playtime\./.test(code)) return -1; // the pack misses its target length
   if (/^explore\./.test(code)) return 0; // incomplete exploration, unreached content
   if (/^walkthrough\./.test(code)) return 1;
   if (/shadow|unreach|unused|unreferenced|score/i.test(code)) return 2;
@@ -181,7 +163,8 @@ function warningRank(code: string): number {
 
 /**
  * Select and order diagnostics for a repair prompt: all errors first (in
- * report order, capped), then the most important warnings.
+ * report order, capped), then the most important warnings (play time first,
+ * then exploration and walkthrough findings, style and text length last).
  */
 export function selectDiagnostics(diags: Diagnostic[], maxErrors = 40, maxWarnings = 20): Diagnostic[] {
   const errors = diags.filter((d) => d.severity === "error").slice(0, maxErrors);
