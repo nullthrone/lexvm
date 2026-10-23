@@ -57,8 +57,8 @@ rooms:
       south: { to: sm_mietstation }
       north:
         to: sb_parkplatz
-        when: [ { flag: karte_sm }, { has: hubert } ]
-        blocked: Gertrud fährt erst los, wenn Paul Hubert im Arm hat und Opas erste Karte gelesen ist. Uwe hupt trotzdem schon.
+        when: [ { flag: karte_sm }, { has: hubert }, { has: kreditkarte } ]
+        blocked: Gertrud fährt erst los, wenn du die Kreditkarte hast, Paul Hubert im Arm hält und Opas erste Karte gelesen ist. Uwe hupt trotzdem schon.
   sm_pier:
     name: Santa Monica Pier
     description: |-
@@ -336,9 +336,9 @@ objects:
   kreditkarte:
     name: Kreditkarte
     synonyms: [visa, plastikkarte, kreditkarte]
-    location: inventory
+    location: gertrud
     portable: true
-    description: "Die Familienkreditkarte. Uwe hat sie dir übergeben mit dem Satz: »Nur für Notfälle und Eis.«"
+    description: "Die Familienkreditkarte. Uwe hat sie vorsorglich mit den Schlüsseln in den Wagen gelegt. Sie ist »nur für Notfälle und Eis«."
   haribo:
     name: Haribo
     synonyms: [gummibärchen, süßes, packung, goldbären]
@@ -1397,7 +1397,7 @@ hints:
   - id: hint_gertrud
     until: { isOpen: gertrud }
     steps:
-      - "Uwe hat die Schlüssel im Wagen eingeschlossen. Das ist sein Stil, nicht deine Schuld."
+      - "Uwe hat die Schlüssel und die Kreditkarte im Wagen eingeschlossen. Das ist sein Stil, nicht deine Schuld."
       - "Opas Brief erwähnt einen Ersatzschlüssel für den Notfall."
       - "Benutze den Ersatzschlüssel mit Gertrud, dann öffnet sie sich."
   - id: hint_hubert
@@ -1518,6 +1518,7 @@ walkthrough:
   - choose sabine_sonne_zurueck
   - look gertrud
   - open gertrud
+  - take kreditkarte
   - read masterplan
   - look hubert
   - take hubert
