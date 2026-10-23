@@ -348,3 +348,4 @@ model is in [SECURITY.md](../SECURITY.md). Rules for code in this repository:
 | Pack sources | Bundled packs today, import of files and pasted text; a pack catalog is planned for v0.3. | No |
 | Generation pipeline | Prompt kit stages and `lexvm generate` stages build on the specification and diagnostics; see the [generation pipeline](authoring/pipeline.md). | No |
 | Other front ends | Anything that can call `newGame`, `view`, `step` and `parseCommand` can host LexVM, for example a terminal (`lexvm play`), a screen-reader-first interface or a chat bot. | No |
+| Visual vignettes | Optional, size-budgeted inline SVG decorations per pack or room, sanitised and with a text alternative; games stay fully playable as text ([ADR 0011](adr/0011-text-first-optional-svg-vignettes.md)). Raster images need a separate ADR. | Additive, not yet specified |
