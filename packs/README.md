@@ -12,6 +12,7 @@ releases as `<pack-id>.lexpack.json`.
 |---|---|---|---|---|
 | [`letzte-nacht-der-reichsmark`](letzte-nacht-der-reichsmark/pack.yaml): *Die letzte Nacht der Reichsmark* | German | 45 minutes (estimated 47, speedrun 24; 74-step walkthrough) | CC-BY-4.0 | Noir mystery, Hamburg 1948; design notes in [`design/`](letzte-nacht-der-reichsmark/design/) |
 | [`locked-study`](locked-study/pack.yaml): *The Locked Study* | English | 5 minutes (estimated 6; 17-step walkthrough) | CC0-1.0 | Demo and reference example for authors and the prompt kit |
+| [`gertrud-rollt-nach-norden`](gertrud-rollt-nach-norden/pack.yaml): *Gertrud rollt nach Norden* | German | 120 minutes (estimated 99, speedrun 77; 330-step walkthrough) | CC-BY-4.0 | Comedy road trip, Santa Monica to San Francisco; seven stops, a grandfather's postcard hunt, a rival family |
 
 Length is the pack's `playtime` target, shown on its library card; the
 estimate is what `lexvm check` computes from the texts and the walkthrough.

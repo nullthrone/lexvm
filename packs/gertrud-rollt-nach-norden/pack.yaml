@@ -1,0 +1,1838 @@
+# yaml-language-server: $schema=../../schema/lexvm-pack-1.schema.json
+format: lexvm-pack/1
+id: gertrud-rollt-nach-norden
+version: 1.0.0
+title: Gertrud rollt nach Norden
+subtitle: Ein Familien-Roadtrip von Santa Monica nach San Francisco
+description: "Die Familie Dörfler aus Hannover fährt mit dem Campingbus Gertrud den Highway 1 hinauf. Opas Schnitzeljagd führt über sieben Stationen bis San Francisco, und die Familie Brenner ist immer schon einen Parkplatz weiter."
+language: de
+author: Thomas (written with an LLM)
+license: CC-BY-4.0
+policy: forgiving
+generator:
+  pipeline: "lexvm one-shot prompt"
+  notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt."
+playtime: 120
+maxScore: 14
+
+start:
+  room: sm_parkplatz
+  intro: |-
+    Santa Monica, neun Uhr morgens. Die Sonne steht über dem Pazifik, und auf dem Parkplatz der Mietstation steht ein Wohnmobil von der Größe eines mittleren Reihenhauses. Paul hat es Gertrud getauft, weil er das Kennzeichen für einen Vornamen hielt.
+
+    Dein Vater hat die Schlüssel im Wagen eingeschlossen. Er sagt das nicht laut. Er sagt es mit dem ganzen Körper.
+
+verbs:
+  read:
+    label: Lesen
+    synonyms: [lies, lese, lesen]
+    default: Das hast du schon gelesen.
+  use:
+    label: Benutzen
+    default: Das bringt dich nicht weiter.
+
+flags:
+  karte_sm: false
+  karte_sb: false
+  karte_bs: false
+  karte_mo: false
+  karte_sc: false
+  karte_ys: false
+  karte_sf: false
+  getankt: false
+  haribo_gegeben: false
+  tisch_gekeilt: false
+  junior_ranger: false
+  frank_weg: false
+
+rooms:
+  sm_parkplatz:
+    name: Parkplatz Mietstation
+    description: |-
+      Der Parkplatz der Mietstation Sunny Coast RV liegt zwei Blocks vom Pier. {gertrud} steht darauf wie ein Wohnzimmer mit Rädern. Durch die Scheibe der Fahrertür siehst du die richtigen Schlüssel auf dem Beifahrersitz. Uwe sieht sie auch.
+
+      Im Süden liegt das Büro der Mietstation, im Osten der Pier. Der Highway 1 führt nach Norden.
+    exits:
+      east: { to: sm_pier }
+      south: { to: sm_mietstation }
+      north:
+        to: sb_parkplatz
+        when: [ { flag: karte_sm }, { has: hubert } ]
+        blocked: Gertrud fährt erst los, wenn Paul Hubert im Arm hat und Opas erste Karte gelesen ist. Uwe hupt trotzdem schon.
+  sm_pier:
+    name: Santa Monica Pier
+    description: |-
+      Der Pier ist ein Jahrmarkt über dem Wasser. Ein {riesenrad} dreht sich gegen den Himmel, ein Karussell spielt einen Walzer, der nie endet. Am Ende der Holzplanken steht das {route66_schild} wie ein Grabstein für eine Straße.
+
+      {moewe} hat einen Donut erbeutet und teilt ihn nicht.
+    exits:
+      west: { to: sm_parkplatz }
+  sm_mietstation:
+    name: Büro der Mietstation
+    description: |-
+      Das Büro riecht nach Kaffee und Sonnencreme. Hinter dem Tresen steht {kyle} und tippt mit einem Finger in eine Tastatur, als wolle er sie bestrafen. An der Wand hängt der {schluesselkasten}, ein grauer Kasten mit Zahlenschloss. Auf dem Tresen liegt ein Stapel Versicherungsformulare, die niemand gelesen hat.
+    exits:
+      north: { to: sm_parkplatz }
+  sb_parkplatz:
+    name: Parkplatz Santa Barbara
+    description: |-
+      Der Parkplatz liegt oberhalb der Stadt, mit Blick auf Palmen. Die {festung} steht quer über zwei Plätze, schwarz und verspiegelt. Nach Westen geht es zur Mission, nach Osten zum Hafen, nach Norden die Küste hinauf.
+    exits:
+      west: { to: sb_mission }
+      east: { to: sb_hafen }
+      north:
+        to: bs_tankstelle
+        when: [ { flag: karte_sb }, { has: bootshaken } ]
+        blocked: Uwe lässt den Motor laufen. Opas zweite Karte fehlt dir noch, und den Haken für den Felsen hast du auch nicht.
+  sb_mission:
+    name: Mission Santa Barbara
+    description: |-
+      Die Mission ist ein Zeitloch aus weißen Mauern, Kakteen und dem Geruch nach Lavendel. Im Innenhof plätschert der {brunnen}. Am Rand liegen Kacheln, und eine davon, die {kachel}, sitzt ein Stück schiefer als alle anderen. {tomas} harkt Kies, als hätte er bis zum Jüngsten Tag Zeit.
+
+      Der Weg führt nach Osten zurück zum Parkplatz.
+    exits:
+      east: { to: sb_parkplatz }
+  sb_hafen:
+    name: Stearns Wharf
+    description: |-
+      Der Steg ragt weit ins Meer, gesäumt von Fischbuden und Souvenirständen. Unter dem Holz liegen die {seeloewen} wie Sandsäcke, die jemand vergessen hat zu verschicken. Am Geländer sitzt {kalle} auf einer Kiste.
+
+      Im Westen liegt der Parkplatz.
+    exits:
+      west: { to: sb_parkplatz }
+  bs_tankstelle:
+    name: Tankstelle in Big Sur
+    description: |-
+      Die Tankstelle besteht aus einer {zapfsaeule}, einem Holzschuppen und einem Schild, das in drei Sprachen Vorkasse verlangt. Hinter der Theke steht {hendrik}, als hätte er die Theke selbst gebaut und würde sie nicht mehr hergeben.
+
+      Im Norden führt die Straße zu einer Brücke. Westlich geht es zu einem Strand. Südlich liegt Santa Barbara.
+    exits:
+      north: { to: bs_aussicht }
+      west: { to: bs_strand }
+      south: { to: sb_parkplatz }
+  bs_aussicht:
+    name: Bixby Bridge
+    description: |-
+      Die {bruecke} spannt sich als weißer Bogen über eine Schlucht, und heute liegt Nebel über dem Meer wie ein nasses Laken. Auf einem Pfosten sitzt {kondor} und mustert dich, als würde er Gebühren verlangen. Hier gibt es keinen Handyempfang. Uwe reagiert darauf wie auf eine Mobilmachung.
+
+      Der Weg führt nach Süden zur Tankstelle. Nach Norden geht es weiter, sobald Gertrud wieder rollt und du alles beisammen hast.
+    exits:
+      south: { to: bs_tankstelle }
+      north:
+        to: mo_parkplatz
+        when: [ { flag: karte_bs }, { flag: getankt } ]
+        blocked: Gertrud rollt noch nicht. Der Tank ist leer, und Uwe hat das Wort »Tankanzeige« gerade zum ersten Mal gehört.
+  bs_strand:
+    name: Pfeiffer Beach
+    description: |-
+      Der Sand ist violett, und der Wind schneidet wie eine Gräte. Am Ende der Bucht steht der {schluesselloch_fels}, ein Felsbogen mit einem runden Loch, durch das man das Meer sieht. Davor liegt der {felsentuempel}, ein Becken voller Seesterne und Dinge, die nicht dorthin gehören.
+    exits:
+      east: { to: bs_tankstelle }
+  mo_parkplatz:
+    name: Parkplatz in Monterey
+    description: |-
+      Monterey riecht nach Fisch und Sonnencreme. Das {steinbeck_schild} verrät, dass hier ein Schriftsteller wohnte. Im Osten liegt das Aquarium, nach Norden geht die Fahrt weiter.
+    exits:
+      east: { to: mo_aquarium }
+      north:
+        to: sc_parkplatz
+        when: { flag: karte_mo }
+        blocked: Uwe hat die Route nach Santa Cruz bereits markiert, aber Opas Karte aus Monterey fehlt dir noch.
+  mo_aquarium:
+    name: Monterey Bay Aquarium
+    description: |-
+      Das Aquarium ist ein Glaskasten voller Tang, Quallen und Besucher, die sich gegenseitig auf die Füße treten. Im großen {kelpbecken} schwankt ein Wald aus braunen Algenstangen. Auf einer Bank liegt ein Beutel {fischsnack}, den ein Kind vergessen hat. Und auf dem Rücken im Becken, mit einem Stein auf dem Bauch, liegt {otto} und sieht aus, als wüsste er etwas, das du nicht weißt.
+    exits:
+      west: { to: mo_parkplatz }
+  sc_parkplatz:
+    name: Parkplatz am Boardwalk
+    description: |-
+      Der Parkplatz ist ein Gewirr aus Surfbrettern und Möwen mit Haltung. Über allem dreht sich der {giantdipper}. Im Osten liegt der Boardwalk, im Westen das schiefe Haus.
+    exits:
+      east: { to: sc_boardwalk }
+      west: { to: sc_mystery }
+      north:
+        to: ys_eingang
+        when: { flag: karte_sc }
+        blocked: Die Straße nach Norden ist frei, aber Opas Karte aus Santa Cruz fehlt dir noch. Uwe wartet trotzdem schon am Steuer.
+  sc_boardwalk:
+    name: Der Boardwalk
+    description: |-
+      Der Boardwalk riecht nach Zuckerwatte und Sonnenöl. Zwischen Schießbuden und Losbuden steht ein {skeeball}-Automat, an dem ein Junge seit zwanzig Minuten Tickets zählt, die er nie einlösen wird.
+    exits:
+      west: { to: sc_parkplatz }
+  sc_mystery:
+    name: The Mystery Spot
+    description: |-
+      Das Haus steht auf einem schiefen Hang und ist innen noch schiefer. Wasser scheint bergauf zu fließen, die Wände sind nicht gerade, und dein Gleichgewicht ist mit dem Ergebnis nicht einverstanden. In der Mitte steht der {kippstisch}, der lieber auf dem Boden läge. {greg} hält die Tür offen, als wäre sie das Schwerste an diesem Ort.
+    exits:
+      east: { to: sc_parkplatz }
+  ys_eingang:
+    name: Parkeingang Yosemite
+    description: |-
+      Der Parkeingang besteht aus einer Holzhütte und einem Schild mit einem Bären, der dich kritisch ansieht. Die {infotafel} erklärt die Regeln, {ruth} sitzt im Kassenhäuschen. Im Osten liegt der Campingplatz, im Süden eine Wiese, westlich San Francisco.
+    exits:
+      east: { to: ys_camp }
+      south: { to: ys_wiese }
+      west:
+        to: sf_parkplatz
+        when: { flag: karte_ys }
+        blocked: Die Straße nach Westen ist offen, aber Opas Karte aus dem Campingplatz fehlt dir noch. Uwe wartet trotzdem.
+  ys_camp:
+    name: Campingplatz Bärenweg
+    description: |-
+      Der Campingplatz hat Stellplätze unter Kiefern und graue Metallkisten, die wie Panzerschränke aussehen. Im Sand liegt die {baerenspur}, so groß wie ein Teller. Die {baerenbox} Nummer sieben ist verschlossen. Ein Schild erklärt, dass Essen außerhalb der Box einen Bären zum Mittagessen macht.
+    exits:
+      west: { to: ys_eingang }
+  ys_wiese:
+    name: Wiese am Merced
+    description: |-
+      Eine Wiese mit hohem Gras und einem Fluss, der klingt, als würde er sich über etwas lustig machen. Der {hirsch} steht mitten im Gras und kaut mit dem Ausdruck eines Mannes, der die Rechnung schon bezahlt hat.
+    exits:
+      north: { to: ys_eingang }
+  sf_parkplatz:
+    name: Parkplatz am Golden Gate
+    description: |-
+      Der Parkplatz liegt im Nebel. Die {goldengate} ist nur zur Hälfte zu sehen. Nach Osten geht es zum Pier, nach Süden in die Straßen der Hügel.
+    exits:
+      east: { to: sf_pier }
+      south: { to: sf_lombard }
+  sf_pier:
+    name: Pier 39
+    description: |-
+      Pier 39 ist ein Labyrinth aus Souvenirs, Fudge und Seelöwen, die auf schwimmenden Stegen liegen und einander beschimpfen. {pat} verkauft am Kiosk alles, was man nicht braucht. {robben} brüllen dazu.
+    exits:
+      west: { to: sf_parkplatz }
+  sf_lombard:
+    name: Lombard Street
+    description: |-
+      Die Lombard Street windet sich den Hügel hinunter wie ein Gartenschlauch, den jemand zu lange liegen gelassen hat. Acht Kurven, Blumen in jedem Beet, Touristen in Schlangen vor dem Geländer. Das {blumenbeet} liegt an der dritten Kurve.
+    exits:
+      north: { to: sf_parkplatz }
+
+objects:
+  # Die Familie Dörfler reist mit und wird bei jeder Ankunft mitgeführt.
+  uwe:
+    name: Uwe
+    synonyms: [papa, vater]
+    location: sm_parkplatz
+    npc: true
+    dialogue: uwe_talk
+    roomText: Uwe steht am Wagen und blickt auf seine Tabelle, als würde sie gleich etwas Vernünftiges sagen.
+    description: Versicherungsmathematiker, Excel-Fan und Mensch mit Plan. Der Plan hat siebenundvierzig Tabellenblätter und einen Abschnitt namens Puffer, der leer ist.
+  sabine:
+    name: Sabine
+    synonyms: [mama, mutter]
+    location: sm_parkplatz
+    npc: true
+    dialogue: sabine_talk
+    roomText: Sabine telefoniert mit niemandem und sagt trotzdem »Das ist nicht akzeptabel«.
+    description: Lehrerin für Mathe und Englisch, Vorsitzende der Elternpflegschaft und Organisatorin des Familienurlaubs. Gegnerin jeder Unklarheit, auch der eigenen.
+  paul:
+    name: Paul
+    synonyms: [sohn]
+    location: sm_parkplatz
+    npc: true
+    dialogue: paul_talk
+    roomText: Paul hält Hubert im Arm wie ein Baby, nur mit mehr Ernst.
+    description: Neun Jahre alt, Dino-Shirt, Sticker auf den Knien und das Gesicht eines Richters, der gleich ein Urteil verkündet.
+  frank:
+    name: Frank Brenner
+    synonyms: [frank, brenner, herr brenner]
+    location: nowhere
+    npc: true
+    dialogue: frank_talk
+    roomText: Frank Brenner filmt sich mit einem Gimbal und einem Lächeln, das nach Makler riecht.
+    description: Anfang fünfzig, sonnengebräunt wie Schuhleder, mit einer Uhr, die mehr kostet als Gertrud.
+  jasmin:
+    name: Jasmin
+    synonyms: [jasmin, tochter]
+    location: nowhere
+    npc: true
+    dialogue: jasmin_talk
+    roomText: Jasmin hält ihr Handy ins Licht und sagt »Hey, Follower« zu einer Möwe.
+    description: Sechzehn, mit einer Sonnenbrille im Haar und dem Blick, den man nur mit Social Media bekommt.
+
+  kyle:
+    name: Kyle
+    synonyms: [verleiher, angestellter]
+    location: sm_mietstation
+    npc: true
+    dialogue: kyle_talk
+    description: "Ein junger Mann mit Schweißband und einem Namensschild, auf dem Kyle, Customer Joy steht."
+
+  # Der Campingbus und die Schlüssel.
+  gertrud:
+    name: Gertrud
+    synonyms: [wohnmobil, camper, mobil, bus]
+    location: sm_parkplatz
+    container: true
+    openable: true
+    open: false
+    locked: true
+    unlockedBy: ersatzschluessel
+    description:
+      - when: { isOpen: gertrud }
+        text: "Die Tür steht offen. Drinnen riecht es nach Sonnencreme und nach Excel-Ausdruck."
+      - text: Ein weißes Wohnmobil mit Dachzelt und Solarpanel. Das Kennzeichen lautet GRT RUD. Paul las GERTRUD, und Gertrud heißt sie seitdem. Die Kühlbox hat die Form eines Sarges.
+  masterplan:
+    name: Masterplan
+    synonyms: [excel, tabelle, ausdruck, plan]
+    location: gertrud
+    portable: false
+    verbs: [read]
+    description: Ein Ausdruck von vierzig Seiten mit farbigen Zellen. Oben steht MASTERPLAN_v7_FINAL_wirklich_final.xlsx.
+  schluesselkasten:
+    name: Schlüsselkasten
+    synonyms: [kasten, schlüsselbox]
+    location: sm_mietstation
+    description: "Ein grauer Kasten mit Zahlenschloss und dem Aufkleber NUR FÜR MITARBEITER. Darunter hat jemand mit Kuli ergänzt: Ersatzschlüssel bitte nicht vergessen, Kyle."
+  route66_schild:
+    name: Route-66-Schild
+    synonyms: [schild, route 66, route]
+    location: sm_pier
+    description: "Das Schild zeigt die Route 66, das Ende des Weges. Darunter hat jemand gekritzelt: Auch Hannover."
+  riesenrad:
+    name: Riesenrad
+    synonyms: [rad, riesenrad]
+    location: sm_pier
+    description: Ein Riesenrad, dessen Gondeln in Pastellfarben die Sonne reflektieren. Von oben sieht man vermutlich das ganze Meer und einen Parkplatz mit einer Familie darauf.
+  moewe:
+    name: Möwe
+    synonyms: [möwe, vogel]
+    location: sm_pier
+    description: Eine Möwe mit einem Donut im Schnabel und einem Blick, der keine Verhandlungen zulässt.
+
+  # Hubert und Opas Karten.
+  hubert:
+    name: Hubert
+    synonyms: [gartenzwerg, zwerg]
+    location: sm_parkplatz
+    portable: true
+    container: true
+    openable: true
+    open: false
+    description: Ein Gartenzwerg aus Gips mit roter Zipfelmütze und einem Lächeln aus einer Zeit vor der Erfindung des Zynismus. Die Mütze lässt sich abschrauben, zumindest behauptet das Paul.
+  postkarte_sm:
+    name: Karte aus Santa Monica
+    synonyms: [santa monica karte]
+    location: hubert
+    portable: false
+    verbs: [read]
+    description: Eine Ansichtskarte mit Palmen, Vintage-Schrift und einer Briefmarke von 1975. Die Rückseite ist in Opas Handschrift beschrieben, schräg vor Vorfreude.
+  ersatzschluessel:
+    name: Ersatzschlüssel
+    synonyms: [ersatz, ersatzschlüssel]
+    location: inventory
+    portable: true
+    description: "Ein Schlüssel mit Gummianhänger, auf dem NOTFALL steht. Darunter in Opas Handschrift: »Für Uwe«."
+  opas_brief:
+    name: Opas Brief
+    synonyms: [brief, umschlag, auftrag]
+    location: inventory
+    portable: true
+    verbs: [read]
+    description: Ein Umschlag aus Hannover mit Opas Handschrift und zwei Briefmarken. Er riecht nach Pfefferminz und nach Ärger.
+  kreditkarte:
+    name: Kreditkarte
+    synonyms: [visa, plastikkarte, kreditkarte]
+    location: inventory
+    portable: true
+    description: "Die Familienkreditkarte. Uwe hat sie dir übergeben mit dem Satz: »Nur für Notfälle und Eis.«"
+  haribo:
+    name: Haribo
+    synonyms: [gummibärchen, süßes, packung, goldbären]
+    location: inventory
+    portable: true
+    description: Eine große Packung Goldbären, die Notfallration für die Fahrt. Im Laufe der Reise wird sie wertvoller, als sie sein sollte.
+
+  # Santa Barbara: Mission und Hafen.
+  brunnen:
+    name: Brunnen
+    synonyms: [wasserspiel, muschel]
+    location: sb_mission
+    description: Ein steinerner Brunnen mit einer Muschel, aus der Wasser fließt, das niemand trinken würde. Die Kakteen darum haben es aufgegeben, neidisch zu sein.
+  kachel:
+    name: lockere Kachel
+    synonyms: [kachel, fliese]
+    location: sb_mission
+    verbs: [pull]
+    description: Eine blau-weiße Kachel am Brunnenrand. Sie wackelt, wenn man sie ansieht.
+  postkarte_sb:
+    name: Karte aus Santa Barbara
+    synonyms: [santa barbara karte]
+    location: sb_mission
+    hidden: true
+    portable: false
+    verbs: [read]
+    roomText: Unter der gelösten Kachel liegt eine Ansichtskarte.
+    description: Eine Ansichtskarte mit der Mission im Sonnenschein. Die Rückseite ist an den Rändern vergilbt, als hätte sie unter einer Kachel gelegen.
+  tomas:
+    name: Bruder Tomás
+    synonyms: [tomás, tomas, bruder]
+    location: sb_mission
+    npc: true
+    dialogue: tomas_talk
+    description: Ein alter Mönch im Kittel mit einer Gartenschere, die älter aussieht als er.
+  kalle:
+    name: Fischer Kalle
+    synonyms: [kalle, fischer]
+    location: sb_hafen
+    npc: true
+    dialogue: kalle_talk
+    description: Ein Mann mit Hut, Holzfäusten und einem Gesicht, das Wetter voraussagen kann, ohne hinzusehen.
+  seeloewen:
+    name: Seelöwen
+    synonyms: [löwen, robben]
+    location: sb_hafen
+    description: Dreißig Seelöwen liegen unter dem Steg und brüllen, als würde ihnen jemand Miete abverlangen.
+  bootshaken:
+    name: Bootshaken
+    synonyms: [haken, stange]
+    location: sb_hafen
+    portable: false
+    description: Ein langer Holzstiel mit einem Metallhaken, der schon viele Boote aus der Brandung gezogen hat. Kalle hält ihn fest, als wäre er sein Erbstück.
+    roomText: Kalle hält einen Bootshaken fest, als wäre es ein Zepter.
+  # Big Sur: Tankstelle, Brücke und Felsen.
+  hendrik:
+    name: Hendrik
+    synonyms: [tankwart, kassierer]
+    location: bs_tankstelle
+    npc: true
+    dialogue: hendrik_talk
+    description: Ein Mann mit Schnauzer und einem Hemd, auf dem Big Sur Gas and Snacks steht. Er bewegt sich nur, wenn Geld im Spiel ist.
+  zapfsaeule:
+    name: Zapfsäule
+    synonyms: [zapfsäule, tank, zapfen]
+    location: bs_tankstelle
+    description: Eine alte Zapfsäule, deren Anzeige PAY INSIDE FIRST blinkt. Daneben hängt ein Schild, das freundlich darum bittet, Hunde nicht allein im Auto zu lassen.
+  bruecke:
+    name: Bixby Bridge
+    synonyms: [brücke, bogen]
+    location: bs_aussicht
+    description: Ein weißer Betonbogen über einer Schlucht, der so fotogen ist, dass er selbst im Nebel Fotos bekommt.
+  kondor:
+    name: Kondor
+    synonyms: [vogel, geier]
+    location: bs_aussicht
+    description: Ein Kalifornischer Kondor mit einer Flügelspannweite wie ein Kleinwagen und dem Blick eines Buchhalters, der weiß, dass du Chips dabeihast.
+  schluesselloch_fels:
+    name: Schlüsselloch-Fels
+    synonyms: [fels, felsbogen]
+    location: bs_strand
+    description: Ein Felsbogen mit einem runden Loch, durch das die Brandung wie durch ein Schlüsselloch schaut. Irgendjemand hat den Namen gewählt, der zum Fels gehört.
+  felsentuempel:
+    name: Felsentümpel
+    synonyms: [tümpel, tuempel, becken]
+    location: bs_strand
+    description: Ein flacher Tümpel mit Seesternen, Muscheln und einem Plastikhandschuh, der dort nicht sein sollte. Unter der Wasseroberfläche liegt etwas Weißes.
+  postkarte_bs:
+    name: Karte aus Big Sur
+    synonyms: [big sur karte]
+    location: bs_strand
+    hidden: true
+    portable: false
+    verbs: [read]
+    roomText: Im Felsentümpel treibt eine Ansichtskarte.
+    description: Eine Ansichtskarte mit einem Felsbogen. Die Tinte ist verlaufen, aber der Text ist lesbar genug.
+
+  # Monterey: Aquarium und Otter.
+  steinbeck_schild:
+    name: Steinbeck-Schild
+    synonyms: [schild]
+    location: mo_parkplatz
+    description: »John Steinbeck lebte hier.« Ob er Gartenzwerge mochte, ist nicht überliefert.
+  kelpbecken:
+    name: Kelpbecken
+    synonyms: [becken, kelp, tang]
+    location: mo_aquarium
+    description: Hohe Algenstangen, die sich bei jeder Welle verbeugen. Ein Fisch schaut aus dem Dickicht wie ein Nachbar, der nicht gegrüßt werden will.
+  fischsnack:
+    name: Fischsnack
+    synonyms: [snack, fisch, beutel]
+    location: mo_aquarium
+    portable: true
+    description: Ein Beutel mit Forellen-Snacks. Die Zutaten möchte niemand genau kennen.
+  otto:
+    name: Otto
+    synonyms: [seeotter, otter]
+    location: mo_aquarium
+    npc: true
+    dialogue: otto_talk
+    description: Ein Seeotter mit einem Stein auf dem Bauch und einem Blick, der dir sagt, dass er gerade zu Mittag isst und du störst.
+  postkarte_mo:
+    name: Karte aus Monterey
+    synonyms: [monterey karte]
+    location: nowhere
+    portable: false
+    verbs: [read]
+    description: Eine Ansichtskarte mit einem Otter. Auf der Rückseite ist ein Fleck, den niemand genau identifizieren möchte.
+  # Santa Cruz: Boardwalk und das Haus der schiefen Dinge.
+  giantdipper:
+    name: Giant Dipper
+    synonyms: [achterbahn, holzachterbahn]
+    location: sc_parkplatz
+    description: Eine Holzachterbahn aus den Dreißigerjahren mit Schienen, die aussehen, als seien sie aus Versehen so gebogen. Die Leute oben schreien in Wellen.
+  skeeball:
+    name: Skee-Ball
+    synonyms: [automat, kugeln]
+    location: sc_boardwalk
+    description: Ein Automat, auf dem man Kugeln in Löcher rollen lässt. Der Junge daneben hat achtundzwanzig Tickets und keine Ahnung, wofür.
+  greg:
+    name: Greg
+    synonyms: [guide, führer]
+    location: sc_mystery
+    npc: true
+    dialogue: greg_talk
+    description: Ein Guide im Polohemd, der jeden Satz beginnt, als hätte er ihn schon hunderttausend Mal gesagt und jedes Mal geglaubt.
+  kippstisch:
+    name: Kippstisch
+    synonyms: [tisch]
+    location: sc_mystery
+    description:
+      - when: { flag: tisch_gekeilt }
+        text: Der Tisch steht fast gerade, dank eines Gartenzwergs mit roter Mütze, der unter seinem kurzen Bein klemmt.
+      - text: Ein Tisch, der so schief steht, dass Kugeln lieber auf ihm liegen als unter ihm. Unter der Platte blitzt etwas Weißes.
+  postkarte_sc:
+    name: Karte aus Santa Cruz
+    synonyms: [santa cruz karte]
+    location: sc_mystery
+    hidden: true
+    portable: false
+    verbs: [read]
+    roomText: Unter dem Kippstisch steckt eine Ansichtskarte.
+    description: Eine Ansichtskarte vom Haus, in dem nichts gerade ist. Die Schrift läuft leicht bergab.
+
+  # Yosemite: Infotafel, Ranger, Bärenbox und Aussichten.
+  infotafel:
+    name: Infotafel
+    synonyms: [tafel, schild]
+    location: ys_eingang
+    verbs: [read]
+    description: Eine Tafel mit Regeln, Grafiken und einem Bären, der besser gezeichnet ist als die meisten Menschen.
+  ruth:
+    name: Ranger Ruth
+    synonyms: [ruth, ranger]
+    location: ys_eingang
+    npc: true
+    dialogue: ruth_talk
+    description: Eine Frau in Olivgrün, die seit Jahrzehnten dieselbe Frage hört. Sie beantwortet sie mit Geduld und einem Lächeln, das nichts verspricht.
+  ranger_schluessel:
+    name: Ranger-Schlüssel
+    synonyms: [rangerschlüssel, bärenschlüssel]
+    location: nowhere
+    portable: true
+    description: Ein Messingschlüssel mit dem Wappen des Nationalparks. Er wiegt mehr, als er aussieht, vermutlich wegen des Respekts.
+  baerenspur:
+    name: Bärenspur
+    synonyms: [spur, bär, pfote]
+    location: ys_camp
+    description: Eine Pfote im Sand, so groß wie ein Teller. Der Bär war nicht hungrig, nur neugierig. Das beruhigt nicht richtig.
+  baerenbox:
+    name: Bärenbox
+    synonyms: [box, bärenkiste]
+    location: ys_camp
+    container: true
+    openable: true
+    open: false
+    locked: true
+    unlockedBy: ranger_schluessel
+    description:
+      - when: { isOpen: baerenbox }
+        text: "Die Box steht offen und ist leer bis auf eine Ansichtskarte, die man lieber nicht anfassen würde, wenn man Bären wäre."
+      - text: Eine graue Metallbox mit Schloss und dem Schild ESSEN HIER EINSCHLIESSEN. Die Box riecht nach Mülltonne und Verzweiflung.
+  postkarte_ys:
+    name: Karte aus Yosemite
+    synonyms: [yosemite karte]
+    location: baerenbox
+    portable: false
+    verbs: [read]
+    description: Eine Ansichtskarte mit dem Half Dome bei Sonnenuntergang. Auf der Rückseite klebt ein Honigfleck, der das Bild altern lässt.
+  hirsch:
+    name: Hirsch
+    synonyms: [reh, geweih]
+    location: ys_wiese
+    description: Ein Hirsch mit einem Geweih wie ein Kronleuchter. Er ignoriert dich mit Würde.
+
+  # San Francisco: Pier, Lombard Street und die Dose.
+  goldengate:
+    name: Golden Gate Bridge
+    synonyms: [golden gate, goldengate]
+    location: sf_parkplatz
+    description: Die Brücke ist rot, lang und im Nebel nur zur Hälfte da. Die andere Hälfte ist eine Vermutung.
+  pat:
+    name: Pat
+    synonyms: [verkäuferin, kiosk]
+    location: sf_pier
+    npc: true
+    dialogue: pat_talk
+    description: Eine Frau mit Brille, einem Kassenbon im Mund und der Gewissheit, dass alles, was sie verkauft, ein gutes Geschäft ist.
+  robben:
+    name: Robben
+    synonyms: [seelöwen, seelöwe, robbe]
+    location: sf_pier
+    description: Die Robben liegen auf den Stegen und schreien einander an. Sie wirken nicht, als würden sie je ein Problem lösen wollen.
+  postkarte_sf:
+    name: Karte aus San Francisco
+    synonyms: [san francisco karte]
+    location: sf_pier
+    portable: false
+    verbs: [read]
+    roomText: Zwischen den Golden-Gate-Motiven im Ständer steckt eine vergilbte Karte von 1975.
+    description: Die Karte ist älter als du. Die Schrift ist die deines Opas, nur etwas jünger.
+  stadtplan:
+    name: Stadtplan
+    synonyms: [straßenplan, stadtkarte]
+    location: nowhere
+    portable: true
+    description: Ein Stadtplan von San Francisco mit Kaffeeflecken und vielen roten Linien an den Hügeln. Die Linien sehen steil aus.
+  blumenbeet:
+    name: Blumenbeet
+    synonyms: [beet, blumen]
+    location: sf_lombard
+    description: Die Erde im Beet sieht aus wie jede andere Erde in Kalifornien. Die Blumen sind pink, die Bienen zu beschäftigt zum Reden.
+  dose:
+    name: Blechdose
+    synonyms: [dose, keksdose, schloss, zahlenschloss]
+    location: sf_lombard
+    hidden: true
+    container: true
+    openable: true
+    open: false
+    locked: true
+    roomText: Im Blumenbeet an der dritten Kurve steckt eine blaue Blechdose.
+    description:
+      - when: { isOpen: dose }
+        text: "Die Dose steht offen und riecht nach Keksen aus den Siebzigern. Das Foto ist noch da."
+      - text: Eine blaue Blechdose, verbeult, mit einem Zahlenschloss aus den Siebzigern und vier Ziffernrädern. Am Deckel klebt ein Aufkleber mit der Aufschrift Eigentum H. Dörfler.
+  polaroid:
+    name: Polaroid
+    synonyms: [foto, bild]
+    location: dose
+    portable: false
+    description: "Zwei junge Leute vor einer roten Brücke im Nebel, 1975. Er hat einen Schnurrbart und viel Hoffnung. Sie lacht. Auf der Rückseite steht: Für immer, I. & H."
+  opa_abschied:
+    name: Opas Nachricht
+    synonyms: [nachricht, abschiedsbrief]
+    location: dose
+    portable: false
+    verbs: [read]
+    description: Ein zweiter, dünner Brief. Die Tinte ist verlaufen, als hätte jemand sie zum Lachen gebracht.
+  # Die Familie Brenner: Festung mit Schild und Rivalität.
+  festung:
+    name: Festung
+    synonyms: [brenner mobil, schwarzes mobil]
+    location: sb_parkplatz
+    description: "Ein schwarzes Wohnmobil mit verspiegelten Scheiben, einer Dachterrasse mit Liegestuhl und einem Schild: BRENNER IMMOBILIEN. IHR TRAUM, UNSER PREIS."
+
+  # Die Hinweise, die im Notizbuch liegen. Sie sind nie im Inventar verloren.
+  clue_karte_sm:
+    name: Karte aus Santa Monica
+    location: nowhere
+    clue: true
+    description: Die zweite Karte liegt dort, wo die Mönche ihre Blumen gießen. Mission Santa Barbara.
+  clue_karte_sb:
+    name: Karte aus Santa Barbara
+    location: nowhere
+    clue: true
+    description: Die dritte Karte liegt am Felsen mit dem Schlüsselloch, im Tümpel davor.
+  clue_karte_bs:
+    name: Karte aus Big Sur
+    location: nowhere
+    clue: true
+    description: Die vierte Karte gehört einem Otter in Monterey, der gern Tauchen spielt.
+  clue_karte_mo:
+    name: Karte aus Monterey
+    location: nowhere
+    clue: true
+    description: Die fünfte Karte liegt im Haus der schiefen Dinge, unter einem Tisch, der nicht gerade steht.
+  clue_karte_sc:
+    name: Karte aus Santa Cruz
+    location: nowhere
+    clue: true
+    description: Die sechste Karte liegt in der Bärenbox in Yosemite. Ein Ranger hat den Schlüssel.
+  clue_karte_ys:
+    name: Karte aus Yosemite
+    location: nowhere
+    clue: true
+    description: Die siebte Karte steckt im Ständer am Pier 39 in San Francisco.
+  clue_karte_sf:
+    name: Karte aus San Francisco
+    location: nowhere
+    clue: true
+    description: Die Dose liegt dort, wo die Straße acht Kurven macht. Das Schloss kennst du auswendig.
+  clue_geburtstag:
+    name: Ingrids Geburtstag
+    location: nowhere
+    clue: true
+    description: Ingrid hat am vierten Mai Geburtstag. Opa vergisst alles, nur dieses Datum nicht.
+  clue_baeren:
+    name: Bärenregel
+    location: nowhere
+    clue: true
+    description: Bären fressen alles, was nach Essen riecht. Die Bärenbox schützt das Essen, nicht den Campingplatz.
+  clue_frank_karte:
+    name: Franks Schatzkarte
+    location: nowhere
+    clue: true
+    description: Franks Karte ist eine laminierte Internetkopie, neunundvierzig Euro bei eBay. Ein Fake.
+  clue_ort:
+    name: Lombard Street
+    location: nowhere
+    clue: true
+    description: Die Dose liegt in der Lombard Street, im Blumenbeet an der dritten Kurve.
+
+rules:
+  # Opas Brief und die sieben Karten. Jede Karte schaltet eine Stadt frei und gibt einen Punkt.
+  - id: read_opas_brief
+    on: { verb: read, object: opas_brief }
+    once: true
+    do:
+      - say: "»Mia, Liebes! Ihr fahrt die Küste hinauf: Uwe mit seinem Plan, Sabine mit ihren Reklamationen, Paul mit Hubert und du mit meinen Nerven. Der Ersatzschlüssel ist für den Notfall. Uwe ist der Notfall. In Hubert steckt die erste Karte. In San Francisco liegt eine Dose mit meinem größten Geheimnis. Frank Brenner aus Hannover will sie auch. Er hat mir den Kleingartenpokal 1986 nie verziehen. Viel Spaß! Opa Heinz«"
+  - id: read_karte_sm
+    on: { verb: read, object: postkarte_sm }
+    once: true
+    do:
+      - say: "»Ingrid, Santa Monica! Der Pier ist so lang wie unsere Hochzeitsliste, und das Meer so blau wie dein Kleid. Die zweite Karte liegt dort, wo die Mönche ihre Blumen gießen. In Liebe, dein H.«"
+      - learn: clue_karte_sm
+      - set: karte_sm
+      - score: 1
+  - id: read_karte_sb
+    on: { verb: read, object: postkarte_sb }
+    once: true
+    do:
+      - say: "»Ingrid, Santa Barbara! Die Mönche haben einen Brunnen mit einer Kachel, die ich nie richtig hingekriegt habe. Die dritte Karte liegt am Fels mit dem Schlüsselloch, im Tümpel davor. H.«"
+      - learn: clue_karte_sb
+      - set: karte_sb
+      - score: 1
+  - id: read_karte_bs
+    on: { verb: read, object: postkarte_bs }
+    once: true
+    do:
+      - say: "»Ingrid, Big Sur! Der Nebel hat uns zwei Stunden lang vergessen. Die vierte Karte gehört einem Otter in Monterey, der im Kelp Tauchen spielt. Er ist ein Dieb, aber ein netter. H.«"
+      - learn: clue_karte_bs
+      - set: karte_bs
+      - score: 1
+  - id: read_karte_mo
+    on: { verb: read, object: postkarte_mo }
+    once: true
+    do:
+      - say: "»Ingrid, Monterey! Der Otter hat mir die Karte geklaut und gegen einen Fisch getauscht. Die fünfte Karte liegt im Haus der schiefen Dinge, unter einem Tisch, der nicht gerade steht. H.«"
+      - learn: clue_karte_mo
+      - set: karte_mo
+      - score: 1
+  - id: read_karte_sc
+    on: { verb: read, object: postkarte_sc }
+    once: true
+    do:
+      - say: "»Ingrid, Santa Cruz! Im Haus der schiefen Dinge ist nichts gerade, außer dieser Karte. Die sechste liegt dort, wo die Bären ihr Essen lagern, in einer Kiste mit Schloss. H.«"
+      - learn: clue_karte_sc
+      - set: karte_sc
+      - score: 1
+  - id: read_karte_ys
+    on: { verb: read, object: postkarte_ys }
+    once: true
+    do:
+      - say: "»Ingrid, Yosemite! Die Bären haben meine Pommes gegessen, und ich habe es ihnen nicht übel genommen. Die siebte Karte steckt im Ständer am Pier 39 in San Francisco. H.«"
+      - learn: clue_karte_ys
+      - set: karte_ys
+      - score: 1
+  - id: read_karte_sf
+    on: { verb: read, object: postkarte_sf }
+    once: true
+    do:
+      - say: "»Ingrid, San Francisco! Die Dose liegt dort, wo die Straße acht Kurven macht und die Blumen so bunt sind wie dein Sommerkleid. Das Schloss kennst du auswendig. H.«"
+      - learn: clue_karte_sf
+      - set: karte_sf
+      - score: 1
+
+  # Lesbare Gegenstände ohne Punkt.
+  - id: read_masterplan
+    on: { verb: read, object: masterplan }
+    do:
+      - say: "Zeile 47: Familienfoto am Golden Gate, 10:30 Uhr. Zeile 48: Eis für Paul. Zeile 49: Versöhnung mit Mama. Zeile 50 und 51: frei. Uwe hat diese beiden Zeilen rot markiert, mit einem Ausrufezeichen."
+  - id: read_infotafel
+    on: { verb: read, object: infotafel }
+    do:
+      - say: "Bären riechen Essen aus Kilometern Entfernung. Wer etwas offen liegen lässt, hat danach einen neuen Mitbewohner mit Pfoten."
+      - learn: clue_baeren
+
+  # Die Kachel in Santa Barbara, der Bootshaken und der Felsentümpel.
+  - id: pull_kachel
+    on: { verb: pull, object: kachel }
+    once: true
+    do:
+      - say: "Die Kachel gibt nach und klappt zur Seite. Darunter liegt eine Ansichtskarte in Plastikfolie, trocken wie Opas Humor."
+      - reveal: postkarte_sb
+  - id: give_haribo_kalle
+    on: { verb: give, object: haribo, with: kalle }
+    when: { not: { flag: haribo_gegeben } }
+    do:
+      - say: "Kalle reißt die Packung auf, bevor du sie loslassen kannst, und grinst wie ein Kind. »Der Haken gehört dir, Mädchen.« Er drückt dir den Bootshaken in die Hand."
+      - set: haribo_gegeben
+      - score: 1
+      - move: { object: haribo, to: nowhere }
+      - move: { object: bootshaken, to: inventory }
+  - id: give_kalle_sonst
+    on: { verb: give, with: kalle }
+    do:
+      - say: "Kalle schiebt das Zeug zurück. »Nur Süßes, sonst nichts.«"
+  - id: use_bootshaken_felsentuempel
+    on: { verb: use, object: bootshaken, with: felsentuempel }
+    once: true
+    do:
+      - say: "Du angelst mit dem Bootshaken, Stück für Stück, bis die Karte an der Oberfläche treibt. Ein Seestern hebt beleidigt einen Arm."
+      - reveal: postkarte_bs
+
+  # Die Tankstelle: Vorkasse, Benzin und die Festung.
+  - id: show_kreditkarte_hendrik
+    on: { verb: show, object: kreditkarte, with: hendrik }
+    when: { not: { flag: getankt } }
+    do:
+      - say: "Hendrik zieht die Karte durch ein Gerät, das aus den Achtzigern stammt, und nickt. »Jetzt läuft die Pumpe.« Gertrud gluckert zufrieden."
+      - set: getankt
+      - score: 1
+  - id: show_hendrik_sonst
+    on: { verb: show, with: hendrik }
+    do:
+      - say: "Hendrik winkt ab. »Die Karte kenn ich schon.«"
+
+  # Der Otter im Aquarium: Fisch gegen Karte.
+  - id: give_fischsnack_otto
+    on: { verb: give, object: fischsnack, with: otto }
+    once: true
+    do:
+      - say: "Otto schnappt den Snack, dreht sich einmal im Wasser und lässt eine Ansichtskarte fallen. Sie treibt zu deinen Füßen, pitschnass und tapfer."
+      - move: { object: postkarte_mo, to: inventory }
+  - id: give_otto_sonst
+    on: { verb: give, with: otto }
+    do:
+      - say: "Otto dreht den Kopf weg. Fisch oder nichts."
+
+  # Das Haus der schiefen Dinge: Hubert als Keil.
+  - id: use_hubert_kippstisch
+    on: { verb: use, object: hubert, with: kippstisch }
+    once: true
+    do:
+      - say: "Du klemmst Hubert unter das kurze Tischbein. Der Tisch seufzt, richtet sich auf und kippt nicht mehr. Unter der Platte rutscht eine Ansichtskarte hervor."
+      - set: tisch_gekeilt
+      - reveal: postkarte_sc
+
+  # Pier 39: der Stadtplan gegen die Kreditkarte.
+  - id: show_kreditkarte_pat
+    on: { verb: show, object: kreditkarte, with: pat }
+    when: { not: { has: stadtplan } }
+    do:
+      - say: "Pat zieht die Karte durch ein Gerät und reicht dir einen Stadtplan. »Touristenaufschlag inklusive, Liebes.«"
+      - move: { object: stadtplan, to: inventory }
+  - id: show_pat_sonst
+    on: { verb: show, with: pat }
+    do:
+      - say: "Pat sagt: »Das haben wir schon erledigt, Liebes.«"
+
+  # Die Deduktion und die Dose.
+  - id: deduktion_lombard
+    on: { verb: use, object: clue_karte_sf, with: stadtplan }
+    when: { not: { has: clue_ort } }
+    do:
+      - say: "Du legst den Stadtplan neben die Karte. Acht Kurven, ein Hügel, Blumen, die jeder pflanzt und keiner gießt. Es gibt genau eine Straße in San Francisco, auf die das passt: die Lombard Street."
+      - learn: clue_ort
+      - reveal: dose
+      - score: 2
+  - id: code_dose
+    on: { verb: use, object: clue_geburtstag, with: dose }
+    when: { isLocked: dose }
+    do:
+      - say: "Du drehst die Ziffern auf null, vier, null, fünf. Das Schloss klackt wie eine Erinnerung, die endlich passt."
+      - unlock: dose
+      - score: 1
+
+  # Frank Brenner: der Beweis gegen den Fake.
+  - id: show_frank_karte
+    on: { verb: show, object: clue_frank_karte, with: frank }
+    when: { not: { flag: frank_weg } }
+    do:
+      - say: "Du sagst Frank, was Jasmin dir verraten hat: laminiert, neunundvierzig Euro, bei eBay. Frank wird blass, schwitzt und murmelt: »Das ist für den Prospekt.« Dann stapft er den Hügel hinauf, ohne sich umzudrehen."
+      - set: frank_weg
+      - move: { object: frank, to: nowhere }
+      - score: 1
+  - id: show_frank_sonst
+    on: { verb: show, with: frank }
+    do:
+      - say: "Frank wedelt mit der Hand. »Ich habe keine Zeit für Kinderkram.«"
+
+  # Die Schlussszene: Opas Nachricht beendet die Reise.
+  - id: ende_opas_nachricht
+    on: { verb: read, object: opa_abschied }
+    do:
+      - say: "»Liebe Mia, wenn du das liest, hast du die Dose gefunden, und Frank Brenner hat dir vermutlich den letzten Nerv geraubt. Es gab nie Gold. Es gab Ingrid, die mich im Hafen ausgelacht hat, bis ich Ja gesagt habe. Mach ein Foto vor der Brücke, mit allen vieren und mit Hubert. Dann war die Reise das Gold. Opa.«"
+      - end: ende_familie
+
+  # Dinge, die später noch gebraucht werden, bleiben in der Hand.
+  - id: drop_kreditkarte
+    on: { verb: drop, object: kreditkarte }
+    do:
+      - say: "Die Karte bleibt in deiner Hand. Wer einmal ohne Benzin dastand, lässt die Karte nicht fallen."
+  - id: drop_hubert
+    on: { verb: drop, object: hubert }
+    do:
+      - say: "Hubert bleibt in deinem Arm. Paul würde dir das nie verzeihen, und Opa auch nicht."
+  - id: drop_bootshaken
+    on: { verb: drop, object: bootshaken }
+    do:
+      - say: "Der Bootshaken bleibt in deiner Hand. Du wirst ihn an einem Felsen brauchen, der noch weit weg ist."
+
+  # Ankünfte: Die Familie zieht bei jeder Station mit, die Brenners sind immer schon da.
+  - id: ankunft_santa_barbara
+    on: { event: enter, room: sb_parkplatz }
+    once: true
+    do:
+      - say: "Uwe springt aus dem Wagen und reckt die Arme: »Santa Barbara! Punkt drei, wie im Plan!« Frank Brenner winkt vom Balkon seiner Festung, als hätte er die Auffahrt gebucht."
+      - move: { object: uwe, to: sb_parkplatz }
+      - move: { object: sabine, to: sb_parkplatz }
+      - move: { object: paul, to: sb_parkplatz }
+      - move: { object: frank, to: sb_parkplatz }
+      - move: { object: jasmin, to: sb_parkplatz }
+  - id: ankunft_big_sur
+    on: { event: enter, room: bs_tankstelle }
+    once: true
+    do:
+      - say: "Uwe blickt auf die Tankanzeige, Sabine blickt auf Uwe, Paul blickt auf Hubert. Frank Brenner parkt quer neben der Zapfsäule und hält dir eine Tüte Chips hin, als wäre das die Lösung."
+      - move: { object: uwe, to: bs_tankstelle }
+      - move: { object: sabine, to: bs_tankstelle }
+      - move: { object: paul, to: bs_tankstelle }
+      - move: { object: frank, to: bs_tankstelle }
+      - move: { object: jasmin, to: bs_tankstelle }
+  - id: ankunft_monterey
+    on: { event: enter, room: mo_parkplatz }
+    once: true
+    do:
+      - say: "Paul liest das Steinbeck-Schild laut vor und fragt, ob Steinbeck Eis mochte. Die Festung rollt herein. Jasmin filmt Paul, und Paul lässt sie gewähren."
+      - move: { object: uwe, to: mo_parkplatz }
+      - move: { object: sabine, to: mo_parkplatz }
+      - move: { object: paul, to: mo_parkplatz }
+      - move: { object: frank, to: mo_parkplatz }
+      - move: { object: jasmin, to: mo_parkplatz }
+  - id: ankunft_santa_cruz
+    on: { event: enter, room: sc_parkplatz }
+    once: true
+    do:
+      - say: "Die Achterbahn ruft, Paul ruft zurück. Jasmin hält ihr Handy in die Luft, und Frank steht am Schild des Boardwalks und lächelt, als gehöre er dazu."
+      - move: { object: uwe, to: sc_parkplatz }
+      - move: { object: sabine, to: sc_parkplatz }
+      - move: { object: paul, to: sc_parkplatz }
+      - move: { object: frank, to: sc_parkplatz }
+      - move: { object: jasmin, to: sc_parkplatz }
+  - id: ankunft_yosemite
+    on: { event: enter, room: ys_eingang }
+    once: true
+    do:
+      - say: "Uwe liest die Bärenregel dreimal laut vor. Sabine verschränkt die Arme. Die Brenners haben ihr Essen offen auf dem Tisch stehen lassen, was Ranger Ruth sofort bemerkt."
+      - move: { object: uwe, to: ys_eingang }
+      - move: { object: sabine, to: ys_eingang }
+      - move: { object: paul, to: ys_eingang }
+      - move: { object: frank, to: ys_eingang }
+      - move: { object: jasmin, to: ys_eingang }
+  - id: ankunft_san_francisco
+    on: { event: enter, room: sf_parkplatz }
+    once: true
+    do:
+      - say: "Der Nebel nimmt euch auf. »San Francisco! Der Plan lebt!«, sagt Uwe. Frank Brenner steigt aus seinem Wagen mit einer Schatzkarte, die er vielleicht selbst gezeichnet hat."
+      - move: { object: uwe, to: sf_parkplatz }
+      - move: { object: sabine, to: sf_parkplatz }
+      - move: { object: paul, to: sf_parkplatz }
+      - move: { object: frank, to: sf_parkplatz }
+      - move: { object: jasmin, to: sf_parkplatz }
+  - id: ankunft_lombard
+    on: { event: enter, room: sf_lombard }
+    once: true
+    do:
+      - say: "Ein Keuchen den Hügel hinauf: Frank Brenner, außer Atem und ohne Jasmin. »Die Dose gehört mir«, japst er."
+      - move: { object: frank, to: sf_lombard }
+
+dialogues:
+  # Die Familie: bei jeder Station dabei, mit drei Themen und einem Abschied.
+  uwe_talk:
+    with: uwe
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Mia! Was gibt's?«"
+        options:
+          - id: uwe_plan
+            text: "»Erklär mir den Plan.«"
+            goto: plan
+          - id: uwe_zeit
+            text: "»Wie spät ist es eigentlich?«"
+            goto: zeit
+          - id: uwe_gefuehl
+            text: "»Wie geht es dir, Papa?«"
+            goto: gefuehl
+          - id: uwe_tschuess
+            text: "»Nichts, danke.«"
+      plan:
+        say: "»Der Masterplan, Version sieben, wirklich final. Siebenundvierzig Tabellenblätter, alle farbig. Am Montag Big Sur, am Dienstag Yosemite. Für Umwege gibt es Puffer.« Er wischt auf dem Handy herum. »Das Netz fehlt leider im Plan.«"
+        options:
+          - id: uwe_plan_zurueck
+            text: "»Beeindruckend.«"
+      zeit:
+        say: "»Laut Plan müssten wir jetzt in Santa Barbara sein. Laut Realität sind wir da, wo wir gerade sind, und suchen nach Schlüsseln. Die Realität hat das Excel nicht berücksichtigt.«"
+        options:
+          - id: uwe_zeit_zurueck
+            text: "»Dann eben später.«"
+      gefuehl:
+        say: "»Entspannt. Vollkommen entspannt. Ich habe nur das Gefühl, dass sich der Campingstuhl von Sabine gegen mich verschworen hat.« Er atmet dreimal tief durch, wie im Kurs."
+        options:
+          - id: uwe_gefuehl_zurueck
+            text: "»Atme weiter.«"
+  sabine_talk:
+    with: sabine
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Mia, was ist?«"
+        options:
+          - id: sabine_ingrid
+            text: "»Erzähl mir von Oma Ingrid.«"
+            goto: ingrid
+          - id: sabine_stuhl
+            text: "»Was ist mit dem Campingstuhl?«"
+            goto: stuhl
+          - id: sabine_sonne
+            text: "»Hast du Sonnencreme?«"
+            goto: sonne
+          - id: sabine_tschuess
+            text: "»Schon gut.«"
+      ingrid:
+        say: "Sabine lächelt, was sie unterwegs selten tut. »Meine Mutter und dein Opa waren 1975 hier auf Hochzeitsreise. Sie hat am vierten Mai Geburtstag. Dein Opa hat in fünfzig Jahren alles vergessen, nur dieses Datum nicht.«"
+        do:
+          - learn: clue_geburtstag
+        options:
+          - id: sabine_ingrid_zurueck
+            text: "»Danke, Mama.«"
+      stuhl:
+        say: "»Der Stuhl hatte drei Beine statt vier. Ich habe das der Vermietung schriftlich erklärt. Die Vermietung hat ›Sorry‹ geschrieben. Sorry ist kein Ersatzteil.«"
+        options:
+          - id: sabine_stuhl_zurueck
+            text: "»Verstehe.«"
+      sonne:
+        say: "»Lichtschutzfaktor fünfzig, für alle außer mir. Ich bin Lehrerin. Ich habe gelernt, Verantwortung zu verteilen.«"
+        options:
+          - id: sabine_sonne_zurueck
+            text: "»Wie edel.«"
+  paul_talk:
+    with: paul
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Was willst du wissen?«"
+        options:
+          - id: paul_hubert
+            text: "»Was für Geheimnisse?«"
+            goto: hubert
+          - id: paul_dinos
+            text: "»Kennst du Dinos aus Kalifornien?«"
+            goto: dinos
+          - id: paul_eis
+            text: "»Gibt es hier Eis?«"
+            goto: eis
+          - id: paul_tschuess
+            text: "»Pass auf Hubert auf.«"
+      hubert:
+        say: "»Er hat eine Mütze. Die geht ab. Ich hab's versucht, aber Papa hat gesagt, das gibt Ärger mit der Versicherung. Versicherung ist immer Ärger.«"
+        options:
+          - id: paul_hubert_zurueck
+            text: "»Danke, das hilft.«"
+      dinos:
+        say: "»Tyrannosaurus rex hat in Kalifornien gelebt. Also fast. Die Wissenschaftler streiten sich. Ich nicht. Ich recherchiere nur.«"
+        options:
+          - id: paul_dinos_zurueck
+            text: "»Glaubwürdig.«"
+      eis:
+        say: "»Im Plan steht Zeile achtundvierzig. Papa hat sie grün markiert. Das heißt, wir haben es uns verdient.«"
+        options:
+          - id: paul_eis_zurueck
+            text: "»Dann holen wir es.«"
+
+  # Die Mietstation in Santa Monica.
+  kyle_talk:
+    with: kyle
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Willkommen! Wir lieben Ihre Versicherung.«"
+        options:
+          - id: kyle_versicherung
+            text: "»Was deckt die Versicherung?«"
+            goto: versicherung
+          - id: kyle_tank
+            text: "»Der Tank ist voll, oder?«"
+            goto: tank
+          - id: kyle_schluessel
+            text: "»Wir haben uns ausgesperrt.«"
+            goto: schluessel
+          - id: kyle_ende
+            text: "»Danke, Kyle.«"
+      versicherung:
+        say: "»Alles, außer Pech, Gewitter und Hunde. Hunde sind ein Thema.« Er tippt. »Mit Pech kann man nichts machen. Das kostet extra.«"
+        options:
+          - id: kyle_versicherung_zurueck
+            text: "»Teuer also.«"
+      tank:
+        say: "»Der Tank ist voll, Sir. Laut Vertrag. Aber der Tankwart in Big Sur sieht das vermutlich anders. Steht auf Seite zwölf, zwischen Hunden und Sonnenbrand.«"
+        options:
+          - id: kyle_tank_zurueck
+            text: "»Seite zwölf. Verstanden.«"
+      schluessel:
+        say: "»Der Ersatzschlüssel ist nur für Notfälle, Miss.« Er schaut auf Mias Rucksack. »Haben Sie einen Notfall dabei? Dann haben Sie auch einen Schlüssel.«"
+        options:
+          - id: kyle_schluessel_zurueck
+            text: "»Wir haben einen.«"
+
+  # Die Brenners: Rivalen auf allen Parkplätzen.
+  frank_talk:
+    with: frank
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Dörfler! Ihr fahrt zu langsam.«"
+        options:
+          - id: frank_gold
+            text: "»Was suchen Sie eigentlich?«"
+            goto: gold
+          - id: frank_opa
+            text: "»Sie kennen meinen Opa?«"
+            goto: opa
+          - id: frank_festung
+            text: "»Ist das Ihr Haus auf Rädern?«"
+            goto: festung
+          - id: frank_tschuess
+            text: "»Schönen Tag noch.«"
+      gold:
+        say: "»Gold. Oder etwas Geschichte, die sich gut verkauft. Ich bin Immobilienmakler, Mädchen. Ich weiß, was Dinge wert sind, bevor sie es selbst wissen.«"
+        options:
+          - id: frank_gold_zurueck
+            text: "»Und was ist die Dose wert?«"
+      opa:
+        say: "»Dein Opa hat mich 1986 beim Kleingarten-Pokal geschlagen. Mit einem Zwerg! Mit einem Zwerg, Mia. Ich habe das nie verwunden.«"
+        options:
+          - id: frank_opa_zurueck
+            text: "»Das tut mir leid.«"
+      festung:
+        say: "»Die Festung hat eine Dachterrasse, einen Whirlpool und ein Gästezimmer. Das Gästezimmer ist für Jasmin. Sie filmt darin alles, was zu viel kostet.«"
+        options:
+          - id: frank_festung_zurueck
+            text: "»Beeindruckend.«"
+  jasmin_talk:
+    with: jasmin
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Oh, Dörflers! Darf ich filmen?«"
+        options:
+          - id: jasmin_influencer
+            text: "»Was machst du da eigentlich?«"
+            goto: influencer
+          - id: jasmin_karte
+            text: "»Was ist mit Franks Karte?«"
+            goto: karte
+          - id: jasmin_hubert
+            text: "»Filmst du auch Hubert?«"
+            goto: hubert
+          - id: jasmin_tschuess
+            text: "»Nein, danke. Tschüss.«"
+      influencer:
+        say: "»Ich bin Content-Creatorin. Zweihundertzwölf Follower. Papa sagt, das sind Kunden. Ich sage, das sind Freunde, die es noch nicht wissen.«"
+        options:
+          - id: jasmin_influencer_zurueck
+            text: "»Klingt anstrengend.«"
+      karte:
+        say: "Jasmin senkt die Stimme. »Die Karte ist eine laminierte Kopie aus dem Internet. Papa hat sie auf eBay gekauft, für neunundvierzig Euro. Er glaubt, sie ist von 1975. Sag's ihm nicht, ja?«"
+        do:
+          - learn: clue_frank_karte
+        options:
+          - id: jasmin_karte_zurueck
+            text: "»Dein Geheimnis ist sicher.«"
+      hubert:
+        say: "»Hubert ist das beste Motiv des Jahres. Ein Gartenzwerg, der Gesichter hat. Ich lade ihn hoch, wenn du mir einen Kuss auf die Mütze gibst. Nein? Dann eben nicht.«"
+        options:
+          - id: jasmin_hubert_zurueck
+            text: "»Hubert bleibt Hubert.«"
+
+  # Santa Barbara: Mission, Hafen und Strand.
+  tomas_talk:
+    with: tomas
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Gelobt sei der Garten, mein Kind.«"
+        options:
+          - id: tomas_brunnen
+            text: "»Wie alt ist der Brunnen?«"
+            goto: brunnen
+          - id: tomas_moenche
+            text: "»Was machen Mönche hier eigentlich?«"
+            goto: moenche
+          - id: tomas_kachel
+            text: "»Gibt es hier ein Geheimnis?«"
+            goto: kachel
+          - id: tomas_tschuess
+            text: "»Danke, Bruder.«"
+      brunnen:
+        say: "»Älter als die Stadt, jünger als die Kakteen. Der Brunnen hat schon viele Münzen gesehen, und einmal eine Gartenschere, die nicht ihm gehörte.«"
+        options:
+          - id: tomas_brunnen_zurueck
+            text: "»Gut zu wissen.«"
+      moenche:
+        say: "»Wir gießen, wir singen, wir hören, wie die Touristen ihre Kameras einstellen. Das ist Arbeit. Gott hat Geduld, ich habe nur ein Gartenmesser.«"
+        options:
+          - id: tomas_moenche_zurueck
+            text: "»Respekt.«"
+      kachel:
+        say: "Bruder Tomás lächelt in den Kies. »Jeder Gärtner kennt die lockere Kachel am Brunnenrand. Seit 1975. Da hat ein junger Mann aus Deutschland eine Karte darunter geklebt, mit Spucke. Er hat Blumen geklaut, und ich glaube, er hat sie geliebt.«"
+        options:
+          - id: tomas_kachel_zurueck
+            text: "»Ein romantischer Dieb also.«"
+  kalle_talk:
+    with: kalle
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Willst du fangen oder gucken?«"
+        options:
+          - id: kalle_haken
+            text: "»Was ist mit deinem Haken?«"
+            goto: haken
+          - id: kalle_seeloewen
+            text: "»Warum liegen hier so viele Seelöwen?«"
+            goto: seeloewen
+          - id: kalle_angeln
+            text: "»Was fängt man hier so?«"
+            goto: angeln
+          - id: kalle_tschuess
+            text: "»Ich guck dann mal weiter.«"
+      haken:
+        say: "»Der Haken ist meiner. Hat meinem Vater gehört, der hat Boote aus der Brandung gezogen. Verkaufen? Nein. Für Süßes? Da reden wir.«"
+        options:
+          - id: kalle_haken_zurueck
+            text: "»Ich verstehe.«"
+      seeloewen:
+        say: "»Die haben die Stege übernommen. Schlimmer als Möwen. Möwen klauen nur Pommes. Seelöwen klauen dir den ganzen Steg, wenn du nicht aufpasst.«"
+        options:
+          - id: kalle_seeloewen_zurueck
+            text: "»Furchtbar.«"
+      angeln:
+        say: "»Heute: nichts. Gestern: einen Schuh, zwei Krabben und einen Touristen aus Ohio, der dachte, ich sei eine Attraktion. Er hatte recht.«"
+        options:
+          - id: kalle_angeln_zurueck
+            text: "»Schöne Bilanz.«"
+  # Big Sur: Tankstelle, Festung der Vorkasse.
+  hendrik_talk:
+    with: hendrik
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Benzin? Erst bezahlen.«"
+        options:
+          - id: hendrik_vorkasse
+            text: "»Warum nur Vorkasse?«"
+            goto: vorkasse
+          - id: hendrik_felsen
+            text: "»Wo ist der Felsen mit dem Loch?«"
+            goto: felsen
+          - id: hendrik_surfer
+            text: "»Wie viele Surfer kommen so vorbei?«"
+            goto: surfer
+          - id: hendrik_tschuess
+            text: "»Alles klar.«"
+      vorkasse:
+        say: "»Letzten Sommer ist ein Surfer mit leerem Tank weggerollt, mit meinem Kanister. Den Kanister habe ich nie wiedergesehen. Der Typ hat aber gut gesungen.«"
+        options:
+          - id: hendrik_vorkasse_zurueck
+            text: "»Verständlich.«"
+      felsen:
+        say: "»Westlich, am Strand. Der Felsen mit dem Loch. Im Tümpel davor liegt alles, was Touristen verlieren. Nicht alles davon will man wiederhaben.«"
+        options:
+          - id: hendrik_felsen_zurueck
+            text: "»Danke.«"
+      surfer:
+        say: "»Zu viele. Alle wollen die Welle, keiner will den Kaffee bezahlen. Der Kaffee ist der eigentliche Gewinn dieses Ladens.«"
+        options:
+          - id: hendrik_surfer_zurueck
+            text: "»Dann nehme ich einen Kaffee.«"
+
+  # Monterey: Otter.
+  otto_talk:
+    with: otto
+    start: hallo
+    nodes:
+      hallo:
+        say: "Otto hält dir die Pfote hin, höflich, als wolle er einen Handschlag. Dann dreht er sich auf den Rücken und zeigt dir den Bauch. Er erwartet Fisch. Das hat er klargemacht."
+  # Santa Cruz: Das Haus der schiefen Dinge.
+  greg_talk:
+    with: greg
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Willkommen. Die Schwerkraft ist schräg.«"
+        options:
+          - id: greg_schwerkraft
+            text: "»Wie funktioniert das?«"
+            goto: schwerkraft
+          - id: greg_keil
+            text: "»Kann man das reparieren?«"
+            goto: keil
+          - id: greg_gespenst
+            text: "»Gibt es hier Gespenster?«"
+            goto: gespenst
+          - id: greg_tschuess
+            text: "»Ich bin nur auf der Durchreise.«"
+      schwerkraft:
+        say: "»Der Boden ist geneigt, die Wände sind geneigt, und Sie sind bereit, alles zu glauben. Ihr Gehirn sucht die Senkrechte und findet sie nicht. Das ist der ganze Trick. Und ein bisschen Holz.«"
+        options:
+          - id: greg_schwerkraft_zurueck
+            text: "»Ein Trick also.«"
+      keil:
+        say: "»Ein Keil hilft. Irgendetwas Kleines, das Sie nicht vermissen würden. Dann steht der Tisch, und die Wahrheit steht auch.«"
+        options:
+          - id: greg_keil_zurueck
+            text: "»Ich hab da was.«"
+      gespenst:
+        say: "»Das Gespenst ist der Besucher, der sich fragt, warum sein Wasser bergauf läuft. Es heißt Kevin und ist selbst schuld.«"
+        options:
+          - id: greg_gespenst_zurueck
+            text: "»Kevin also.«"
+
+  # Yosemite: Ranger Ruth, die Bärenregel und die Quizfrage.
+  ruth_talk:
+    with: ruth
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Willkommen im Yosemite. Ich bin Ranger Ruth. Wer das Junior-Ranger-Abzeichen will, muss eine Frage beantworten. Für Ihren Sohn ist das machbar.«"
+        options:
+          - id: ruth_frage
+            text: "»Stell die Frage.«"
+            goto: frage
+          - id: ruth_regeln
+            text: "»Welche Regeln gelten hier?«"
+            goto: regeln
+          - id: ruth_tschuess
+            text: "»Später vielleicht.«"
+      regeln:
+        say: "»Essen in die Bärenbox. Müll in die Bärenbox. Zahnpasta in die Bärenbox. Die Bären sind nicht böse, sie sind hungrig, und sie haben Ihr Wechselgeld im Blick.«"
+        options:
+          - id: ruth_regeln_zurueck
+            text: "»Verstanden.«"
+      frage:
+        say: "»Was machen Bären mit Essen, das nicht in der Bärenbox liegt?«"
+        options:
+          - id: ruth_honig
+            text: "»Sie mögen Honig.«"
+            goto: falsch
+          - id: ruth_richtig
+            text: "»Sie fressen alles, was nach Essen riecht.«"
+            when: [ { has: clue_baeren }, { not: { flag: junior_ranger } } ]
+            goto: richtig
+          - id: ruth_nichtwissen
+            text: "»Keine Ahnung.«"
+            goto: hallo
+      falsch:
+        say: "»Honig ist ein Nachtisch für Bären, kein Hauptgang.« Sie notiert etwas. »Versuch es noch mal, Mia.«"
+        options:
+          - id: ruth_falsch_zurueck
+            text: "»Okay, noch mal.«"
+            goto: frage
+      richtig:
+        say: "»Genau. Dein Essen gehört in die Box, sonst gehört dein Essen dem Bären. Hier, der Schlüssel für Box Nummer sieben. Und für Paul das Abzeichen.« Paul greift danach wie nach einer Eintrittskarte in die Zukunft."
+        do:
+          - move: { object: ranger_schluessel, to: inventory }
+          - set: junior_ranger
+          - score: 1
+  # San Francisco: Pier 39.
+  pat_talk:
+    with: pat
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Stadtplan? Zwölf Dollar.«"
+        options:
+          - id: pat_stadtplan
+            text: "»Kann ich mit Karte zahlen?«"
+            goto: stadtplan
+          - id: pat_seeloewen
+            text: "»Warum schreien die Robben so?«"
+            goto: seeloewen
+          - id: pat_wetter
+            text: "»Wird der Nebel heute noch weg?«"
+            goto: wetter
+          - id: pat_tschuess
+            text: "»Später.«"
+      stadtplan:
+        say: "»Selbstverständlich. Legen Sie die Karte hierhin. Der Nebel ist nur Atmosphäre, Liebes, die Preise sind echt.«"
+        options:
+          - id: pat_stadtplan_zurueck
+            text: "»Gut zu wissen.«"
+      seeloewen:
+        say: "»Die sind hier seit 1989 und haben sich nie einen Kalender angeschafft. Sie sagen, eine Woche ist lang genug.«"
+        options:
+          - id: pat_seeloewen_zurueck
+            text: "»Weise Tiere.«"
+      wetter:
+        say: "»Im Juli hat der Nebel Besuchspflicht. Im September kommt er nur, wenn er Lust hat. Heute hat er Lust.«"
+        options:
+          - id: pat_wetter_zurueck
+            text: "»Dann warte ich.«"
+
+endings:
+  ende_familie:
+    title: Das Foto
+    text: |-
+      Ihr stellt euch an die Brüstung, die Brücke im Rücken, halb im Nebel. Uwe stellt den Selbstauslöser ein, rennt dreimal zurück und stolpert über eine Touristin mit Hund. Sabine lacht zum ersten Mal seit Santa Monica, richtig, mit Schnauben.
+
+      Paul hält Hubert hoch. Du hältst die Hand deiner Mutter. Das Foto wird ein bisschen unscharf, und es ist trotzdem das beste der ganzen Reise.
+    win: true
+
+hints:
+  - id: hint_gertrud
+    until: { isOpen: gertrud }
+    steps:
+      - "Uwe hat die Schlüssel im Wagen eingeschlossen. Das ist sein Stil, nicht deine Schuld."
+      - "Opas Brief erwähnt einen Ersatzschlüssel für den Notfall."
+      - "Benutze den Ersatzschlüssel mit Gertrud, dann öffnet sie sich."
+  - id: hint_hubert
+    when: { isOpen: gertrud }
+    until: { flag: karte_sm }
+    steps:
+      - "Paul trägt Hubert ständig mit sich herum. Hubert hat etwas am Kopf."
+      - "Gartenzwerg-Mützen lassen sich abschrauben, wenn man es nur versucht."
+      - "Nimm Hubert, öffne ihn und lies die Karte in seiner Mütze."
+  - id: hint_kachel
+    when: { flag: karte_sm }
+    until: { flag: karte_sb }
+    steps:
+      - "Opas zweite Karte liegt dort, wo die Mönche ihre Blumen gießen."
+      - "Bruder Tomás weiß, welche Kachel wackelt. Frag ihn."
+      - "Zieh an der lockeren Kachel am Brunnen."
+  - id: hint_tankstelle
+    when: { flag: karte_sb }
+    until: { flag: getankt }
+    steps:
+      - "Uwes Excel behauptet, der Tank sei voll. Uwes Excel lügt."
+      - "Hendrik nimmt nur Vorkasse, und die Kreditkarte ist dafür da."
+      - "Zeig Hendrik die Kreditkarte."
+  - id: hint_bootshaken
+    when: { flag: karte_sb }
+    until: { has: bootshaken }
+    steps:
+      - "Im Felsentümpel bei Big Sur liegt die nächste Karte, und du kommst nicht dran."
+      - "Kalle hat einen Haken, der genau das kann."
+      - "Kalle mag Süßes. Gib ihm die Haribo."
+  - id: hint_felsentuempel
+    when: { has: bootshaken }
+    until: { flag: karte_bs }
+    steps:
+      - "Im Felsentümpel treibt etwas, das nicht dorthin gehört."
+      - "Mit den Händen kommst du nicht hin. Du brauchst etwas Langes."
+      - "Benutze den Bootshaken mit dem Felsentümpel."
+  - id: hint_otto
+    when: { flag: karte_bs }
+    until: { flag: karte_mo }
+    steps:
+      - "Ein Seeotter in Monterey hat eine Karte, die dir gehört."
+      - "Otter lieben Fisch, besonders Fisch aus der Tüte."
+      - "Gib Otto den Fischsnack aus dem Aquarium."
+  - id: hint_kippstisch
+    when: { flag: karte_mo }
+    until: { flag: karte_sc }
+    steps:
+      - "Im Haus der schiefen Dinge steht der Tisch schief und der Boden auch."
+      - "Greg sagt, man braucht einen Keil. Irgendetwas Kleines, das man nicht vermisst."
+      - "Benutze Hubert mit dem Kippstisch."
+  - id: hint_baerenbox
+    when: { flag: karte_sc }
+    until: { flag: karte_ys }
+    steps:
+      - "Die Bärenbox schützt das Essen. Opas nächste Karte liegt darin."
+      - "Ranger Ruth gibt den Schlüssel nur an Junior Ranger heraus."
+      - "Lies die Infotafel und beantworte Ruths Frage richtig. Dann öffne die Box mit dem Schlüssel."
+  - id: hint_stadtplan
+    when: { flag: karte_ys }
+    until: { has: stadtplan }
+    steps:
+      - "Die letzte Karte steckt im Ständer am Pier 39."
+      - "Pat verkauft Stadtpläne, und sie nimmt Kreditkarten."
+      - "Zeig Pat die Kreditkarte."
+  - id: hint_deduktion
+    when: { flag: karte_sf }
+    until: { has: clue_ort }
+    steps:
+      - "Die Karte aus San Francisco beschreibt eine Straße mit acht Kurven."
+      - "Auf dem Stadtplan gibt es nur eine Straße, auf die das passt."
+      - "Kombiniere die Karte aus San Francisco mit dem Stadtplan."
+  - id: hint_dose
+    when: { has: clue_ort }
+    until: { not: { isLocked: dose } }
+    steps:
+      - "Die Dose hat ein Zahlenschloss mit vier Ziffern."
+      - "Opa vergisst alles, nur ein Datum nicht."
+      - "Kombiniere Ingrids Geburtstag mit der Dose."
+  - id: hint_frank
+    when: { has: clue_frank_karte }
+    until: { flag: frank_weg }
+    steps:
+      - "Frank will die Dose für sich und hält sich für den Gewinner."
+      - "Jasmin hat dir etwas über Franks Karte verraten."
+      - "Zeig Frank den Beweis."
+  - id: hint_nachricht
+    when: { isOpen: dose }
+    until: { has: opa_abschied }
+    steps:
+      - "Die Dose ist offen. Schau hinein."
+      - "In der Dose liegen ein Polaroid und ein Brief."
+      - "Nimm den Brief und lies Opas Nachricht."
+  - id: hint_route
+    until: { flag: karte_sf }
+    steps:
+      - "Folge den Karten in der Reihenfolge der Route."
+      - "Die Familie fährt weiter, sobald die Karte der Station in der Tasche ist."
+      - "Frag die Familie, wenn du nicht weiterweißt. Uwe hat für alles einen Plan."
+
+walkthrough:
+  # Santa Monica: Opas Brief, Gertrud, Hubert, das Büro und der Pier.
+  - read opas_brief
+  - talk uwe
+  - choose uwe_plan
+  - choose uwe_plan_zurueck
+  - talk uwe
+  - choose uwe_zeit
+  - choose uwe_zeit_zurueck
+  - talk uwe
+  - choose uwe_gefuehl
+  - choose uwe_gefuehl_zurueck
+  - talk sabine
+  - choose sabine_stuhl
+  - choose sabine_stuhl_zurueck
+  - talk sabine
+  - choose sabine_sonne
+  - choose sabine_sonne_zurueck
+  - look gertrud
+  - open gertrud
+  - read masterplan
+  - look hubert
+  - take hubert
+  - open hubert
+  - read postkarte_sm
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - go south
+  - look schluesselkasten
+  - talk kyle
+  - choose kyle_versicherung
+  - choose kyle_versicherung_zurueck
+  - talk kyle
+  - choose kyle_tank
+  - choose kyle_tank_zurueck
+  - go north
+  - go east
+  - look route66_schild
+  - look riesenrad
+  - look moewe
+  - go west
+  - go north
+  # Santa Barbara: Mission, Hafen, Strand. Die Familie erzählt von Ingrid.
+  - talk uwe
+  - choose uwe_plan
+  - choose uwe_plan_zurueck
+  - talk uwe
+  - choose uwe_zeit
+  - choose uwe_zeit_zurueck
+  - talk uwe
+  - choose uwe_gefuehl
+  - choose uwe_gefuehl_zurueck
+  - talk sabine
+  - choose sabine_ingrid
+  - choose sabine_ingrid_zurueck
+  - talk frank
+  - choose frank_gold
+  - choose frank_gold_zurueck
+  - talk frank
+  - choose frank_opa
+  - choose frank_opa_zurueck
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - look festung
+  - go west
+  - look brunnen
+  - talk tomas
+  - choose tomas_brunnen
+  - choose tomas_brunnen_zurueck
+  - talk tomas
+  - choose tomas_kachel
+  - choose tomas_kachel_zurueck
+  - pull kachel
+  - read postkarte_sb
+  - go east
+  - go east
+  - look seeloewen
+  - look bootshaken
+  - talk kalle
+  - choose kalle_haken
+  - choose kalle_haken_zurueck
+  - talk kalle
+  - choose kalle_seeloewen
+  - choose kalle_seeloewen_zurueck
+  - give haribo kalle
+  - go west
+  - talk jasmin
+  - choose jasmin_influencer
+  - choose jasmin_influencer_zurueck
+  - go north
+  # Big Sur: Tankstelle, Vorkasse, Bootshaken und der Felsentümpel.
+  - talk hendrik
+  - choose hendrik_vorkasse
+  - choose hendrik_vorkasse_zurueck
+  - talk hendrik
+  - choose hendrik_felsen
+  - choose hendrik_felsen_zurueck
+  - talk hendrik
+  - choose hendrik_surfer
+  - choose hendrik_surfer_zurueck
+  - show kreditkarte hendrik
+  - look zapfsaeule
+  - look hendrik
+  - talk uwe
+  - choose uwe_plan
+  - choose uwe_plan_zurueck
+  - talk uwe
+  - choose uwe_zeit
+  - choose uwe_zeit_zurueck
+  - talk uwe
+  - choose uwe_gefuehl
+  - choose uwe_gefuehl_zurueck
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - talk sabine
+  - choose sabine_stuhl
+  - choose sabine_stuhl_zurueck
+  - talk sabine
+  - choose sabine_sonne
+  - choose sabine_sonne_zurueck
+  - talk frank
+  - choose frank_gold
+  - choose frank_gold_zurueck
+  - talk frank
+  - choose frank_opa
+  - choose frank_opa_zurueck
+  - go west
+  - look schluesselloch_fels
+  - look felsentuempel
+  - use bootshaken felsentuempel
+  - read postkarte_bs
+  - go east
+  - go north
+  - look kondor
+  - look bruecke
+  - go north
+  # Monterey: Aquarium und der Otter. Dann geht es nach Norden.
+  - talk frank
+  - choose frank_gold
+  - choose frank_gold_zurueck
+  - talk frank
+  - choose frank_opa
+  - choose frank_opa_zurueck
+  - talk uwe
+  - choose uwe_plan
+  - choose uwe_plan_zurueck
+  - talk uwe
+  - choose uwe_zeit
+  - choose uwe_zeit_zurueck
+  - talk uwe
+  - choose uwe_gefuehl
+  - choose uwe_gefuehl_zurueck
+  - talk sabine
+  - choose sabine_stuhl
+  - choose sabine_stuhl_zurueck
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - talk jasmin
+  - choose jasmin_hubert
+  - choose jasmin_hubert_zurueck
+  - look steinbeck_schild
+  - go east
+  - look otto
+  - look fischsnack
+  - talk otto
+  - take fischsnack
+  - give fischsnack otto
+  - read postkarte_mo
+  - look kelpbecken
+  - go west
+  - go north
+  # Santa Cruz: Jasmins Geheimnis, Greg und das Haus der schiefen Dinge.
+  - talk uwe
+  - choose uwe_plan
+  - choose uwe_plan_zurueck
+  - talk uwe
+  - choose uwe_zeit
+  - choose uwe_zeit_zurueck
+  - talk uwe
+  - choose uwe_gefuehl
+  - choose uwe_gefuehl_zurueck
+  - talk jasmin
+  - choose jasmin_karte
+  - choose jasmin_karte_zurueck
+  - talk jasmin
+  - choose jasmin_hubert
+  - choose jasmin_hubert_zurueck
+  - look giantdipper
+  - talk sabine
+  - choose sabine_sonne
+  - choose sabine_sonne_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk frank
+  - choose frank_gold
+  - choose frank_gold_zurueck
+  - talk frank
+  - choose frank_opa
+  - choose frank_opa_zurueck
+  - go west
+  - look kippstisch
+  - look greg
+  - talk greg
+  - choose greg_schwerkraft
+  - choose greg_schwerkraft_zurueck
+  - talk greg
+  - choose greg_keil
+  - choose greg_keil_zurueck
+  - use hubert kippstisch
+  - read postkarte_sc
+  - go east
+  - go east
+  - look skeeball
+  - go west
+  - go north
+  # Yosemite: Infotafel, Ranger Ruth, die Bärenbox und die Wiese.
+  - read infotafel
+  - look ruth
+  - talk ruth
+  - choose ruth_frage
+  - choose ruth_honig
+  - choose ruth_falsch_zurueck
+  - choose ruth_richtig
+  - talk sabine
+  - choose sabine_stuhl
+  - choose sabine_stuhl_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - go east
+  - look baerenbox
+  - open baerenbox
+  - read postkarte_ys
+  - look baerenspur
+  - go west
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - talk jasmin
+  - choose jasmin_hubert
+  - choose jasmin_hubert_zurueck
+  - go south
+  - look hirsch
+  - go north
+  - go west
+  # San Francisco: Pier 39, Lombard Street und die Dose.
+  - talk uwe
+  - choose uwe_plan
+  - choose uwe_plan_zurueck
+  - talk uwe
+  - choose uwe_zeit
+  - choose uwe_zeit_zurueck
+  - talk uwe
+  - choose uwe_gefuehl
+  - choose uwe_gefuehl_zurueck
+  - talk paul
+  - choose paul_hubert
+  - choose paul_hubert_zurueck
+  - talk paul
+  - choose paul_dinos
+  - choose paul_dinos_zurueck
+  - talk paul
+  - choose paul_eis
+  - choose paul_eis_zurueck
+  - talk sabine
+  - choose sabine_stuhl
+  - choose sabine_stuhl_zurueck
+  - talk jasmin
+  - choose jasmin_hubert
+  - choose jasmin_hubert_zurueck
+  - look goldengate
+  - go east
+  - look robben
+  - look pat
+  - read postkarte_sf
+  - talk pat
+  - choose pat_stadtplan
+  - choose pat_stadtplan_zurueck
+  - talk pat
+  - choose pat_seeloewen
+  - choose pat_seeloewen_zurueck
+  - talk pat
+  - choose pat_wetter
+  - choose pat_wetter_zurueck
+  - show kreditkarte pat
+  - look stadtplan
+  - go west
+  - go south
+  - look blumenbeet
+  - use clue_karte_sf stadtplan
+  - look dose
+  - use clue_geburtstag dose
+  - open dose
+  - look polaroid
+  - look opa_abschied
+  - talk frank
+  - choose frank_gold
+  - choose frank_gold_zurueck
+  - show clue_frank_karte frank
+  - read opa_abschied
