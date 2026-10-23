@@ -1,7 +1,106 @@
+/** Replay of `pack.walkthrough` (spec section 14, step 3). */
+
+import { listedExits } from "./affordances.ts";
+import { formatCommand, parseCanonical } from "./commands.ts";
+import { availableOptions } from "./effects.ts";
+import { indexPack } from "./pack-index.ts";
+import { presentObjects } from "./presence.ts";
+import { newGame, step } from "./runtime.ts";
 import type { Pack } from "./schema.ts";
-import type { WalkthroughReport } from "./types.ts";
+import { renderPlain } from "./text.ts";
+import type { Diagnostic, GameState, WalkthroughReport, WalkthroughStep } from "./types.ts";
 
 /** Replay pack.walkthrough from a new game. ok = all steps accepted and a winning ending reached at the last step. */
-export function runWalkthrough(_pack: Pack): WalkthroughReport {
-  throw new Error("not implemented: runWalkthrough");
+export function runWalkthrough(pack: Pack): WalkthroughReport {
+  const diagnostics: Diagnostic[] = [];
+  const steps: WalkthroughStep[] = [];
+  let state = newGame(pack).state;
+  let failed = false;
+
+  for (let i = 0; i < pack.walkthrough.length; i++) {
+    const text = pack.walkthrough[i] ?? "";
+    const path = `walkthrough[${i}]`;
+    if (state.ended !== null) {
+      diagnostics.push({
+        severity: "error",
+        code: "walkthrough.ended-early",
+        path,
+        message:
+          `The game already ended with '${state.ended}' before step ${i + 1} ("${text}"); ` +
+          `${pack.walkthrough.length - i} step(s) remain. Remove the remaining steps or move the ending later.`,
+      });
+      failed = true;
+      break;
+    }
+    const cmd = parseCanonical(text);
+    if (!cmd) {
+      steps.push({ command: text, status: "rejected", output: "" });
+      diagnostics.push({
+        severity: "error",
+        code: "walkthrough.malformed",
+        path,
+        message:
+          `Step ${i + 1} "${text}" is not a canonical command. Use "verb [object [with]]" with ids ` +
+          `separated by single spaces, e.g. "take brass_key", "use brass_key study_door", "go north", "choose ask_uncle".`,
+      });
+      failed = true;
+      break;
+    }
+    const result = step(pack, state, cmd);
+    steps.push({ command: formatCommand(cmd), status: result.status, output: renderPlain(result.output) });
+    if (result.status === "rejected") {
+      const reason = result.output.map((b) => b.spans.map((s) => s.text).join("")).join(" ");
+      diagnostics.push({
+        severity: "error",
+        code: "walkthrough.rejected",
+        path,
+        message: `Step ${i + 1} "${text}" was rejected: ${reason} ${describeSituation(pack, state)}`,
+      });
+      failed = true;
+      break;
+    }
+    state = result.state;
+  }
+
+  const ending = state.ended;
+  const won = ending !== null && pack.endings[ending]?.win === true;
+  if (!failed && !won) {
+    diagnostics.push({
+      severity: "error",
+      code: "walkthrough.not-won",
+      path: "walkthrough",
+      message:
+        ending === null
+          ? `The walkthrough ends without reaching an ending (ending: none). ${describeSituation(pack, state)} ` +
+            "Add the missing steps up to an `end` effect with a winning ending."
+          : `The walkthrough ends with '${ending}', which is not a winning ending (win: false).`,
+    });
+  }
+  return { ok: !failed && won, steps, ending, score: state.score, diagnostics };
+}
+
+/** Where the player is and what can be referred to, so an author (or an LLM) can fix a step. */
+function describeSituation(pack: Pack, state: GameState): string {
+  const ix = indexPack(pack);
+  const present = presentObjects(pack, state, ix.objectIds);
+  const parts = [
+    `Current room: ${state.room}.`,
+    `Present objects: ${present.room.join(", ") || "none"}.`,
+    `Inventory: ${present.inv.join(", ") || "none"}.`,
+    `Exits: ${
+      listedExits(pack, state)
+        .map((e) => e.id)
+        .join(", ") || "none"
+    }.`,
+  ];
+  if (state.dialogue) {
+    const { id, node } = state.dialogue;
+    const options = availableOptions(pack, state, id, pack.dialogues[id]?.nodes[node]);
+    parts.push(
+      `Active dialogue: ${id}, node ${node}; only "choose <option>" is accepted. Options: ${
+        options.map((o) => o.id).join(", ") || "none"
+      }.`,
+    );
+  }
+  return parts.join(" ");
 }

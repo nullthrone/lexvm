@@ -7,8 +7,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
-    "preview": "vite preview"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json --noEmit && vite build --mode singlefile && vite build",
+    "preview": "vite preview",
+    "icons": "tsx scripts/icons.ts",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "vite": "8.3.5",

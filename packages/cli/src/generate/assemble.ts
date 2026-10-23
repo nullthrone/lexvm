@@ -34,6 +34,8 @@ export interface PromptInputs {
   license?: string | null;
   /** True when the prompt is for the API pipeline (affects provenance wording). */
   pipeline?: boolean;
+  /** True for copy-paste stage prompts (affects provenance wording); set by assemblePrompt. */
+  staged?: boolean;
   /** design/concept.md, if available. */
   concept?: string | null;
   /** design/puzzles.md, if available. */
@@ -112,7 +114,9 @@ function provenance(inputs: PromptInputs): { AUTHOR: string; LICENSE: string; GE
       : "the user's name or handle if they gave one, otherwise `Anonymous`, followed by ` (written with an LLM)`";
   const generator = inputs.pipeline
     ? '`{ pipeline: "lexvm generate", notes: "Drafted by an LLM via the Anthropic API in staged prompts; verified with lexvm check." }`'
-    : '`{ pipeline: "lexvm one-shot prompt", notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt." }`';
+    : inputs.staged
+      ? '`{ pipeline: "lexvm staged prompts", notes: "Drafted by an LLM chat assistant from the LexVM stage prompts." }`'
+      : '`{ pipeline: "lexvm one-shot prompt", notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt." }`';
   return {
     AUTHOR: author,
     LICENSE: `\`${license}\`${inputs.license ? "" : " unless the user asks for another SPDX license id"}`,
@@ -127,7 +131,10 @@ export function promptVars(kit: PromptKit, inputs: PromptInputs): Record<string,
     GUIDE: kit.guide,
     CHECKLIST: kit.checklist,
     EXAMPLE: fence(kit.example, "yaml"),
-    LANG: describeLanguage(inputs.lang),
+    LANG:
+      inputs.lang === null && inputs.concept && inputs.concept.trim() !== ""
+        ? "the language chosen in the concept (`de` or `en`)"
+        : describeLanguage(inputs.lang),
     MINUTES: String(inputs.minutes),
     IDEA: renderIdea(inputs.idea),
     PACK_ID: inputs.packId
@@ -157,5 +164,5 @@ export function buildStagePrompt(kit: PromptKit, stage: Exclude<PromptStage, "on
  */
 export function assemblePrompt(kit: PromptKit, stage: PromptStage, inputs: PromptInputs): string {
   if (stage === "oneshot") return renderTemplate(kit.templates.oneshot, promptVars(kit, inputs), "oneshot");
-  return `${buildSystemPrompt(kit)}\n---\n\n${buildStagePrompt(kit, stage, inputs)}`;
+  return `${buildSystemPrompt(kit)}\n---\n\n${buildStagePrompt(kit, stage, { staged: true, ...inputs })}`;
 }

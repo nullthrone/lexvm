@@ -14,12 +14,10 @@ export const LANGS: readonly Lang[] = ["de", "en"];
 const de = {
   "app.name": "LexVM",
   "app.tagline": "Textabenteuer für unterwegs – offline, im Browser.",
-  "app.skip": "Zum Inhalt springen",
 
   "common.back": "Zurück",
   "common.close": "Schließen",
   "common.cancel": "Abbrechen",
-  "common.ok": "OK",
   "common.delete": "Löschen",
   "common.retry": "Erneut versuchen",
   "common.loading": "Lade …",
@@ -29,8 +27,6 @@ const de = {
   "nav.create": "Eigenes Abenteuer",
   "nav.settings": "Einstellungen",
   "nav.about": "Über LexVM",
-
-  "library.heading": "Bibliothek",
   "library.continue": "Weiterspielen",
   "library.newGame": "Neues Spiel",
   "library.confirmNewTitle": "Neues Spiel beginnen?",
@@ -100,7 +96,6 @@ const de = {
   "game.toLibrary": "Zur Bibliothek",
   "game.playAgain": "Nochmal spielen",
   "game.theEnd": "Ende",
-  "game.readText": "Text lesen",
   "game.finalScore": "{value} von {max} Punkten",
   "game.dialogueWith": "Gespräch mit {npc}",
   "game.dialogue": "Gespräch",
@@ -116,7 +111,6 @@ const de = {
   "game.kind.container": "Behälter",
   "game.kind.scenery": "Umgebung",
   "game.new": "neu",
-  "game.notPresent": "Das ist gerade nicht hier.",
   "game.help":
     "Tippe auf Dinge, Personen und Ausgänge, um zu handeln. Hervorgehobene Wörter im Text lassen sich ebenfalls antippen. Mit der Tastatur kannst du Befehle auch schreiben.",
   "game.helpMeta": "Außerdem verstanden: rückgängig, neustart, tipp, hilfe, speichern, laden.",
@@ -168,7 +162,8 @@ const de = {
   "about.offlineText":
     "Füge LexVM zum Home-Bildschirm hinzu oder lade die Offline-Version als einzelne HTML-Datei herunter. Beides läuft auch im Flugmodus.",
   "about.privacyHeading": "Privatsphäre",
-  "about.privacy": "Keine Konten, keine Werbung, kein Tracking. Spielstände und eigene Abenteuer bleiben auf deinem Gerät.",
+  "about.privacy":
+    "Keine Konten, keine Werbung, kein Tracking. Spielstände und eigene Abenteuer bleiben auf deinem Gerät.",
   "about.creditsHeading": "Mitwirkende",
   "about.credits":
     "Geschrieben von den LexVM-Mitwirkenden. Inspiriert von ScummVM und den Abenteuern von LucasArts und Infocom: Niemand soll in einer Sackgasse landen.",
@@ -226,12 +221,10 @@ export type StringKey = keyof typeof de;
 const en: Record<StringKey, string> = {
   "app.name": "LexVM",
   "app.tagline": "Text adventures to go – offline, in your browser.",
-  "app.skip": "Skip to content",
 
   "common.back": "Back",
   "common.close": "Close",
   "common.cancel": "Cancel",
-  "common.ok": "OK",
   "common.delete": "Delete",
   "common.retry": "Try again",
   "common.loading": "Loading …",
@@ -241,8 +234,6 @@ const en: Record<StringKey, string> = {
   "nav.create": "Create your own",
   "nav.settings": "Settings",
   "nav.about": "About LexVM",
-
-  "library.heading": "Library",
   "library.continue": "Continue",
   "library.newGame": "New game",
   "library.confirmNewTitle": "Start a new game?",
@@ -312,7 +303,6 @@ const en: Record<StringKey, string> = {
   "game.toLibrary": "Back to library",
   "game.playAgain": "Play again",
   "game.theEnd": "The End",
-  "game.readText": "Read the text",
   "game.finalScore": "{value} of {max} points",
   "game.dialogueWith": "Conversation with {npc}",
   "game.dialogue": "Conversation",
@@ -328,7 +318,6 @@ const en: Record<StringKey, string> = {
   "game.kind.container": "Container",
   "game.kind.scenery": "Scenery",
   "game.new": "new",
-  "game.notPresent": "That is not here right now.",
   "game.help":
     "Tap things, people and exits to act. Highlighted words in the text can be tapped too. With the keyboard you can also type commands.",
   "game.helpMeta": "Also understood: undo, restart, hint, help, save, load.",

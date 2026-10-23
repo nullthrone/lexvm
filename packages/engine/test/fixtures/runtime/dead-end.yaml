@@ -1,0 +1,58 @@
+# Fixture: the only key can be lost down a drain, after which the cell can
+# never be left. explore() must report this as a dead end.
+format: lexvm-pack/1
+id: dead-end
+version: 1.0.0
+title: Dead End
+description: A cell whose only key can be lost down a drain.
+language: en
+author: LexVM tests
+license: CC0-1.0
+start:
+  room: cell
+rooms:
+  cell:
+    name: Cell
+    description: A bare cell with a {drain} in the floor.
+    exits:
+      out:
+        to: yard
+        door: cell_door
+        blocked: The cell door is shut.
+  yard:
+    name: Yard
+    description: Fresh air at last.
+objects:
+  key:
+    name: key
+    location: cell
+    portable: true
+  drain:
+    name: drain
+    location: cell
+    description: A rusty drain.
+  cell_door:
+    name: cell door
+    synonyms: [door]
+    location: cell
+    openable: true
+    locked: true
+    unlockedBy: key
+rules:
+  - id: key_down_drain
+    on: { verb: use, object: key, with: drain }
+    do:
+      - say: The key slips through the grate. Gone.
+      - move: { object: key, to: nowhere }
+  - id: escape
+    on: { event: enter, room: yard }
+    do: { end: free }
+endings:
+  free:
+    title: Free
+    text: You are free.
+    win: true
+walkthrough:
+  - take key
+  - open cell_door
+  - go out

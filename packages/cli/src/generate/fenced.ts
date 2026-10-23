@@ -206,7 +206,11 @@ export function parseFencedFiles(text: string, options: FencedParseOptions = {})
   for (let i = files.length - 1; i >= 0; i--) {
     const f = files[i]!;
     if (seen.has(f.name)) {
-      issues.push({ severity: "warning", line: f.line, message: `'${f.name}' appears more than once; the last block wins` });
+      issues.push({
+        severity: "warning",
+        line: f.line,
+        message: `'${f.name}' appears more than once; the last block wins`,
+      });
       files.splice(i, 1);
     } else {
       seen.set(f.name, i);

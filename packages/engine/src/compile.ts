@@ -49,7 +49,12 @@ function compileUnchecked(files: SourceFile[]): CompileResult {
     return {
       pack: null,
       diagnostics: [
-        { severity: "error", code: "compile.no-files", path: "", message: "No source files given. A pack needs pack.yaml." },
+        {
+          severity: "error",
+          code: "compile.no-files",
+          path: "",
+          message: "No source files given. A pack needs pack.yaml.",
+        },
       ],
     };
   }

@@ -1,0 +1,20 @@
+# Schema-valid but semantically wrong: references to things that do not exist.
+start: { room: hal }
+format: lexvm-pack/1
+id: semantic
+version: 1.0.0
+title: Semantic
+description: Unknown references.
+language: en
+author: Test
+license: CC0-1.0
+rooms:
+  hall:
+    name: Hall
+    description: A hall.
+    exits:
+      north: { to: garden }
+endings:
+  done: { title: Done, text: The end., win: true }
+walkthrough:
+  - wait

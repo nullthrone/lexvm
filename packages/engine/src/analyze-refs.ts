@@ -22,7 +22,11 @@ export class Refs {
     const { ix } = this;
     if (ix.rooms.has(id)) return true;
     if (ix.objects.has(id)) {
-      this.out.error("ref.unknown-room", path, `"${id}" is an object, not a room; a room id is needed here. Rooms: ${listIds(ix.rooms)}.`);
+      this.out.error(
+        "ref.unknown-room",
+        path,
+        `"${id}" is an object, not a room; a room id is needed here. Rooms: ${listIds(ix.rooms)}.`,
+      );
     } else {
       this.out.error(
         "ref.unknown-room",
@@ -202,7 +206,11 @@ function checkRoomsAndExits(refs: Refs): void {
   refs.room(pack.start.room, "start.room");
   for (const [roomId, room] of Object.entries(pack.rooms)) {
     if (RESERVED_IDS.includes(roomId)) {
-      out.error("id.reserved", `rooms.${roomId}`, `"${roomId}" is reserved for locations and cannot be a room id. Rename the room.`);
+      out.error(
+        "id.reserved",
+        `rooms.${roomId}`,
+        `"${roomId}" is reserved for locations and cannot be a room id. Rename the room.`,
+      );
     }
     for (const [exitId, exit] of Object.entries(room.exits ?? {})) {
       const p = `rooms.${roomId}.exits.${exitId}`;
@@ -251,7 +259,11 @@ function checkObjects(refs: Refs): void {
       );
     }
     if (object.location === id) {
-      out.error("object.contains-itself", `${p}.location`, `Object "${id}" is located in itself. Choose a room, a container, "inventory" or "nowhere".`);
+      out.error(
+        "object.contains-itself",
+        `${p}.location`,
+        `Object "${id}" is located in itself. Choose a room, a container, "inventory" or "nowhere".`,
+      );
     } else {
       refs.location(object.location, `${p}.location`);
     }
@@ -279,7 +291,11 @@ function checkObjects(refs: Refs): void {
     (object.verbs ?? []).forEach((verb, i) => {
       const vp = `${p}.verbs[${i}]`;
       if (refs.verb(verb, vp) && (verb === "go" || verb === "choose" || verb === "wait" || verb === "inventory")) {
-        out.warning("object.verb-not-applicable", vp, `Verb "${verb}" does not take an object; remove it from objects.${id}.verbs.`);
+        out.warning(
+          "object.verb-not-applicable",
+          vp,
+          `Verb "${verb}" does not take an object; remove it from objects.${id}.verbs.`,
+        );
       }
     });
   }
@@ -393,8 +409,16 @@ function checkDialogueRefs(refs: Refs): void {
   const { ix, out } = refs;
   for (const [id, dialogue] of Object.entries(ix.pack.dialogues)) {
     const p = `dialogues.${id}`;
-    if (dialogue.with !== undefined && refs.object(dialogue.with, `${p}.with`) && !ix.pack.objects[dialogue.with]!.npc) {
-      out.warning("dialogue.with-not-npc", `${p}.with`, `"${dialogue.with}" is not an npc. Set npc: true on objects.${dialogue.with}.`);
+    if (
+      dialogue.with !== undefined &&
+      refs.object(dialogue.with, `${p}.with`) &&
+      !ix.pack.objects[dialogue.with]!.npc
+    ) {
+      out.warning(
+        "dialogue.with-not-npc",
+        `${p}.with`,
+        `"${dialogue.with}" is not an npc. Set npc: true on objects.${dialogue.with}.`,
+      );
     }
     if (dialogue.nodes[dialogue.start] === undefined) {
       out.error(

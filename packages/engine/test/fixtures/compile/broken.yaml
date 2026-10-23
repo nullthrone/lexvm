@@ -1,0 +1,29 @@
+format: lexvm-pack/1
+id: broken
+version: 1.0.0
+title: Broken
+description: Every line here hides a typical generator mistake.
+language: de
+author: Test
+license: CC0-1.0
+start: { room: hall }
+flags:
+  lamp_lit: false
+rooms:
+  hall:
+    name: Halle
+    description: Eine Halle.
+objects:
+  lamp:
+    name: Lampe
+    location: hall
+    portable: true
+rules:
+  - id: light
+    on: { verb: use, object: lamp }
+    when: { flagg: lamp_lit }
+    do: { say: Die Lampe brennt nicht, sagt er. }
+endings:
+  done: { title: Ende, text: Aus., win: true }
+walkthrough:
+  - use lamp

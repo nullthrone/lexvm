@@ -141,8 +141,12 @@ function unknownKey(segments: PathSegment[], key: string, input: unknown): RawDi
   let message = `Unknown key "${key}" in ${noun}.`;
   if (suggestion !== undefined) message += ` Did you mean "${suggestion}"?`;
   // A bare word or phrase with no value is the typical remainder of an unquoted string.
-  if (looksLikeProse(key) || (keyValue === null && suggestion === undefined)) message += ` ${PROSE_HINT}`;
-  if (keys.length > 0) {
+  const bareWord = keyValue === null && suggestion === undefined && kind !== "pack";
+  if (looksLikeProse(key) || bareWord) message += ` ${PROSE_HINT}`;
+  if (kind === "trigger") {
+    message +=
+      " A command trigger has the keys verb, object, with; an event trigger has event and, for enter events, room. They cannot be mixed.";
+  } else if (keys.length > 0) {
     message += isSingleKeyKind(kind)
       ? ` Each ${kind} has exactly one key, one of: ${keys.join(", ")}.`
       : ` Valid keys: ${keys.join(", ")}.`;
@@ -169,7 +173,13 @@ function typeMismatch(segments: PathSegment[], expected: string, value: unknown,
   const what = expectation(kind) ?? expected;
   let message = `Expected ${what}, got ${describeValue(value)}.`;
   if (expected === "string" && (typeof value === "number" || typeof value === "boolean")) {
-    message += ` Quote the value in YAML: "${String(value)}".`;
+    const key = segments[segments.length - 1];
+    const example = typeof key === "string" ? `${key}: "…"` : `"…"`;
+    message += ` YAML reads unquoted numbers (1.0 becomes 1) and true/false as non-strings: quote the value, e.g. ${example}.`;
+  } else if ((expected === "number" || expected === "int") && typeof value === "string") {
+    message += " Write numbers without quotes.";
+  } else if (expected === "boolean" && typeof value !== "boolean") {
+    message += " Use true or false, without quotes.";
   } else if (value === null && (kind === "text" || expected === "string")) {
     message += " The value is empty: write the text after the colon or remove the key.";
   } else if (typeof value === "string" && (kind === "conditions" || kind === "condition")) {
@@ -190,7 +200,7 @@ function convert(flat: FlatIssue, input: unknown): RawDiagnostic[] {
       if (value === undefined) return [missingKey(segments, issue.expected, input)];
       return [typeMismatch(segments, issue.expected, value, "schema.invalid_type")];
     case "invalid_union":
-      return [unionMismatch(segments, value)];
+      return [unionMismatch(segments, value, input)];
     case "invalid_key": {
       const key = segments[segments.length - 1];
       const inner = issue.issues.map((i) => i.message).join("; ");
@@ -228,7 +238,8 @@ function convert(flat: FlatIssue, input: unknown): RawDiagnostic[] {
       if (issue.origin === "string") message = "Must not be empty: write a text or remove the key.";
       else if (issue.origin === "array")
         message = `Must contain at least ${String(issue.minimum)} item${Number(issue.minimum) === 1 ? "" : "s"}.`;
-      else message = `Must be ${issue.inclusive ? "at least" : "greater than"} ${String(issue.minimum)}, got ${describeValue(value)}.`;
+      else
+        message = `Must be ${issue.inclusive ? "at least" : "greater than"} ${String(issue.minimum)}, got ${describeValue(value)}.`;
       return [{ severity: "error", code: "schema.too_small", segments, message }];
     }
     case "too_big": {
@@ -251,7 +262,8 @@ function convert(flat: FlatIssue, input: unknown): RawDiagnostic[] {
   }
 }
 
-function unionMismatch(segments: PathSegment[], value: unknown): RawDiagnostic {
+function unionMismatch(segments: PathSegment[], value: unknown, input: unknown): RawDiagnostic {
+  if (value === undefined) return missingKey(segments, "a value", input);
   const kind = kindAt(segments);
   if (kind === "trigger" && value !== null && typeof value === "object" && "verb" in value && "event" in value) {
     return {

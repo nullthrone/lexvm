@@ -33,24 +33,33 @@ export interface Visitor {
   effect?(effect: Effect, path: string, site: Site): void;
   /** Called for every string of a Text (each variant's text separately). */
   text?(text: string, path: string, site: Site): void;
+  /** Called once per Text value, before its strings. */
+  textBlock?(text: Text, path: string, site: Site): void;
 }
 
 export function visitConditions(conditions: Conditions | undefined, path: string, site: Site, v: Visitor): void {
   if (conditions === undefined) return;
-  conditions.forEach((c, i) => visitCondition(c, joinPath(path, i), site, v));
+  conditions.forEach((c, i) => {
+    visitCondition(c, joinPath(path, i), site, v);
+  });
 }
 
 export function visitCondition(condition: Condition, path: string, site: Site, v: Visitor): void {
   v.condition?.(condition, path, site);
   if ("not" in condition) visitCondition(condition.not, joinPath(path, "not"), site, v);
   else if ("all" in condition)
-    condition.all.forEach((c, i) => visitCondition(c, joinPath(joinPath(path, "all"), i), site, v));
+    condition.all.forEach((c, i) => {
+      visitCondition(c, joinPath(joinPath(path, "all"), i), site, v);
+    });
   else if ("any" in condition)
-    condition.any.forEach((c, i) => visitCondition(c, joinPath(joinPath(path, "any"), i), site, v));
+    condition.any.forEach((c, i) => {
+      visitCondition(c, joinPath(joinPath(path, "any"), i), site, v);
+    });
 }
 
 export function visitText(text: Text | undefined, path: string, site: Site, v: Visitor): void {
   if (text === undefined) return;
+  v.textBlock?.(text, path, site);
   if (typeof text === "string") {
     v.text?.(text, path, site);
     return;
@@ -64,7 +73,9 @@ export function visitText(text: Text | undefined, path: string, site: Site, v: V
 
 export function visitEffects(effects: Effects | undefined, path: string, site: Site, v: Visitor): void {
   if (effects === undefined) return;
-  effects.forEach((e, i) => visitEffect(e, joinPath(path, i), site, v));
+  effects.forEach((e, i) => {
+    visitEffect(e, joinPath(path, i), site, v);
+  });
 }
 
 export function visitEffect(effect: Effect, path: string, site: Site, v: Visitor): void {

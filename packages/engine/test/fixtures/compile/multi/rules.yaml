@@ -1,0 +1,7 @@
+rules:
+  - id: wait_in_garden
+    on: { verb: wait }
+    when:
+      - at: garden
+      - flag: bell_rung
+    do: { end: done }

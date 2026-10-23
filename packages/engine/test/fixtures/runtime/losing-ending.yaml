@@ -1,0 +1,53 @@
+# Fixture: a reachable ending with win: false. explore() must report it.
+format: lexvm-pack/1
+id: losing-ending
+version: 1.0.0
+title: Losing Ending
+description: A lab with a lever and a suspicious vial.
+language: en
+author: LexVM tests
+license: CC0-1.0
+start:
+  room: lab
+rooms:
+  lab:
+    name: Lab
+    description: A cramped lab. A {vial} glows on the bench.
+objects:
+  vial:
+    name: vial
+    location: lab
+    portable: true
+  lever:
+    name: lever
+    location: lab
+    verbs: [pull]
+    roomText: A big {lever} sticks out of the wall.
+rules:
+  - id: drink
+    on: { verb: use, object: vial }
+    do: { end: poisoned }
+  - id: pull_lever
+    on: { verb: pull, object: lever }
+    do: { end: escaped }
+  - id: never
+    on: { verb: push, object: lever }
+    when: { flag: impossible }
+    do: { say: Unreachable. }
+flags:
+  impossible: false
+endings:
+  escaped:
+    title: Escaped
+    text: You escape.
+    win: true
+  poisoned:
+    title: Poisoned
+    text: That was a mistake.
+    win: false
+  forgotten:
+    title: Forgotten
+    text: Nobody ever gets here.
+    win: true
+walkthrough:
+  - pull lever

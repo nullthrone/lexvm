@@ -184,9 +184,11 @@ write one. To be merged, a content pack must:
 - **Declare its language** in `language` (BCP 47, currently `de` or `en`).
 - **Declare its license** in `license` as an SPDX identifier. We recommend
   `CC-BY-4.0` for community packs (see
-  [ADR 0010](docs/adr/0010-content-licensing.md)). You must have the right to
-  license the content: no text copied from other works, no characters or
-  settings from copyrighted franchises.
+  [ADR 0010](docs/adr/0010-content-licensing.md)). The license must allow the
+  project to redistribute the pack, including bundled into the player and
+  release files, so non-commercial and no-derivatives licenses are not
+  accepted. You must have the right to license the content: no text copied
+  from other works, no characters or settings from copyrighted franchises.
 - **State its provenance honestly** in `author` and `generator`. If an LLM
   wrote or co-wrote the pack, say so in `generator.pipeline` (for example
   "prompt kit, one-shot" or "lexvm generate") and describe the human editing

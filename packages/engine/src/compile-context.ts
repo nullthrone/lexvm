@@ -323,7 +323,8 @@ const EXPECTATIONS: Partial<Record<NodeKind, string>> = {
   effect: 'an effect: an object with exactly one key such as { say: "…" } or { set: door_open }',
   text: 'a non-empty string, or a list of variants like [{ when: { flag: x }, text: "…" }, { text: "…" }]',
   variant: 'a text variant { when?: conditions, text: "…" }',
-  trigger: "a command trigger { verb: pull, object: red_book } or an event trigger { event: start | enter | turn, room? }",
+  trigger:
+    "a command trigger { verb: pull, object: red_book } or an event trigger { event: start | enter | turn, room? }",
   rooms: "a map from room id to room",
   objects: "a map from object id to object",
   verbs: "a map from verb id to verb",

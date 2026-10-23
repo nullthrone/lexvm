@@ -43,8 +43,8 @@ Issues that need a decision are labelled `type: decision`.
 3. On merge, the status becomes **Accepted** (or **Rejected**, which is also
    worth recording).
 4. Accepted ADRs are not rewritten. To change a decision, write a new ADR
-   and set the old one to **Superseded by [NNNN](NNNN-title.md)**. Fixing
-   typos and links is fine.
+   and set the old one's status to `Superseded by NNNN`, linking the new ADR.
+   Fixing typos and links is fine.
 
 Statuses: Proposed, Accepted, Rejected, Deprecated, Superseded.
 

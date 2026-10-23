@@ -16,6 +16,8 @@
     "dev": "npm run packs && npm run dev -w @lexvm/web",
     "packs": "npm run lexvm -- build packs --out apps/web/public/packs",
     "check:packs": "npm run lexvm -- check packs",
+    "schema": "npm run lexvm -- schema",
+    "prompts": "npm run lexvm -- prompt --stage oneshot --out prompts/oneshot.md",
     "lexvm": "tsx packages/cli/src/main.ts",
     "test": "vitest run",
     "typecheck": "tsc -p packages/engine && tsc -p packages/cli && tsc -p apps/web",

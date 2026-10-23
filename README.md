@@ -178,11 +178,17 @@ Progress: [milestones](https://github.com/nullthrone/lexvm/milestones) and
 ## Deployment
 
 Every push to `main` builds the player and deploys it to GitHub Pages
-([`.github/workflows/pages.yml`](.github/workflows/pages.yml)). A maintainer
-must enable this once: **Settings → Pages → Build and deployment → Source =
-GitHub Actions**. Pushing a tag `v*` creates a GitHub Release with
-`lexvm-offline.html` and the compiled content packs attached
+([`.github/workflows/pages.yml`](.github/workflows/pages.yml)). Pushing a tag
+`v*` creates a GitHub Release with `lexvm-offline.html`, the compiled content
+packs and a `SHA256SUMS.txt` attached
 ([`.github/workflows/release.yml`](.github/workflows/release.yml)).
+
+One-time repository settings for maintainers:
+
+- **Settings → Pages → Build and deployment → Source = GitHub Actions**, so
+  the Pages workflow can deploy.
+- **Settings → Code security → Private vulnerability reporting = enabled**,
+  which [SECURITY.md](SECURITY.md) relies on.
 
 ## Contributing
 

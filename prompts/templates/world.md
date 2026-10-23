@@ -6,7 +6,9 @@ Build the **world** of the adventure from the concept and the puzzle design belo
 Return exactly these three files:
 
 1. `pack.yaml` — metadata and global declarations:
-   - `format: lexvm-pack/1`, `id: {{PACK_ID}}`, `version: 1.0.0`, `title`, optional `subtitle`, `description`, `language` ({{LANG}}), `playtime: {{MINUTES}}`, `policy: forgiving`, `maxScore` (the total from the puzzle design);
+   - `format: lexvm-pack/1`, `version: 1.0.0`, `title`, optional `subtitle`, `description`, `playtime: {{MINUTES}}`, `policy: forgiving`, `maxScore` (the total from the puzzle design);
+   - `id`: {{PACK_ID}};
+   - `language`: {{LANG}};
    - `author`: {{AUTHOR}};
    - `license`: {{LICENSE}};
    - `generator`: {{GENERATOR}};

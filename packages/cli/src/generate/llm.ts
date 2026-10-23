@@ -53,8 +53,9 @@ export interface AnthropicConfig {
   /** Base delay for mid-stream retries in ms (doubles each attempt). */
   backoffMs?: number;
   log?: (line: string) => void;
-  /** Injection point for tests. */
+  /** Injection points for tests. */
   sleep?: (ms: number) => Promise<void>;
+  fetch?: typeof fetch;
 }
 
 /** Thrown for failures that retrying cannot fix (refusal, authentication, bad request). */
@@ -95,6 +96,7 @@ export function createAnthropicComplete(config: AnthropicConfig): CompleteFn {
     maxRetries: 4,
     // Streaming keeps the connection alive; this only bounds a stalled request.
     timeout: 30 * 60 * 1000,
+    ...(config.fetch ? { fetch: config.fetch } : {}),
   });
   const log = config.log ?? (() => {});
   const sleep = config.sleep ?? defaultSleep;
@@ -108,7 +110,11 @@ export function createAnthropicComplete(config: AnthropicConfig): CompleteFn {
           model: config.model,
           max_tokens: config.maxTokens,
           ...(options.system
-            ? { system: [{ type: "text" as const, text: options.system, cache_control: { type: "ephemeral" as const } }] }
+            ? {
+                system: [
+                  { type: "text" as const, text: options.system, cache_control: { type: "ephemeral" as const } },
+                ],
+              }
             : {}),
           messages: [{ role: "user", content: prompt }],
           ...(config.thinking ? { thinking: { type: "adaptive" as const } } : {}),

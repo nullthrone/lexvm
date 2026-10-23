@@ -5,8 +5,8 @@
 
 ## Context
 
-LexVM is started by German-speaking maintainers, and the first full content
-pack is German. At the same time, the project is meant for an international
+LexVM's first audience is German-speaking, and the first full content pack
+is German. At the same time, the project is meant for an international
 community of contributors, and the engine is meant to play games in more than
 one language.
 

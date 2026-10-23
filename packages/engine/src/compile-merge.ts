@@ -90,7 +90,8 @@ export function mergeSources(sources: readonly ParsedSource[]): MergeResult {
         continue;
       }
       if (v === null || v === undefined) continue; // an empty section adds nothing
-      const firstFile = origin.kind === "map" ? origin.first : origin.kind === "array" ? origin.parts[0]!.file : origin.file;
+      const firstFile =
+        origin.kind === "map" ? origin.first : origin.kind === "array" ? origin.parts[0]!.file : origin.file;
       if (origin.kind === "map" && isPlainMap(v) && isPlainMap(current)) {
         for (const [sub, subValue] of Object.entries(v)) {
           const owner = origin.owners.get(sub);

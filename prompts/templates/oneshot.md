@@ -7,7 +7,7 @@ LexVM is an offline text-adventure player for phones and tablets. Players mostly
 
 ## Parameters
 
-- **Pack language:** {{LANG}}
+- **Pack language:** {{LANG}}.
 - **Target play time:** about {{MINUTES}} minutes, unless the idea asks for a different length.
 - **Policy:** `forgiving` — no deaths, no losing endings, no dead ends.
 
@@ -54,7 +54,7 @@ Metadata:
 
 # When the user sends diagnostics
 
-The user will load your pack into LexVM (`lexvm check` or the import screen of the app) and may paste back diagnostics such as `[error] walkthrough.rejected @ walkthrough[12]: …`. Then fix every error and as many warnings as you sensibly can, and answer with the complete corrected `pack.yaml` again in a single ```` ```yaml ```` block, followed by one line per fix. Never answer with partial snippets. If a diagnostic reveals a design problem (for example a dead end), fix the design, not only the symptom.
+The user will load your pack into LexVM (`lexvm check` or the import screen of the app) and may paste back diagnostics. Each one has a severity (error, warning), a code such as `walkthrough.rejected`, a location such as `walkthrough[12]` or `rooms.hall.exits.north` (sometimes with a line number), and a message that usually says how to fix it. Then fix every error and as many warnings as you sensibly can, and answer with the complete corrected `pack.yaml` again in a single ```` ```yaml ```` block, followed by one line per fix. Never answer with partial snippets. A rejected walkthrough step often means an earlier step is missing (a door still closed, a dialogue still open). If a diagnostic reveals a design problem (for example a dead end), fix the design, not only the symptom.
 
 # The idea
 
