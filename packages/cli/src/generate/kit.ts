@@ -15,7 +15,7 @@ export const TEMPLATE_NAMES = ["oneshot", "system", "concept", "puzzles", "world
 export type TemplateName = (typeof TEMPLATE_NAMES)[number];
 
 export interface PromptKit {
-  /** Full normative spec (docs/spec/content-pack.md), headings demoted for embedding. */
+  /** Full normative spec (docs/spec/content-pack.md), headings demoted one level for embedding. */
   spec: string;
   /** Condensed authoring guide: the `guide` regions of docs/authoring/guide.md. */
   guide: string;
@@ -94,8 +94,8 @@ export async function loadPromptKit(root: string = REPO_ROOT): Promise<PromptKit
     throw new Error(`${KIT_SOURCES.guide} has no 'guide' or 'checklist' prompt regions`);
   }
   return {
-    spec: demoteHeadings(specRaw.trim(), 2),
-    guide: demoteHeadings(guide, 1),
+    spec: demoteHeadings(specRaw.trim(), 1),
+    guide,
     checklist,
     example: cleanExample(exampleRaw),
     templates: Object.fromEntries(entries) as Record<TemplateName, string>,
