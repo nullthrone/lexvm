@@ -2,13 +2,20 @@
 
 import { listedExits, offeredPredicate } from "./affordances.ts";
 import { formatCommand, parseCanonical } from "./commands.ts";
-import { availableOptions } from "./effects.ts";
+import { activeOptions } from "./effects.ts";
 import { indexPack } from "./pack-index.ts";
 import { isHeld, presentObjects } from "./presence.ts";
 import { newGame, step } from "./runtime.ts";
 import type { Pack } from "./schema.ts";
 import { renderPlain } from "./text.ts";
-import type { Command, Diagnostic, GameState, WalkthroughReport, WalkthroughStep } from "./types.ts";
+import type { Command, Diagnostic, GameState, OutputBlock, Span, WalkthroughReport, WalkthroughStep } from "./types.ts";
+
+/**
+ * Longest plain-text output kept per walkthrough step. The output is for
+ * diagnostics; keeping every step's full text would let a small pack (a long
+ * `say` repeated by many steps) fill the heap.
+ */
+export const STEP_OUTPUT_MAX = 4000;
 
 /**
  * Replay pack.walkthrough from a new game. ok = all steps accepted and a
@@ -61,7 +68,7 @@ export function runWalkthrough(pack: Pack): WalkthroughReport {
           `cannot do it. ${offerHint(pack, state, cmd)}`,
       });
     }
-    steps.push({ command: formatCommand(cmd), status: result.status, output: renderPlain(result.output) });
+    steps.push({ command: formatCommand(cmd), status: result.status, output: clippedPlain(result.output) });
     if (result.status === "rejected") {
       const reason = result.output.map((b) => b.spans.map((s) => s.text).join("")).join(" ");
       diagnostics.push({
@@ -91,6 +98,33 @@ export function runWalkthrough(pack: Pack): WalkthroughReport {
     });
   }
   return { ok: !failed && won, steps, ending, score: state.score, diagnostics };
+}
+
+/** renderPlain of the first STEP_OUTPUT_MAX characters of span text, with " …" when cut. */
+function clippedPlain(blocks: OutputBlock[]): string {
+  const kept: OutputBlock[] = [];
+  let room = STEP_OUTPUT_MAX;
+  let cut = false;
+  for (const block of blocks) {
+    if (room <= 0) {
+      cut = true;
+      break;
+    }
+    const spans: Span[] = [];
+    for (const span of block.spans) {
+      if (span.text.length > room) {
+        spans.push({ text: span.text.slice(0, room) });
+        room = 0;
+        cut = true;
+        break;
+      }
+      spans.push(span);
+      room -= span.text.length;
+    }
+    kept.push({ kind: block.kind, spans });
+  }
+  const text = renderPlain(kept);
+  return cut ? `${text} …` : text;
 }
 
 function isOffered(pack: Pack, state: GameState, cmd: Command): boolean {
@@ -128,7 +162,7 @@ function describeSituation(pack: Pack, state: GameState): string {
   ];
   if (state.dialogue) {
     const { id, node } = state.dialogue;
-    const options = availableOptions(pack, state, id, pack.dialogues[id]?.nodes[node]);
+    const options = activeOptions(pack, state);
     parts.push(
       `Active dialogue: ${id}, node ${node}; only "choose <option>" is accepted. Options: ${
         options.map((o) => o.id).join(", ") || "none"

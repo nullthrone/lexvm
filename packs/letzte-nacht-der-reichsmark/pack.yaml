@@ -180,8 +180,8 @@ hints:
   - id: h_verhoer
     until: { has: clue_gestaendnis }
     steps:
-      - Kröger hat vier Behauptungen. Für jede brauchst du den einen Beweis, der sie widerlegt. Lies »Krögers Version« in deinem Notizbuch.
-      - Schwund → »Kein Schwund«. Mitternacht → »Jakobs Zählheft«. Dieb → »Untergeschoben«. Die Brodersens → »Zweihundert Reichsmark«.
+      - Kröger hat vier Behauptungen, und jede widerlegt genau ein Beweis. Lies »Krögers Version« im Notizbuch.
+      - Schwund → »Kein Schwund«. Mitternacht → »Jakobs Zählheft«. Dieb → »Untergeschoben«. Brodersens → »Zweihundert Reichsmark«.
       - Sprich mit Kröger, wähle »Reden wir über Donnerstagnacht« und leg die Beweise in dieser Reihenfolge vor.
   - id: h_ueberfahrt
     until: { flag: tadeusz_rudert }
@@ -293,7 +293,6 @@ walkthrough:
   - choose t_ueberfahrt
   - go ueberfahrt
   - go up
-  - take sturmlaterne
   - use streichhoelzer sturmlaterne
   - open bodentuer
   - go up

@@ -20,11 +20,12 @@
  *    the source phrase.
  */
 import { listedExits } from "./affordances.ts";
-import { availableOptions } from "./effects.ts";
+import { activeOptions } from "./effects.ts";
 import { allCatalogs, fill, type Messages, messagesFor } from "./messages/index.ts";
 import { indexPack } from "./pack-index.ts";
 import { presentObjects } from "./presence.ts";
 import type { Pack } from "./schema.ts";
+import { plainText } from "./text.ts";
 import type { Command, GameState, MetaCommand, ParseResult } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -92,10 +93,13 @@ function stem(word: string, lang: string): string {
 // ---------------------------------------------------------------------------
 
 interface Vocab {
-  /** Stemmed content words of the name. */
+  /** Folded content words of the name, not stemmed. */
   name: string[];
-  /** Stemmed content words of each synonym. */
+  /** Folded content words of each synonym, not stemmed. */
   syns: string[][];
+  /** Folded words of the name and the synonyms. */
+  surface: Set<string>;
+  /** The same words stemmed. */
   words: Set<string>;
 }
 
@@ -146,6 +150,9 @@ const LEADING_PREPS = [
   "back",
   "zurück",
 ];
+
+/** Direction abbreviations accepted in every language. */
+const COMPASS_LETTERS: ReadonlySet<string> = new Set(["n", "s", "e", "w"]);
 
 const cache = new WeakMap<Pack, Tables>();
 
@@ -202,6 +209,9 @@ function buildTables(pack: Pack): Tables {
     for (const [exitId, words] of Object.entries(cat.vocab.directions)) {
       for (const w of words) {
         const f = fold(w);
+        // Short words of another language are often common words here ("no", "so", "o" in English):
+        // of those, only the compass letters carry over.
+        if (cat.lang !== lang && f.length < 3 && !COMPASS_LETTERS.has(f)) continue;
         if (!directions.has(f)) directions.set(f, exitId);
       }
     }
@@ -238,37 +248,58 @@ function buildTables(pack: Pack): Tables {
   return t;
 }
 
-function contentWords(t: Tables, phrase: string): string[] {
+/** Folded words without stopwords, not stemmed. */
+function surfaceWords(t: Tables, phrase: string): string[] {
   return fold(phrase)
     .split(" ")
-    .filter((w) => w && !t.stop.has(w))
-    .map((w) => stem(w, t.lang));
+    .filter((w) => w && !t.stop.has(w));
+}
+
+function contentWords(t: Tables, phrase: string): string[] {
+  return surfaceWords(t, phrase).map((w) => stem(w, t.lang));
 }
 
 function makeVocab(t: Tables, name: string, synonyms: readonly string[]): Vocab {
-  const nameWords = contentWords(t, name);
-  const syns = synonyms.map((s) => contentWords(t, s)).filter((s) => s.length > 0);
-  const words = new Set<string>(nameWords);
-  for (const s of syns) for (const w of s) words.add(w);
-  return { name: nameWords, syns, words };
+  const nameWords = surfaceWords(t, name);
+  const syns = synonyms.map((s) => surfaceWords(t, s)).filter((s) => s.length > 0);
+  const surface = new Set<string>(nameWords);
+  for (const s of syns) for (const w of s) surface.add(w);
+  const words = new Set<string>([...surface].map((w) => stem(w, t.lang)));
+  return { name: nameWords, syns, surface, words };
+}
+
+/** Input words for scoring: folded as typed, and stemmed. */
+interface Words {
+  surface: readonly string[];
+  stems: readonly string[];
+}
+
+function inputWords(t: Tables, tokens: readonly Token[]): Words {
+  const surface = tokens.map((x) => x.f);
+  return { surface, stems: surface.map((w) => stem(w, t.lang)) };
 }
 
 /**
- * 0 when some input word is not part of the vocabulary. Otherwise 10 per
- * exact word, 6 per word that ends a longer vocabulary word (German
- * compounds: "schluessel" in "messingschluessel"), +5 when the input is
- * exactly the name, +3 when it is exactly a synonym.
+ * 0 when some input word is not part of the vocabulary. Otherwise 10 per word
+ * as written, 8 per word that matches only after stemming ("book" in
+ * "books"), 6 per word that ends a longer vocabulary word (German compounds:
+ * "schluessel" in "messingschluessel"), +5 when the input is exactly the
+ * name, +3 when it is exactly a synonym. Exact means as written: "book"
+ * names "red book" rather than "books".
  */
-function score(v: Vocab, words: readonly string[]): number {
-  if (words.length === 0) return 0;
+function score(v: Vocab, input: Words): number {
+  const { surface, stems } = input;
+  if (stems.length === 0) return 0;
   let s = 0;
-  for (const w of words) {
-    if (v.words.has(w)) s += 10;
+  for (let i = 0; i < stems.length; i++) {
+    const w = stems[i]!;
+    if (v.surface.has(surface[i]!)) s += 10;
+    else if (v.words.has(w)) s += 8;
     else if (w.length >= 4 && [...v.words].some((x) => x.length > w.length && x.endsWith(w))) s += 6;
     else return 0;
   }
-  if (sameWords(words, v.name)) s += 5;
-  else if (v.syns.some((syn) => sameWords(words, syn))) s += 3;
+  if (sameWords(surface, v.name)) s += 5;
+  else if (v.syns.some((syn) => sameWords(surface, syn))) s += 3;
   return s;
 }
 
@@ -305,12 +336,15 @@ export function parseCommand(pack: Pack, state: GameState, input: string): Parse
   if (raw === "?") return { ok: true, meta: "help" };
   const tokens = tokenize(raw);
   if (tokens.length === 0) return fail("empty", m.parse.empty);
-  const meta = t.meta.get(tokens.map((x) => x.f).join(" "));
-  if (meta) return { ok: true, meta };
-
   const ix = indexPack(pack);
   const present = presentObjects(pack, state, ix.objectIds);
   const pc: PCtx = { pack, state, t, present: [...present.room, ...present.inv] };
+  const meta = t.meta.get(tokens.map((x) => x.f).join(" "));
+  if (meta) {
+    // An exit labelled like a meta word ("Laden", a shop) is on screen; it wins.
+    const exit = state.dialogue ? null : labelledExit(pc, tokens);
+    return exit ? command({ verb: "go", object: exit }) : { ok: true, meta };
+  }
   if (state.dialogue) return parseChoice(pc, tokens);
 
   const bare = exactExit(pc, tokens);
@@ -318,6 +352,8 @@ export function parseCommand(pack: Pack, state: GameState, input: string): Parse
 
   const vm = matchVerb(t, tokens);
   if (!vm) return fail("unknown-verb", fill(m.parse.unknownVerb, { word: tokens[0]?.d ?? "" }));
+  // A known phrase without a matching command ("schließ … ab": there is no lock verb).
+  if (vm.verb === "@none") return fail("unknown-verb", fill(m.parse.unknownVerb, { word: vm.words }));
   return parseArgs(pc, vm.verb, vm.rest);
 }
 
@@ -325,25 +361,36 @@ function command(cmd: Command): ParseResult {
   return { ok: true, command: cmd };
 }
 
-function matchVerb(t: Tables, tokens: Token[]): { verb: string; rest: Token[] } | null {
+interface VerbMatch {
+  verb: string;
+  rest: Token[];
+  /** The verb phrase as typed, with " … particle" for separable verbs. */
+  words: string;
+}
+
+function matchVerb(t: Tables, tokens: Token[]): VerbMatch | null {
   for (let len = Math.min(t.maxVerbWords, tokens.length); len >= 1; len--) {
     const phrase = tokens
       .slice(0, len)
       .map((x) => x.f)
+      .join(" ");
+    const words = tokens
+      .slice(0, len)
+      .map((x) => x.d)
       .join(" ");
     const byParticle = t.particleVerbs.get(phrase);
     if (byParticle) {
       const last = tokens[tokens.length - 1];
       const next = tokens[len];
       if (tokens.length > len && last && byParticle.has(last.f)) {
-        return { verb: byParticle.get(last.f) as string, rest: tokens.slice(len, -1) };
+        return { verb: byParticle.get(last.f) as string, rest: tokens.slice(len, -1), words: `${words} … ${last.d}` };
       }
       if (next && byParticle.has(next.f)) {
-        return { verb: byParticle.get(next.f) as string, rest: tokens.slice(len + 1) };
+        return { verb: byParticle.get(next.f) as string, rest: tokens.slice(len + 1), words: `${words} ${next.d}` };
       }
     }
     const verb = t.verbs.get(phrase);
-    if (verb !== undefined) return { verb, rest: tokens.slice(len) };
+    if (verb !== undefined) return { verb, rest: tokens.slice(len), words };
   }
   return null;
 }
@@ -484,12 +531,12 @@ function objectArg(pc: PCtx, raw: Token[], verbLabel: string, optional: boolean)
 function resolveObject(pc: PCtx, words: readonly Token[]): ObjRes {
   const { t, pack } = pc;
   const m = t.m;
-  const stems = words.map((x) => stem(x.f, t.lang));
+  const input = inputWords(t, words);
   let best = 0;
   let ids: string[] = [];
   for (const id of pc.present) {
     const v = t.objects.get(id);
-    const s = v ? score(v, stems) : 0;
+    const s = v ? score(v, input) : 0;
     if (s === 0 || s < best) continue;
     if (s > best) {
       best = s;
@@ -509,7 +556,7 @@ function resolveObject(pc: PCtx, words: readonly Token[]): ObjRes {
     );
   }
   for (const [id, v] of t.objects) {
-    if (!pc.present.includes(id) && score(v, stems) > 0) return fail("not-here", m.parse.notHere);
+    if (!pc.present.includes(id) && score(v, input) > 0) return fail("not-here", m.parse.notHere);
   }
   return fail("unknown-object", fill(m.parse.unknownObject, { words: words.map((x) => x.d).join(" ") }));
 }
@@ -593,6 +640,15 @@ function exactExit(pc: PCtx, tokens: readonly Token[]): string | null {
     if (exits.length === 1 && only && only.id !== "out") return only.id;
   }
   if (dir !== undefined) return dir;
+  return labelledExit(pc, tokens);
+}
+
+/** The listed exit whose label or synonym is exactly the input. */
+function labelledExit(pc: PCtx, tokens: readonly Token[]): string | null {
+  const phrase = content(pc.t, tokens)
+    .map((x) => x.f)
+    .join(" ");
+  if (phrase === "") return null;
   for (const { id, exit } of listedExits(pc.pack, pc.state)) {
     const phrases = [exit.label, ...(exit.synonyms ?? [])].filter((p): p is string => p !== undefined).map(fold);
     if (phrases.includes(phrase)) return id;
@@ -620,7 +676,7 @@ function lenientExit(pc: PCtx, tokens: Token[]): string | ParseError | null {
   const exits = listedExits(pack, state);
   const current = pack.rooms[state.room];
   for (const v of variants) {
-    const stems = content(t, v).map((x) => stem(x.f, t.lang));
+    const input = inputWords(t, content(t, v));
     let best = 0;
     let ids: string[] = [];
     for (const { id, exit } of exits) {
@@ -628,7 +684,7 @@ function lenientExit(pc: PCtx, tokens: Token[]): string | ParseError | null {
       const dest = pack.rooms[exit.to];
       if (dest) names.push(dest.name);
       const vocab = makeVocab(t, names.join(" "), [...(exit.synonyms ?? []), ...names]);
-      const s = score(vocab, stems);
+      const s = score(vocab, input);
       if (s > best) {
         best = s;
         ids = [id];
@@ -637,7 +693,7 @@ function lenientExit(pc: PCtx, tokens: Token[]): string | ParseError | null {
     // Several exits to the same room (a compass exit and a labelled one): any of them will do.
     const targets = new Set(ids.map((id) => exits.find((e) => e.id === id)?.exit.to));
     if (ids.length >= 1 && targets.size === 1 && ids[0] !== undefined) return ids[0];
-    if (current && stems.length > 0 && score(makeVocab(t, current.name, []), stems) > 0) {
+    if (current && input.stems.length > 0 && score(makeVocab(t, current.name, []), input) > 0) {
       return fail("unknown-object", t.m.parse.alreadyHere);
     }
     const door = content(t, v).length > 0 ? resolveObject(pc, content(t, v)) : null;
@@ -671,7 +727,7 @@ function parseChoice(pc: PCtx, tokens: Token[]): ParseResult {
   const m = t.m;
   const active = state.dialogue;
   if (!active) return fail("unknown-verb", m.parse.empty);
-  const options = availableOptions(pack, state, active.id, pack.dialogues[active.id]?.nodes[active.node]);
+  const options = activeOptions(pack, state);
   const chooseMsg = fill(m.parse.chooseOption, { n: options.length });
   const only = tokens[0];
   if (tokens.length === 1 && only && /^\d+$/.test(only.f)) {
@@ -682,13 +738,14 @@ function parseChoice(pc: PCtx, tokens: Token[]): ParseResult {
   let best = 0;
   let ids: Array<{ id: string; name: string }> = [];
   for (const o of options) {
-    const optionWords = new Set(contentWords(t, o.text));
+    const text = plainText(pack, o.text);
+    const optionWords = new Set(contentWords(t, text));
     const s = words.filter((w) => optionWords.has(w)).length;
     if (s === 0 || s < best) continue;
     if (s > best) {
       best = s;
-      ids = [{ id: o.id, name: o.text }];
-    } else ids.push({ id: o.id, name: o.text });
+      ids = [{ id: o.id, name: text }];
+    } else ids.push({ id: o.id, name: text });
   }
   const pick = ids[0];
   if (ids.length === 1 && pick) return command({ verb: "choose", object: pick.id });

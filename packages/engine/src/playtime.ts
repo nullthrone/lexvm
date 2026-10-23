@@ -247,13 +247,18 @@ function modelMinutes(n: Counts, p: Params): { min: number; expected: number } {
 /** Count everything the model needs from a pack. */
 function measure(pack: Pack): { counts: Counts; replay: Replay } {
   const r = replay(pack);
-  const seen = new Set<string>();
+  // Paragraph text → word count; repeated output (a long `say` on every step) is counted once.
+  const seen = new Map<string, number>();
   let wPath = 0;
   for (const block of r.blocks) {
     if (block.kind === "echo") continue;
     const text = blockText(block);
-    seen.add(text);
-    if (READ_KINDS.has(block.kind)) wPath += countWords(text);
+    let words = seen.get(text);
+    if (words === undefined) {
+      words = READ_KINDS.has(block.kind) ? countWords(text) : 0;
+      seen.set(text, words);
+    }
+    if (READ_KINDS.has(block.kind)) wPath += words;
   }
 
   const counted = new Set<string>();

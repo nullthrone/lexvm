@@ -3,7 +3,7 @@
  * of the right kind; rooms, exits and objects must be well-formed.
  */
 import { markupRefs, type PackIndex, walkPack } from "./analyze-walk.ts";
-import { type DiagnosticList, didYouMean, joinPath, listIds } from "./diagnostics.ts";
+import { type DiagnosticList, joinPath, listIds } from "./diagnostics.ts";
 import { CORE_VERBS, type Id, INVENTORY, NOWHERE, RESERVED_IDS, STANDARD_EXITS } from "./schema.ts";
 
 const STANDARD_EXIT_SET = new Set<string>(STANDARD_EXITS);
@@ -31,7 +31,7 @@ export class Refs {
       this.out.error(
         "ref.unknown-room",
         path,
-        `Unknown room "${id}".${didYouMean(id, ix.rooms)} Use one of: ${listIds(ix.rooms)}, or add rooms.${id}.`,
+        `Unknown room "${id}".${this.out.suggest(id, ix.rooms)} Use one of: ${listIds(ix.rooms)}, or add rooms.${id}.`,
       );
     }
     return false;
@@ -48,7 +48,7 @@ export class Refs {
       this.out.error(
         "ref.unknown-object",
         path,
-        `Unknown object "${id}".${didYouMean(id, ix.objects)} Fix the id or add objects.${id} with a name and a location.`,
+        `Unknown object "${id}".${this.out.suggest(id, ix.objects)} Fix the id or add objects.${id} with a name and a location.`,
       );
     }
     return false;
@@ -70,7 +70,7 @@ export class Refs {
     this.out.error(
       "ref.unknown-location",
       path,
-      `Unknown location "${id}".${didYouMean(id, [...ix.rooms, ...ix.objects, ...RESERVED_IDS])} A location is a room id, a container object id, "${INVENTORY}" or "${NOWHERE}".`,
+      `Unknown location "${id}".${this.out.suggest(id, [...ix.rooms, ...ix.objects, ...RESERVED_IDS])} A location is a room id, a container object id, "${INVENTORY}" or "${NOWHERE}".`,
     );
     return false;
   }
@@ -80,7 +80,7 @@ export class Refs {
     this.out.error(
       "ref.unknown-flag",
       path,
-      `Undeclared flag "${id}".${didYouMean(id, this.ix.flags)} Declare every flag with its initial value under flags: (e.g. ${id}: false).`,
+      `Undeclared flag "${id}".${this.out.suggest(id, this.ix.flags)} Declare every flag with its initial value under flags: (e.g. ${id}: false).`,
     );
   }
 
@@ -89,7 +89,7 @@ export class Refs {
     this.out.error(
       "ref.unknown-counter",
       path,
-      `Undeclared counter "${id}".${didYouMean(id, this.ix.counters)} Declare every counter with its initial value under counters: (e.g. ${id}: 0).`,
+      `Undeclared counter "${id}".${this.out.suggest(id, this.ix.counters)} Declare every counter with its initial value under counters: (e.g. ${id}: 0).`,
     );
   }
 
@@ -99,7 +99,7 @@ export class Refs {
     this.out.error(
       "ref.unknown-verb",
       path,
-      `Unknown verb "${id}".${didYouMean(id, this.ix.verbs)} Core verbs: ${CORE_VERBS.join(", ")}. Pack verbs: ${listIds(packVerbs)}. Declare new verbs under verbs: with a label.`,
+      `Unknown verb "${id}".${this.out.suggest(id, this.ix.verbs)} Core verbs: ${CORE_VERBS.join(", ")}. Pack verbs: ${listIds(packVerbs)}. Declare new verbs under verbs: with a label.`,
     );
     return false;
   }
@@ -109,7 +109,7 @@ export class Refs {
     this.out.error(
       "ref.unknown-dialogue",
       path,
-      `Unknown dialogue "${id}".${didYouMean(id, this.ix.dialogues)} Dialogues: ${listIds(this.ix.dialogues)}.`,
+      `Unknown dialogue "${id}".${this.out.suggest(id, this.ix.dialogues)} Dialogues: ${listIds(this.ix.dialogues)}.`,
     );
   }
 
@@ -118,7 +118,7 @@ export class Refs {
     this.out.error(
       "ref.unknown-ending",
       path,
-      `Unknown ending "${id}".${didYouMean(id, this.ix.endings)} Endings: ${listIds(this.ix.endings)}. Add endings.${id} with title, text and win.`,
+      `Unknown ending "${id}".${this.out.suggest(id, this.ix.endings)} Endings: ${listIds(this.ix.endings)}. Add endings.${id} with title, text and win.`,
     );
   }
 }
@@ -184,7 +184,7 @@ function checkLogicRefs(refs: Refs): void {
         else if (ix.rooms.has(ref.id))
           message = `${ref.raw} refers to a room; markup can only refer to objects. Remove the braces or refer to an object.`;
         else
-          message = `${ref.raw} refers to unknown object "${ref.id}".${didYouMean(ref.id, ix.objects)} Markup {id} must name an object id; to show plain text, remove the braces.`;
+          message = `${ref.raw} refers to unknown object "${ref.id}".${out.suggest(ref.id, ix.objects)} Markup {id} must name an object id; to show plain text, remove the braces.`;
         out.error("text.unknown-ref", path, message);
       }
       // Braces are reserved for markup; a stray one is almost always a typo.
@@ -378,7 +378,7 @@ function checkRuleTriggers(refs: Refs): void {
         out.error(
           "ref.unknown-exit",
           `${p}.object`,
-          `For 'go' the object is an exit id, but no room has an exit "${on.object}".${didYouMean(on.object, ix.exits)} Exits: ${listIds(ix.exits)}.`,
+          `For 'go' the object is an exit id, but no room has an exit "${on.object}".${out.suggest(on.object, ix.exits)} Exits: ${listIds(ix.exits)}.`,
         );
       }
       return;
@@ -422,11 +422,11 @@ function checkDialogueRefs(refs: Refs): void {
         `"${dialogue.with}" is not an npc. Set npc: true on objects.${dialogue.with}.`,
       );
     }
-    if (dialogue.nodes[dialogue.start] === undefined) {
+    if (!Object.hasOwn(dialogue.nodes, dialogue.start)) {
       out.error(
         "ref.unknown-node",
         `${p}.start`,
-        `Start node "${dialogue.start}" does not exist.${didYouMean(dialogue.start, Object.keys(dialogue.nodes))} Nodes: ${listIds(Object.keys(dialogue.nodes))}.`,
+        `Start node "${dialogue.start}" does not exist.${out.suggest(dialogue.start, Object.keys(dialogue.nodes))} Nodes: ${listIds(Object.keys(dialogue.nodes))}.`,
       );
     }
   }

@@ -113,18 +113,37 @@ export function editDistance(a: string, b: string): number {
   return prev[b.length]!;
 }
 
+/** Work budget of did-you-mean suggestions, in edit-distance table cells. */
+export interface SuggestionBudget {
+  cells: number;
+}
+
+/**
+ * Edit-distance cells the suggestions of one DiagnosticList may compute
+ * (about a third of a second). A hostile pack with thousands of unknown ids
+ * would otherwise cost errors × ids comparisons; once the budget is spent,
+ * diagnostics simply carry no suggestion.
+ */
+export const SUGGESTION_BUDGET = 20_000_000;
+
 /**
  * The candidate closest to `word`, if it is plausibly a typo of it
  * (case-insensitive, at most a third of the characters differ). Ties go to
  * the earlier candidate, so results are deterministic.
  */
-export function closest(word: string, candidates: Iterable<string>): string | undefined {
+export function closest(word: string, candidates: Iterable<string>, budget?: SuggestionBudget): string | undefined {
   const w = word.toLowerCase();
   let best: string | undefined;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const candidate of candidates) {
-    const d = editDistance(w, candidate.toLowerCase());
     const limit = Math.max(1, Math.floor(Math.max(w.length, candidate.length) / 3));
+    // The edit distance is at least the difference in length.
+    if (Math.abs(w.length - candidate.length) > limit) continue;
+    if (budget !== undefined) {
+      budget.cells -= (w.length + 1) * (candidate.length + 1);
+      if (budget.cells < 0) return undefined;
+    }
+    const d = editDistance(w, candidate.toLowerCase());
     if (d <= limit && d < bestDistance) {
       best = candidate;
       bestDistance = d;
@@ -134,8 +153,8 @@ export function closest(word: string, candidates: Iterable<string>): string | un
 }
 
 /** " Did you mean "x"?" or "". */
-export function didYouMean(word: string, candidates: Iterable<string>): string {
-  const match = closest(word, candidates);
+export function didYouMean(word: string, candidates: Iterable<string>, budget?: SuggestionBudget): string {
+  const match = closest(word, candidates, budget);
   return match === undefined ? "" : ` Did you mean "${match}"?`;
 }
 
@@ -164,6 +183,11 @@ export function toSnakeId(text: string): string {
 /** Collects diagnostics with a compact API. */
 export class DiagnosticList {
   readonly items: Diagnostic[] = [];
+  private readonly budget: SuggestionBudget = { cells: SUGGESTION_BUDGET };
+  /** didYouMean within this list's suggestion budget. */
+  suggest(word: string, candidates: Iterable<string>): string {
+    return didYouMean(word, candidates, this.budget);
+  }
   error(code: string, path: string, message: string): void {
     this.items.push({ severity: "error", code, path, message });
   }

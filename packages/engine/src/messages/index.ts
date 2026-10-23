@@ -19,12 +19,16 @@ export interface Vocabulary {
    * Verb phrases: [phrase, verb id] or [phrase, verb id, particle]. With a
    * particle the entry only matches when the particle closes the sentence
    * ("mach Tür auf") or directly follows the phrase. The pseudo verb "@unlock"
-   * becomes `open x` or `use key with x`.
+   * becomes `open x` or `use key with x`; "@none" marks a phrase that has no
+   * command (the parser reports it as an unknown verb).
    */
   verbs: Array<[string, string] | [string, string, string]>;
   /** Words that mean "examine" only when the pack has no `read` verb ("lies", "read"). */
   readWords: string[];
-  /** Direction words for standard exits. The parser accepts the words of all languages. */
+  /**
+   * Direction words for standard exits. The parser also accepts the words of
+   * the other languages, except their abbreviations other than n, s, e, w.
+   */
   directions: Record<StandardExit, string[]>;
   stopwords: string[];
   /** Prepositions that separate the two objects of a two-object command. */

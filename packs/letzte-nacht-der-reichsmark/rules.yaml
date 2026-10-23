@@ -63,7 +63,10 @@ rules:
     on: { verb: lesen, object: wachbude }
     when: { has: clue_zaehlheft }
     do:
-      - say: "Tadeusz schiebt dir das Register hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+      - say:
+          - when: { flag: tadeusz_rudert }
+            text: "Das Register liegt offen auf dem Tisch. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+          - text: "Tadeusz schiebt dir das Register hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
 
   - id: lesen_wachbude
     on: { verb: lesen, object: wachbude }
@@ -625,10 +628,18 @@ rules:
     do:
       - say: "»Behalten Sie es.«"
 
+  - id: show_paeckchen_kroeger
+    on: { verb: show, object: zigarettenpaeckchen, with: kroeger }
+    do:
+      - say:
+          - when: { has: clue_gestaendnis }
+            text: Kröger sieht weg. »Stecken Se das ein. Ich hab alles gesagt.«
+          - text: Kröger sieht kurz hin, dann in sein Glas. »Englische. Gibt's an jeder Ecke.«
+
   - id: show_kroeger
     on: { verb: show, with: kroeger }
     do:
-      - say: Kröger schiebt dein Notizbuch weg. »Wenn Se was wollen, reden Se mit mir.«
+      - say: Kröger sieht nicht hin. »Wenn Se was wollen, reden Se mit mir.«
 
   - id: give_kroeger
     on: { verb: give, with: kroeger }
@@ -676,7 +687,7 @@ rules:
   - id: show_jakob
     on: { verb: show, with: jakob }
     do:
-      - say: "»Reden Sie mit mir, Voss. Nicht mit Ihrem Notizbuch.«"
+      - say: Jakob blinzelt ins Licht. »Reden Sie mit mir, Voss. Ich seh nicht mehr gut.«
 
   - id: give_jakob
     on: { verb: give, with: jakob }
@@ -686,7 +697,7 @@ rules:
   - id: show_asmussen
     on: { verb: show, with: asmussen }
     do:
-      - say: "»Papier, Voss. Ich handle mit Kaffee.«"
+      - say: Asmussen sieht nicht einmal hin. »Ich kaufe nichts, Voss.«
 
   - id: give_asmussen
     on: { verb: give, with: asmussen }

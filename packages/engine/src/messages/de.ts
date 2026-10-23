@@ -179,6 +179,8 @@ export const de: Messages = {
       ["ablegen", "drop"],
       ["leg", "drop", "ab"],
       ["lege", "drop", "ab"],
+      ["leg", "drop", "hin"],
+      ["lege", "drop", "hin"],
       ["lass", "drop", "fallen"],
       ["lasse", "drop", "fallen"],
       ["wirf", "drop", "weg"],
@@ -191,6 +193,9 @@ export const de: Messages = {
       ["mache", "open", "auf"],
       ["schließ", "@unlock", "auf"],
       ["schließe", "@unlock", "auf"],
+      // There is no lock verb: "schließ Tür ab" must not close the door instead.
+      ["schließ", "@none", "ab"],
+      ["schließe", "@none", "ab"],
       ["aufschließen", "@unlock"],
       ["entriegle", "@unlock"],
       ["entriegel", "@unlock"],
@@ -329,7 +334,8 @@ export const de: Messages = {
     sourcePreps: ["aus", "von", "vom"],
     particles: ["auf", "an", "ab", "aus", "um", "zu", "weg", "hin", "her", "nach"],
     meta: {
-      undo: ["zurück", "rückgängig", "undo"],
+      // Not "zurück": players mean "go back" by it.
+      undo: ["rückgängig", "undo"],
       restart: ["neustart", "neu starten", "restart"],
       hint: ["hinweis", "tipp", "hint"],
       help: ["hilfe", "help"],

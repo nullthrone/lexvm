@@ -3,7 +3,7 @@
  * room reachability and dialogue structure.
  */
 import { type PackIndex, walkPack } from "./analyze-walk.ts";
-import type { DiagnosticList } from "./diagnostics.ts";
+import { type DiagnosticList, listIds } from "./diagnostics.ts";
 import type { CommandTrigger, Condition, Conditions, Effects, Id, Rule } from "./schema.ts";
 
 function ruleName(rule: Rule, index: number): string {
@@ -12,15 +12,6 @@ function ruleName(rule: Rule, index: number): string {
 
 function isCommandTrigger(on: Rule["on"]): on is CommandTrigger {
   return "verb" in on;
-}
-
-/** True when every command matching `b` also matches `a`. */
-function triggerCovers(a: CommandTrigger, b: CommandTrigger): boolean {
-  return (
-    a.verb === b.verb &&
-    (a.object === undefined || a.object === b.object) &&
-    (a.with === undefined || a.with === b.with)
-  );
 }
 
 export function checkRules(ix: PackIndex, out: DiagnosticList): void {
@@ -47,18 +38,31 @@ export function checkRules(ix: PackIndex, out: DiagnosticList): void {
   });
 
   // Only command rules shadow each other: of all event rules that match, every one fires.
+  // A rule can shadow later ones when it is unconditional and not `once`; index those by
+  // trigger, so the check stays linear in the number of rules.
+  const shadowing = new Map<string, number>();
+  const key = (verb: Id, object: Id | undefined, withObj: Id | undefined) => `${verb} ${object ?? ""} ${withObj ?? ""}`;
   rules.forEach((rule, j) => {
-    if (!isCommandTrigger(rule.on)) return;
-    for (let i = 0; i < j; i++) {
+    const on = rule.on;
+    if (!isCommandTrigger(on)) return;
+    let i: number | undefined;
+    for (const object of on.object === undefined ? [undefined] : [undefined, on.object]) {
+      for (const withObj of on.with === undefined ? [undefined] : [undefined, on.with]) {
+        const k = shadowing.get(key(on.verb, object, withObj));
+        if (k !== undefined && (i === undefined || k < i)) i = k;
+      }
+    }
+    if (i !== undefined) {
       const earlier = rules[i]!;
-      if (!isCommandTrigger(earlier.on) || earlier.once || (earlier.when?.length ?? 0) > 0) continue;
-      if (!triggerCovers(earlier.on, rule.on)) continue;
       out.warning(
         "rule.shadowed",
         `rules[${j}].on`,
         `${ruleName(rule, j)} can never fire: the earlier ${ruleName(earlier, i)} has the same or a more general trigger, no 'when' and is not 'once', so it always fires first. Move the specific rule before the general one, or give the general one a 'when'.`,
       );
-      break;
+    }
+    if (!rule.once && (rule.when?.length ?? 0) === 0) {
+      const k = key(on.verb, on.object, on.with);
+      if (!shadowing.has(k)) shadowing.set(k, j);
     }
   });
 }
@@ -370,11 +374,11 @@ export function checkDialogues(ix: PackIndex, out: DiagnosticList): void {
             `Option id "${option.id}" is already used at ${first}. Option ids must be unique within a dialogue ('choose ${option.id}' must be unambiguous).`,
           );
         } else optionIds.set(option.id, op);
-        if (option.goto !== undefined && dialogue.nodes[option.goto] === undefined) {
+        if (option.goto !== undefined && !Object.hasOwn(dialogue.nodes, option.goto)) {
           out.error(
             "dialogue.unknown-goto",
             `${op}.goto`,
-            `Option "${option.id}" goes to node "${option.goto}", which does not exist in dialogue "${id}". Nodes: ${nodeIds.join(", ")}. Omit goto to end the dialogue after this option.`,
+            `Option "${option.id}" goes to node "${option.goto}", which does not exist in dialogue "${id}". Nodes: ${listIds(nodeIds)}. Omit goto to end the dialogue after this option.`,
           );
         }
       });
@@ -383,14 +387,14 @@ export function checkDialogues(ix: PackIndex, out: DiagnosticList): void {
     // Reachable nodes from start via option gotos.
     const reached = new Set<Id>();
     const queue: Id[] = [];
-    if (dialogue.nodes[dialogue.start] !== undefined) {
+    if (Object.hasOwn(dialogue.nodes, dialogue.start)) {
       reached.add(dialogue.start);
       queue.push(dialogue.start);
     }
     while (queue.length > 0) {
       const node = dialogue.nodes[queue.shift()!]!;
       for (const option of node.options ?? []) {
-        if (option.goto !== undefined && dialogue.nodes[option.goto] !== undefined && !reached.has(option.goto)) {
+        if (option.goto !== undefined && Object.hasOwn(dialogue.nodes, option.goto) && !reached.has(option.goto)) {
           reached.add(option.goto);
           queue.push(option.goto);
         }

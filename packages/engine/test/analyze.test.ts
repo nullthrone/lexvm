@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyze } from "../src/analyze.ts";
+import { closest } from "../src/diagnostics.ts";
 import { type PackInput, PackSchema } from "../src/schema.ts";
 import type { Diagnostic } from "../src/types.ts";
 import { basePack } from "./fixtures/compile/base-pack.ts";
@@ -703,6 +704,57 @@ describe("analyze: details", () => {
       p.rules!.unshift({ id: "first_use", on: { verb: "use" }, once: true, do: { say: "Hm." } });
     });
     expect(codes(once)).not.toContain("rule.shadowed");
+  });
+
+  it("reports the first shadowing rule and ignores rules for other objects", () => {
+    const diagnostics = diagnose((p) => {
+      p.rules!.unshift(
+        { id: "other", on: { verb: "use", object: "key" }, do: { say: "Key." } },
+        { id: "general", on: { verb: "use" }, do: { say: "Nothing happens." } },
+        { id: "same", on: { verb: "use", object: "lamp" }, do: { say: "Again." } },
+      );
+    });
+    const shadowed = diagnostics.filter((d) => d.code === "rule.shadowed");
+    expect(shadowed.map((d) => d.path)).toEqual(["rules[2].on", "rules[3].on"]);
+    expect(shadowed.every((d) => d.message.includes('rule "general" (rules[1])'))).toBe(true);
+  });
+
+  it("treats inherited property names such as 'constructor' as unknown ids", () => {
+    const start = diagnose((p) => {
+      p.dialogues!.chat!.start = "constructor";
+    });
+    expect(find(start, "ref.unknown-node").path).toBe("dialogues.chat.start");
+    const goto = diagnose((p) => {
+      p.dialogues!.chat!.nodes.hello!.options![0]!.goto = "constructor";
+    });
+    expect(find(goto, "dialogue.unknown-goto").path).toBe("dialogues.chat.nodes.hello.options[0].goto");
+  });
+
+  it("checks markup in dialogue option texts and hint steps", () => {
+    const diagnostics = diagnose((p) => {
+      p.dialogues!.chat!.nodes.hello!.options![0]!.text = "Ask about {constructor}";
+      p.hints![0]!.steps = ["Look at the {lamp}.", "Talk to {nobody}.", "A stray } brace."];
+    });
+    const refs = diagnostics.filter((d) => d.code === "text.unknown-ref").map((d) => d.path);
+    expect(refs).toEqual(["dialogues.chat.nodes.hello.options[0].text", "hints[0].steps[1]"]);
+    expect(find(diagnostics, "text.stray-brace").path).toBe("hints[0].steps[2]");
+  });
+
+  it("keeps messages and suggestions bounded on packs with many unknown ids", () => {
+    const diagnostics = diagnose((p) => {
+      const nodes: Record<string, { options: { id: string; text: string; goto: string }[] }> = {};
+      for (let i = 0; i < 300; i++) nodes[`n${i}`] = { options: [{ id: `o${i}`, text: "x", goto: `zz${i}` }] };
+      p.dialogues!.big = { start: "n0", nodes };
+    });
+    const gotos = diagnostics.filter((d) => d.code === "dialogue.unknown-goto");
+    expect(gotos).toHaveLength(300);
+    expect(Math.max(...gotos.map((d) => d.message.length))).toBeLessThan(400);
+  });
+
+  it("stops suggesting once the suggestion budget is spent", () => {
+    expect(closest("hal", ["hall"], { cells: 100 })).toBe("hall");
+    expect(closest("hal", ["hall"], { cells: 10 })).toBeUndefined();
+    expect(closest("hal", ["a_much_longer_id", "hall"], { cells: 20 })).toBe("hall");
   });
 
   it("does not report shadowing among event rules", () => {

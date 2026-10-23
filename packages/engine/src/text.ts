@@ -10,7 +10,7 @@
  *   stay inside the span text.
  */
 import { evalConditions } from "./conditions.ts";
-import type { Pack, Text } from "./schema.ts";
+import type { GameObject, Pack, Text } from "./schema.ts";
 import type { GameState, OutputBlock, OutputKind, Span } from "./types.ts";
 
 /** The string of the first applicable variant, or null when no variant applies. */
@@ -34,6 +34,11 @@ export function paragraphs(text: string): string[] {
 
 const MARKUP = /\{([a-z][a-z0-9_]*)(?:\|([^{}]*))?\}/g;
 
+/** The object with this id; undefined for unknown ids (own properties only, so e.g. "constructor" is unknown). */
+export function objectDef(pack: Pack, id: string): GameObject | undefined {
+  return Object.hasOwn(pack.objects, id) ? pack.objects[id] : undefined;
+}
+
 /** Convert one paragraph with inline references into spans. */
 export function markup(pack: Pack, text: string): Span[] {
   const spans: Span[] = [];
@@ -41,7 +46,7 @@ export function markup(pack: Pack, text: string): Span[] {
   let last = 0;
   for (const m of text.matchAll(MARKUP)) {
     const id = m[1] ?? "";
-    const obj = pack.objects[id];
+    const obj = objectDef(pack, id);
     if (!obj) continue;
     plain += text.slice(last, m.index);
     if (plain) spans.push({ text: plain });
@@ -64,9 +69,19 @@ export function inlineSpans(pack: Pack, text: string): Span[] {
   return markup(pack, paragraphs(text).join(" "));
 }
 
+/**
+ * A one-line string as plain text, markup resolved (`{id}` → the object's
+ * name, `{id|text}` → text). For buttons and hints, which show no references.
+ */
+export function plainText(pack: Pack, text: string): string {
+  return inlineSpans(pack, text)
+    .map((s) => s.text)
+    .join("");
+}
+
 /** A tappable reference to an object, showing its name. */
 export function objectSpan(pack: Pack, id: string): Span[] {
-  return [{ text: pack.objects[id]?.name ?? id, ref: id }];
+  return [{ text: objectDef(pack, id)?.name ?? id, ref: id }];
 }
 
 /**

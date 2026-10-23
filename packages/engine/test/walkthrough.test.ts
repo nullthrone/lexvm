@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runWalkthrough } from "../src/walkthrough.ts";
+import { runWalkthrough, STEP_OUTPUT_MAX } from "../src/walkthrough.ts";
 import { loadFixture, loadLockedStudy, makePack } from "./fixtures/runtime/helpers.ts";
 
 const base = {
@@ -30,6 +30,22 @@ describe("runWalkthrough", () => {
     expect(report.steps.every((s) => s.status === "ok")).toBe(true);
     expect(report.steps[0]).toMatchObject({ command: "talk graves" });
     expect(report.steps.at(-1)?.output).toContain("*** The Observatory ***");
+  });
+
+  it("keeps at most STEP_OUTPUT_MAX characters of output per step", () => {
+    const long = "word ".repeat(2000);
+    const pack = makePack({
+      ...base,
+      rules: [...base.rules, { on: { verb: "wait" }, do: { say: long } }],
+      walkthrough: ["wait", "wait", "push button"],
+    });
+    const report = runWalkthrough(pack);
+    expect(report.ok).toBe(true);
+    const wait = report.steps[0]!.output;
+    expect(wait.startsWith("> Wait\n\nword word")).toBe(true);
+    expect(wait.endsWith(" …")).toBe(true);
+    expect(wait.length).toBeLessThan(STEP_OUTPUT_MAX + 20);
+    expect(report.steps[2]!.output).toContain("*** Won ***");
   });
 
   it("accepts the German fixture walkthrough", () => {

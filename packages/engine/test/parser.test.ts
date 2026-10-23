@@ -197,7 +197,8 @@ describe("German parser", () => {
   });
 
   it("recognises meta commands", () => {
-    expect(p("zurück")).toBe("meta:undo");
+    // "zurück" means "go back" to players, never "undo".
+    expect(p("zurück")).toBe("error:unknown-verb");
     expect(p("Rückgängig")).toBe("meta:undo");
     expect(p("undo")).toBe("meta:undo");
     expect(p("neustart")).toBe("meta:restart");
@@ -449,6 +450,87 @@ describe("English parser", () => {
     expect(q("unlock the safe")).toEqual({ verb: "unlock", object: "safe" });
     expect(q("read safe")).toEqual({ verb: "read", object: "safe" });
     expect(q("study safe")).toEqual({ verb: "read", object: "safe" });
+  });
+
+  it("prefers the object named as written over one that matches only after stemming", () => {
+    const en = makePack({
+      start: { room: "r" },
+      rooms: { r: { name: "R", description: "R." } },
+      objects: {
+        book: { name: "red book", location: "r", portable: true },
+        books: { name: "books", location: "r" },
+        key: { name: "brass key", location: "r", portable: true },
+        keys: { name: "keys", location: "r", portable: true },
+        box: { name: "box", location: "r", openable: true, container: true },
+      },
+    });
+    const q = parser(en, newGame(en).state);
+    expect(q("take book")).toEqual({ verb: "take", object: "book" });
+    expect(q("take books")).toEqual({ verb: "take", object: "books" });
+    expect(q("take key")).toEqual({ verb: "take", object: "key" });
+    expect(q("take keys")).toEqual({ verb: "take", object: "keys" });
+    expect(q("open box with key")).toEqual({ verb: "use", object: "key", with: "box" });
+    const de = makePack({
+      language: "de",
+      start: { room: "r" },
+      rooms: { r: { name: "Raum", description: "R." } },
+      objects: {
+        brief: { name: "alter Brief", location: "r", portable: true },
+        briefe: { name: "Briefe", location: "r", portable: true },
+        kiste: { name: "kleine Kiste", location: "r", openable: true },
+        kisten: { name: "Kisten", location: "r" },
+      },
+    });
+    const d = parser(de, newGame(de).state);
+    expect(d("nimm den Brief")).toEqual({ verb: "take", object: "brief" });
+    expect(d("nimm den alten Brief")).toEqual({ verb: "take", object: "brief" });
+    expect(d("nimm die Briefe")).toEqual({ verb: "take", object: "briefe" });
+    expect(d("öffne die Kiste")).toEqual({ verb: "open", object: "kiste" });
+  });
+
+  it("accepts short direction words of other languages only for n, s, e, w", () => {
+    const rooms = {
+      r: {
+        name: "R",
+        description: "R.",
+        exits: { northeast: { to: "a" }, southeast: { to: "a" }, east: { to: "a" }, up: { to: "a" } },
+      },
+      a: { name: "A", description: "A." },
+    };
+    const en = makePack({ start: { room: "r" }, rooms });
+    const q = parser(en, newGame(en).state);
+    for (const word of ["no", "so", "o"]) expect(q(word)).toBe("error:unknown-verb");
+    expect(q("oben")).toEqual({ verb: "go", object: "up" });
+    expect(q("ne")).toEqual({ verb: "go", object: "northeast" });
+    const de = makePack({ language: "de", start: { room: "r" }, rooms });
+    const d = parser(de, newGame(de).state);
+    expect(d("no")).toEqual({ verb: "go", object: "northeast" });
+    expect(d("o")).toEqual({ verb: "go", object: "east" });
+    expect(d("e")).toEqual({ verb: "go", object: "east" });
+    expect(d("north")).toEqual({ verb: "go", object: "north" });
+    expect(d("ne")).toBe("error:unknown-verb");
+  });
+
+  it("maps German particle verbs and lets exit labels win over meta words", () => {
+    const de = makePack({
+      language: "de",
+      start: { room: "r" },
+      rooms: {
+        r: { name: "Gasse", description: "R.", exits: { laden: { to: "a", label: "Laden" } } },
+        a: { name: "Laden", description: "A." },
+      },
+      objects: {
+        brief: { name: "Brief", location: "inventory", portable: true },
+        tuer: { name: "Tür", location: "r", openable: true },
+      },
+    });
+    const d = parser(de, newGame(de).state);
+    expect(d("leg den Brief hin")).toEqual({ verb: "drop", object: "brief" });
+    expect(d("leg den Brief ab")).toEqual({ verb: "drop", object: "brief" });
+    expect(d("schließ die Tür ab")).toBe("error:unknown-verb");
+    expect(d("schließ die Tür")).toEqual({ verb: "close", object: "tuer" });
+    expect(d("Laden")).toEqual({ verb: "go", object: "laden" });
+    expect(d("speichern")).toBe("meta:save");
   });
 
   it("falls back to English vocabulary for other languages", () => {

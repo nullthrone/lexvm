@@ -16,6 +16,13 @@ import type { GameState, ObjectState, OutputBlock, OutputKind, Span } from "./ty
 /** Maximum nesting of goto / dialogue entries triggered by rules (goto → enter rule → goto …). */
 export const MAX_NESTING = 16;
 
+/**
+ * Maximum work (effects run plus room and dialogue node entries) of one engine
+ * call. MAX_NESTING bounds the depth only; without this budget, rules whose
+ * `do` enters the next room several times fan out exponentially within it.
+ */
+export const MAX_WORK = 10_000;
+
 /** Instrumentation hooks used by the explorer to find content that is never reached. */
 export interface Trace {
   rule(index: number): void;
@@ -39,6 +46,8 @@ export interface Ctx {
   trace: Trace | undefined;
   /** Current nesting depth of room entries and dialogue node entries. */
   depth: number;
+  /** Effects run plus rooms and dialogue nodes entered so far in this call (see MAX_WORK). */
+  work: number;
   /** Set by `end` and by the recursion guard: no further effects or rules run in this call. */
   halted: boolean;
   /** Incremented whenever the active dialogue is replaced or ended, to detect changes made by effects. */
@@ -57,6 +66,7 @@ export function makeCtx(pack: Pack, ix: PackIndex, state: GameState, opts: RunOp
     quiet: opts.quiet === true,
     trace: opts.trace,
     depth: 0,
+    work: 0,
     halted: false,
     dialogueEpoch: 0,
     entered: false,

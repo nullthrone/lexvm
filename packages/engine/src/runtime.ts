@@ -10,11 +10,20 @@ import { commandLabelIn } from "./commands.ts";
 import { evalConditions } from "./conditions.ts";
 import { type Ctx, cloneState, emit, emitText, makeCtx, type RunOptions } from "./context.ts";
 import { defaultBehaviour } from "./defaults.ts";
-import { availableOptions, chooseOption, enterRoom, findCommandRule, fireEventRules, fireRule } from "./effects.ts";
+import {
+  activeOptions,
+  chooseOption,
+  enterRoom,
+  findCommandRule,
+  fireEventRules,
+  fireRule,
+  settleDialogue,
+} from "./effects.ts";
 import { fmt } from "./messages/index.ts";
 import { indexPack, type PackIndex } from "./pack-index.ts";
 import { isPresent, presentObjects } from "./presence.ts";
 import type { DialogueOption, Pack } from "./schema.ts";
+import { plainText } from "./text.ts";
 import type {
   Command,
   GameState,
@@ -72,6 +81,7 @@ export function newGameWith(pack: Pack, opts: RunOptions): { state: GameState; o
   fireEventRules(ctx, ix.startRules);
   // A `goto` in a start rule already entered (and described) a room.
   if (!ctx.halted && !ctx.entered) enterRoom(ctx, pack.start.room);
+  settleDialogue(ctx);
   return { state: ctx.state, output: ctx.out };
 }
 
@@ -94,7 +104,11 @@ export function stepWith(pack: Pack, state: GameState, command: Command, opts: R
     runCommand(ctx, command);
   }
   ctx.state.turn++;
-  if (!ctx.halted && ctx.state.ended === null && ctx.state.dialogue === null) fireEventRules(ctx, ix.turnRules);
+  settleDialogue(ctx);
+  if (!ctx.halted && ctx.state.ended === null && ctx.state.dialogue === null) {
+    fireEventRules(ctx, ix.turnRules, undefined, true);
+    settleDialogue(ctx);
+  }
   return { state: ctx.state, output: ctx.out, status: "ok" };
 }
 
@@ -121,9 +135,7 @@ function validate(pack: Pack, ix: PackIndex, state: GameState, cmd: Command): Va
   if (state.dialogue !== null) {
     if (cmd.verb !== "choose") return reject(m.rejectInDialogue);
     if (cmd.with !== undefined) return reject(m.rejectTooMany);
-    const { id, node } = state.dialogue;
-    const options = availableOptions(pack, state, id, pack.dialogues[id]?.nodes[node]);
-    const option = options.find((o) => o.id === cmd.object);
+    const option = activeOptions(pack, state).find((o) => o.id === cmd.object);
     return option ? { option } : reject(m.rejectOptionUnavailable);
   }
   if (cmd.verb === "choose") return reject(m.rejectNoDialogue);
@@ -201,9 +213,9 @@ export function view(pack: Pack, state: GameState): View {
 
   let dialogue: View["dialogue"] = null;
   if (state.dialogue) {
-    const d = pack.dialogues[state.dialogue.id];
-    const options = availableOptions(pack, state, state.dialogue.id, d?.nodes[state.dialogue.node]);
-    dialogue = { id: state.dialogue.id, options: options.map((o) => ({ id: o.id, text: o.text })) };
+    const d = Object.hasOwn(pack.dialogues, state.dialogue.id) ? pack.dialogues[state.dialogue.id] : undefined;
+    const options = activeOptions(pack, state);
+    dialogue = { id: state.dialogue.id, options: options.map((o) => ({ id: o.id, text: plainText(pack, o.text) })) };
     const npc = d?.with !== undefined ? pack.objects[d.with]?.name : undefined;
     if (npc !== undefined) dialogue.npc = npc;
   }

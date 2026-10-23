@@ -16,10 +16,19 @@ rooms:
 
   baumwall:
     name: Am Baumwall
-    description: |-
-      Unter dem Viadukt der Hochbahn stehen Pfützen voller Ziegelstaub. An der Litfaßsäule klebt die {bekanntmachung} zum neuen Geld, darüber ragen Kräne wie Galgen in den Regen.
+    # The hub is passed many times: after the first visit a short text (text variant only, no state).
+    description:
+      - when:
+          any:
+            - { visited: kaischuppen }
+            - { visited: zollkanal }
+            - { visited: kneipe }
+            - { visited: nissenhuette }
+        text: Unter dem Viadukt, an der nassen {bekanntmachung}. Im Süden der Kaischuppen, im Osten der Zollkanal, im Westen St. Pauli.
+      - text: |-
+          Unter dem Viadukt der Hochbahn stehen Pfützen voller Ziegelstaub. An der Litfaßsäule klebt die {bekanntmachung} zum neuen Geld, darüber ragen Kräne wie Galgen in den Regen.
 
-      Nach Süden geht es zum Kaischuppen 17, nach Osten zum Zollkanal, nach Westen in die Kneipen von St. Pauli. An der Haltestelle wartet die Straßenbahn zur Siedlung. Die Treppe hinauf führt in deine Detektei.
+          Nach Süden geht es zum Kaischuppen 17, nach Osten zum Zollkanal, nach Westen in die Kneipen von St. Pauli. An der Haltestelle wartet die Straßenbahn zur Siedlung. Die Treppe hinauf führt in deine Detektei.
     exits:
       up: { to: detektei }
       south: { to: kaischuppen }
@@ -44,12 +53,15 @@ rooms:
 
   kaischuppen:
     name: Kaischuppen 17
+    # After the first visit (aushang read or locker open) a short text; text variants only.
     description:
       - when: { has: clue_tally }
-        text: |-
-          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand stehen die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
-
-          Daneben die verschlossene {glaskabine} des Schuppenmeisters. Das {klemmbrett} hängt schief am Nagel, so wie du es zurückgeschoben hast. Nach Norden geht es zum Baumwall.
+        text: Der Schuppen riecht nach Jute und Teer. Am Tor der {aushang}, an der Wand die {spindreihe}, mittendrin {spind_jakob}. In der {glaskabine} hängt das {klemmbrett} schief am Nagel. Nach Norden geht es zum Baumwall.
+      - when:
+          any:
+            - { has: clue_loeschliste }
+            - { isOpen: spind_jakob }
+        text: Der Schuppen riecht nach Jute und Teer. Am Tor der {aushang}, an der Wand die {spindreihe}, mittendrin {spind_jakob}. In der {glaskabine} hängt das {klemmbrett}, außer Reichweite. Nach Norden geht es zum Baumwall.
       - text: |-
           Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand stehen die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
 
@@ -59,12 +71,12 @@ rooms:
 
   kneipe:
     name: Zum Letzten Groschen
+    # Short texts once you have been here (paid the Wirt or talked to Kröger); text variants only.
     description:
       - when: { flag: hintertuer_frei }
-        text: |-
-          Eine Kellerkneipe in St. Pauli, die Decke so niedrig, dass der Rauch nicht weiß, wohin. Hinter dem Tresen zapft der {wirt} Dünnbier. Auf der {kreidetafel} steht etwas über Reichsmark.
-
-          Die Hintertür zum Hof steht dir jetzt offen. Nach Osten geht es zurück zum Baumwall.
+        text: Rauch unter der niedrigen Decke. Der {wirt} zapft Dünnbier, auf der {kreidetafel} steht etwas über Reichsmark. Die Hintertür zum Hof steht dir offen, nach Osten geht es zum Baumwall.
+      - when: { has: clue_kroeger_version }
+        text: Rauch unter der niedrigen Decke. Der {wirt} zapft Dünnbier, auf der {kreidetafel} steht etwas über Reichsmark. Eine Hintertür führt auf den Hof, nach Osten geht es zum Baumwall.
       - text: |-
           Eine Kellerkneipe in St. Pauli, die Decke so niedrig, dass der Rauch nicht weiß, wohin. Hinter dem Tresen zapft der {wirt} Dünnbier. Auf der {kreidetafel} steht etwas über Reichsmark.
 
@@ -89,10 +101,14 @@ rooms:
 
   zollkanal:
     name: Am Zollkanal
-    description: |-
-      Schwarzes Wasser zwischen Kaimauern. {schuten|Schuten} liegen Bordwand an Bordwand und sammeln Regen. Drüben stehen die Giebel der Speicherstadt ohne Dächer, mittendrin {speicher_k}.
+    # Short text once the boat hook is gone (you have been here before); text variants only.
+    description:
+      - when: { not: { in: { object: bootshaken, location: zollkanal } } }
+        text: Schwarzes Wasser, {schuten|Schuten} im Regen, drüben {speicher_k}. Ein {zollgitter} sperrt die Brücke, in der {wachbude} brennt Petroleum. Nach Westen geht es zum Baumwall.
+      - text: |-
+          Schwarzes Wasser zwischen Kaimauern. {schuten|Schuten} liegen Bordwand an Bordwand und sammeln Regen. Drüben stehen die Giebel der Speicherstadt ohne Dächer, mittendrin {speicher_k}.
 
-      Die Brücke hinüber sperrt ein {zollgitter}. In der {wachbude} brennt Petroleum. Nach Westen geht es zum Baumwall.
+          Die Brücke hinüber sperrt ein {zollgitter}. In der {wachbude} brennt Petroleum. Nach Westen geht es zum Baumwall.
     exits:
       west: { to: baumwall }
       ueberfahrt:
@@ -118,15 +134,9 @@ rooms:
     name: Treppenhaus Speicher K
     description:
       - when: { isOpen: bodentuer }
-        text: |-
-          Im Laternenlicht: verkohlte Stufen, die noch halten. Es riecht nach kaltem Rauch und, absurd, nach Kaffee.
-
-          Oben steht die {bodentuer} zum vierten Boden offen. Unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
+        text: Im Laternenlicht verkohlte Stufen. Oben steht die {bodentuer} zum vierten Boden offen, unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
       - when: { flag: laterne_an }
-        text: |-
-          Im Laternenlicht: verkohlte Stufen, die noch halten. Es riecht nach kaltem Rauch und, absurd, nach Kaffee.
-
-          Oben verschließt eine {bodentuer} den vierten Boden. Unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
+        text: Im Laternenlicht verkohlte Stufen. Oben verschließt eine {bodentuer} den vierten Boden, unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
       - text: |-
           Fast dunkel. Verkohlte Stufen, die noch halten; es riecht nach kaltem Rauch und, absurd, nach Kaffee.
 

@@ -39,7 +39,7 @@ import { listedExits, offeredPredicate } from "./affordances.ts";
 import { formatCommand } from "./commands.ts";
 import { evalConditions } from "./conditions.ts";
 import type { Trace } from "./context.ts";
-import { availableOptions, optionKey } from "./effects.ts";
+import { activeOptions, optionKey } from "./effects.ts";
 import { indexPack, type PackIndex } from "./pack-index.ts";
 import { presentObjects } from "./presence.ts";
 import { coverageCheck, type Relevance, relevantState } from "./relevance.ts";
@@ -456,7 +456,7 @@ function makeCandidateGenerator(
 ): (state: GameState) => Candidate[] {
   const hasTurnRules = ix.turnRules.length > 0;
   // A command that changes nothing by itself (no state-changing rule can match it): the turn rules are its only effect.
-  const neutral = ["wait", "inventory", "look"].find((verb) =>
+  const neutral = ["wait", "look"].find((verb) =>
     (ix.commandRules.get(verb) ?? []).every(
       (r) => r.pure || r.trigger.object !== undefined || r.trigger.with !== undefined,
     ),
@@ -471,8 +471,7 @@ function makeCandidateGenerator(
   return (state) => {
     if (state.ended !== null) return [];
     if (state.dialogue) {
-      const { id, node } = state.dialogue;
-      return availableOptions(pack, state, id, pack.dialogues[id]?.nodes[node]).map((o) => ({
+      return activeOptions(pack, state).map((o) => ({
         cmd: { verb: "choose", object: o.id },
         text: `choose ${o.id}`,
         offered: true,

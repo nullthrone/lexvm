@@ -14,6 +14,7 @@ import {
   type Pack,
   type Text,
 } from "./schema.ts";
+import { objectDef } from "./text.ts";
 
 /** Where a piece of logic lives; lets checks treat e.g. turn rules specially. */
 export type Site =
@@ -125,6 +126,7 @@ export function walkPack(pack: Pack, v: Visitor): void {
         const op = `${p}.options[${index}]`;
         const optionSite: Site = { kind: "option", dialogue: dialogueId, node: nodeId, index };
         visitConditions(option.when, `${op}.when`, optionSite, v);
+        visitText(option.text, `${op}.text`, optionSite, v);
         visitEffects(option.do, `${op}.do`, optionSite, v);
       });
     }
@@ -136,6 +138,9 @@ export function walkPack(pack: Pack, v: Visitor): void {
     const site: Site = { kind: "hint", index };
     visitConditions(hint.when, `hints[${index}].when`, site, v);
     visitConditions(hint.until, `hints[${index}].until`, site, v);
+    hint.steps.forEach((step, i) => {
+      visitText(step, `hints[${index}].steps[${i}]`, site, v);
+    });
   });
 }
 
@@ -191,7 +196,7 @@ export function markupRefs(text: string): Array<{ id: string; display?: string; 
 export function renderedText(text: string, pack: Pack): string {
   return text.replace(
     /\{([^{}|]*)(?:\|([^{}]*))?\}/g,
-    (_, id: string, display?: string) => display ?? pack.objects[id.trim()]?.name ?? id,
+    (_, id: string, display?: string) => display ?? objectDef(pack, id.trim())?.name ?? id,
   );
 }
 

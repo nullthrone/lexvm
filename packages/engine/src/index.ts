@@ -16,6 +16,6 @@ export { parseCommand } from "./parser.ts";
 export { BUDGET_DEFAULTS, budgetForMinutes, countWords, estimatePlaytime, PLAYTIME_DEFAULTS } from "./playtime.ts";
 export { hint, newGame, step, view } from "./runtime.ts";
 export * from "./schema.ts";
-export { renderPlain } from "./text.ts";
+export { plainText, renderPlain } from "./text.ts";
 export * from "./types.ts";
 export { runWalkthrough } from "./walkthrough.ts";

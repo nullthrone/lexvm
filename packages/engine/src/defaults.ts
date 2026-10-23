@@ -176,7 +176,7 @@ function useWith(ctx: Ctx, a: string, b: string): void {
 /** Start the object's dialogue. Any object may have one (a telephone); only npcs offer 'talk' in their sheet. */
 function talk(ctx: Ctx, id: string): void {
   const def = ctx.pack.objects[id];
-  if (def?.dialogue !== undefined && ctx.pack.dialogues[def.dialogue]) startDialogue(ctx, def.dialogue);
+  if (def?.dialogue !== undefined && Object.hasOwn(ctx.pack.dialogues, def.dialogue)) startDialogue(ctx, def.dialogue);
   else emitMsg(ctx, "text", ctx.m.noAnswer);
 }
 

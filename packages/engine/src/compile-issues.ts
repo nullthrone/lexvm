@@ -15,7 +15,7 @@ import {
   type NodeKind,
   validKeys,
 } from "./compile-context.ts";
-import { closest, formatPath, type PathSegment, toSnakeId } from "./diagnostics.ts";
+import { closest, formatPath, listIds, type PathSegment, toSnakeId } from "./diagnostics.ts";
 import type { Diagnostic } from "./types.ts";
 
 type Issue = z.core.$ZodIssue;
@@ -118,7 +118,7 @@ export function describeValue(value: unknown): string {
   if (Array.isArray(value)) return `a list of ${value.length} item${value.length === 1 ? "" : "s"}`;
   if (typeof value === "object") {
     const keys = Object.keys(value);
-    return keys.length === 0 ? "an empty map {}" : `a map with key${keys.length === 1 ? "" : "s"} ${keys.join(", ")}`;
+    return keys.length === 0 ? "an empty map {}" : `a map with key${keys.length === 1 ? "" : "s"} ${listIds(keys, 10)}`;
   }
   return typeof value;
 }

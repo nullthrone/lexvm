@@ -3,6 +3,7 @@ import { exitLabelAnywhere } from "./affordances.ts";
 import { fill, type StandardExit } from "./messages/index.ts";
 import { indexPack, isCoreVerb } from "./pack-index.ts";
 import type { Pack } from "./schema.ts";
+import { objectDef, plainText } from "./text.ts";
 import type { Command } from "./types.ts";
 
 /** Canonical string form: "verb [object [with]]". */
@@ -60,7 +61,7 @@ export function commandLabelIn(pack: Pack, command: Command, room: string | unde
   const ix = indexPack(pack);
   const m = ix.m;
   const { verb } = command;
-  const name = (id: string | undefined) => (id === undefined ? "" : (pack.objects[id]?.name ?? id));
+  const name = (id: string | undefined) => (id === undefined ? "" : (objectDef(pack, id)?.name ?? id));
   const obj = name(command.object);
   const withName = name(command.with);
 
@@ -115,7 +116,7 @@ function optionText(pack: Pack, optionId: string | undefined): string | undefine
   for (const d of Object.values(pack.dialogues)) {
     for (const node of Object.values(d.nodes)) {
       const o = node.options?.find((x) => x.id === optionId);
-      if (o) return o.text;
+      if (o) return plainText(pack, o.text);
     }
   }
   return undefined;

@@ -87,6 +87,8 @@ objects:
     roomText:
       - when: { has: clue_gestaendnis }
         text: Am Ecktisch sitzt {kroeger} vor einem leeren Glas. Seine Kolonne ist gegangen.
+      - when: { has: clue_kroeger_version }
+        text: Am Ecktisch sitzt {kroeger} und rührt seinen Köm nicht an.
       - text: Am Ecktisch sitzt {kroeger} vor einem Köm, den er nicht anrührt. Seine Kolonne sitzt zwei Tische weiter und sieht nicht her.
     description:
       - when: { has: clue_gestaendnis }
@@ -117,7 +119,7 @@ objects:
     roomText:
       - when: { flag: tadeusz_rudert }
         text: "{tadeusz} sitzt unten im Boot und wartet."
-      - text: Vor der Wachbude sitzt {tadeusz} mit einer Thermoskanne.
+      - text: Auf einem Poller sitzt {tadeusz} mit einer Thermoskanne.
     description: Tadeusz Wrona, Schutenwächter. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
 
   asmussen:
@@ -277,7 +279,10 @@ objects:
     name: Schuten
     synonyms: [Schute, Boote, Kähne, Bootshaken]
     location: zollkanal
-    description: Leere Schuten, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken. An der Wachbude lehnt einer, der niemandem zu gehören scheint.
+    description:
+      - when: { in: { object: bootshaken, location: zollkanal } }
+        text: Leere Schuten, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken. An der Wachbude lehnt einer, der niemandem zu gehören scheint.
+      - text: Leere Schuten, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken.
 
   zollgitter:
     name: Zollgitter

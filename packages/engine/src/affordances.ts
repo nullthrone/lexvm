@@ -67,8 +67,8 @@ export function inventoryObjectVerbs(ix: PackIndex, def: GameObject, os: ObjectS
 /**
  * Whether a tap UI offers a command in this state (spec section 14: the
  * explorer judges winnability and dead ends by offered actions). Offered are:
- * listed exits, dialogue options, the zero-object verbs of the View (look
- * around, wait, inventory), `verb obj` when the verb is in obj's action
+ * listed exits, dialogue options, look around and wait (`inventory` is not:
+ * the inventory button only shows the bag), `verb obj` when the verb is in obj's action
  * sheet, `verb a b` when the verb is in a's sheet (the UI then lets the
  * player pick any other present object), and give/show to an npc in the room
  * from either side (item sheet → character, or a character whose sheet lists
@@ -99,7 +99,7 @@ export function offeredPredicate(
   };
   return (cmd) => {
     if (cmd.verb === "go" || cmd.verb === "choose") return true;
-    if (cmd.object === undefined) return cmd.with === undefined && ix.verbs.get(cmd.verb)?.min === 0;
+    if (cmd.object === undefined) return cmd.with === undefined && (cmd.verb === "look" || cmd.verb === "wait");
     if (cmd.with === undefined) return sheet(cmd.object).includes(cmd.verb);
     if (cmd.verb === "give" || cmd.verb === "show") {
       if (!inRoom.has(cmd.with) || pack.objects[cmd.with]?.npc !== true) return false;

@@ -104,11 +104,9 @@ dialogues:
       ah_lebt:
         say:
           - when: { has: clue_jakob_aussage }
-            text: "Anni legt die Nadel weg. »Haben Sie ihn gesehen?« Du nickst und richtest aus, was er dir aufgetragen hat: Er hat richtig gezählt. Sie nickt, als hätte sie nie etwas anderes geglaubt. Dann dreht sie sich zur Wand."
+            text: "Anni legt die Nadel weg. »Haben Sie ihn gesehen?« Du nickst und richtest aus: Er hat richtig gezählt. Sie nickt, als hätte sie nie etwas anderes geglaubt."
           - text: "Anni legt die Nadel weg, sehr langsam. »Dann holen Sie ihn nach Hause. Was stehen Sie hier noch rum?« Sie dreht sich zur Wand, damit du ihr Gesicht nicht siehst."
-        options:
-          - id: ah_unterwegs
-            text: "»Bin schon unterwegs.«"
+        # No options: the scene ends on Anni's gesture.
       ah_lotte:
         say: "»Sie schläft. Wer schläft, hat keinen Hunger.«"
         options:

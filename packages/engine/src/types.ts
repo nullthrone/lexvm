@@ -198,7 +198,7 @@ export interface CompileResult {
 export interface WalkthroughStep {
   command: string;
   status: StepStatus;
-  /** Plain-text rendering of the output. */
+  /** Plain-text rendering of the output, cut after STEP_OUTPUT_MAX (4000) characters of text. */
   output: string;
 }
 

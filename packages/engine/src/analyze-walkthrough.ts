@@ -4,7 +4,7 @@
  */
 import { verbArity } from "./analyze-refs.ts";
 import type { PackIndex } from "./analyze-walk.ts";
-import { type DiagnosticList, didYouMean } from "./diagnostics.ts";
+import type { DiagnosticList } from "./diagnostics.ts";
 
 const ID = /^[a-z][a-z0-9_]*$/;
 
@@ -32,7 +32,7 @@ export function checkWalkthrough(ix: PackIndex, out: DiagnosticList): void {
     }
     const [verb, object, second] = tokens as [string, string | undefined, string | undefined];
     if (!ix.verbs.has(verb)) {
-      fail(`unknown verb "${verb}".${didYouMean(verb, ix.verbs)}`);
+      fail(`unknown verb "${verb}".${out.suggest(verb, ix.verbs)}`);
       return;
     }
     const objects = tokens.length - 1;
@@ -42,9 +42,9 @@ export function checkWalkthrough(ix: PackIndex, out: DiagnosticList): void {
         return;
       }
       if (verb === "go" && !ix.exits.has(object!)) {
-        fail(`no room has an exit "${object}".${didYouMean(object!, ix.exits)}`);
+        fail(`no room has an exit "${object}".${out.suggest(object!, ix.exits)}`);
       } else if (verb === "choose" && !ix.options.has(object!)) {
-        fail(`no dialogue has an option "${object}".${didYouMean(object!, ix.options)}`);
+        fail(`no dialogue has an option "${object}".${out.suggest(object!, ix.options)}`);
       }
       return;
     }
@@ -55,7 +55,7 @@ export function checkWalkthrough(ix: PackIndex, out: DiagnosticList): void {
       return;
     }
     for (const id of [object, second]) {
-      if (id !== undefined && !ix.objects.has(id)) fail(`unknown object "${id}".${didYouMean(id, ix.objects)}`);
+      if (id !== undefined && !ix.objects.has(id)) fail(`unknown object "${id}".${out.suggest(id, ix.objects)}`);
     }
   });
 }

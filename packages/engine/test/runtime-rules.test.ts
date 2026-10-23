@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { commandLabel } from "../src/commands.ts";
+import { MAX_WORK } from "../src/context.ts";
 import { newGame, step, view } from "../src/runtime.ts";
 import { last, linesOf, makePack, play, textOf } from "./fixtures/runtime/helpers.ts";
 
@@ -257,6 +259,25 @@ describe("event rules", () => {
     expect(linesOf(r.output, "room-title").length).toBe(16);
   });
 
+  it("bounds the total work of one step, not only its nesting depth", () => {
+    // Each room's enter rule enters the next room six times: 6^14 entries without a work budget.
+    const fanRooms: Record<string, unknown> = {
+      hall: { name: "Hall", description: "A hall.", exits: { north: { to: "r1" } } },
+    };
+    const fanRules: unknown[] = [];
+    for (let i = 1; i <= 15; i++) {
+      fanRooms[`r${i}`] = { name: `R${i}`, description: `Room ${i}.`, exits: { south: { to: "hall" } } };
+      if (i < 15) fanRules.push({ on: { event: "enter", room: `r${i}` }, do: Array(6).fill({ goto: `r${i + 1}` }) });
+    }
+    const pack = makePack({ start: { room: "hall" }, rooms: fanRooms, rules: fanRules });
+    const t0 = Date.now();
+    const r = step(pack, newGame(pack).state, { verb: "go", object: "north" });
+    expect(Date.now() - t0).toBeLessThan(2000);
+    expect(r.status).toBe("ok");
+    expect(linesOf(r.output, "system")).toContain("internal: rule work limit");
+    expect(linesOf(r.output, "room-title").length).toBeLessThanOrEqual(MAX_WORK);
+  });
+
   it("guards against dialogues that restart themselves forever", () => {
     const pack = makePack({
       start: { room: "hall" },
@@ -362,5 +383,83 @@ describe("dialogues", () => {
     const p = makePack({ ...pack, rules: [{ on: { event: "turn" }, do: { say: "Tick." } }] });
     const { results } = play(p, ["talk ann", "choose bye"]);
     expect(results.map((r) => textOf(r.output).includes("Tick."))).toEqual([false, true]);
+  });
+});
+
+describe("dialogues without available options", () => {
+  const base = {
+    start: { room: "a" },
+    rooms: {
+      a: { name: "A", description: "Room.", exits: { north: { to: "b" } } },
+      b: { name: "B", description: "B." },
+    },
+    objects: { guard: { name: "guard", location: "a", npc: true } },
+  };
+
+  it("end when a later effect of the same rule takes the last option away", () => {
+    const pack = makePack({
+      ...base,
+      flags: { talked: false },
+      rules: [{ id: "talk_guard", on: { verb: "talk", object: "guard" }, do: [{ dialogue: "d" }, { set: "talked" }] }],
+      dialogues: {
+        d: {
+          with: "guard",
+          start: "hi",
+          nodes: { hi: { say: "Hi.", options: [{ id: "first", text: "Who?", when: { not: { flag: "talked" } } }] } },
+        },
+      },
+    });
+    const { results, state } = play(pack, ["talk guard", "go north"]);
+    expect(results[0]?.state.dialogue).toBeNull();
+    expect(results[1]?.status).toBe("ok");
+    expect(state.room).toBe("b");
+  });
+
+  it("stop turn rules once one of them starts a dialogue", () => {
+    const pack = makePack({
+      ...base,
+      flags: { f: false },
+      rules: [
+        { id: "ambush", on: { event: "turn" }, once: true, do: { dialogue: "d" } },
+        { id: "later", on: { event: "turn" }, do: { set: "f" } },
+      ],
+      dialogues: {
+        d: {
+          with: "guard",
+          start: "hi",
+          nodes: { hi: { say: "Hi.", options: [{ id: "first", text: "Who?", when: { not: { flag: "f" } } }] } },
+        },
+      },
+    });
+    const { results } = play(pack, ["wait", "choose first"]);
+    expect(results[0]?.state.dialogue).toEqual({ id: "d", node: "hi" });
+    expect(results[0]?.state.flags.f).toBe(false);
+    expect(results[1]?.status).toBe("ok");
+    expect(results[1]?.state.flags.f).toBe(true);
+  });
+});
+
+describe("markup in dialogue option texts", () => {
+  it("is shown as plain names on buttons and labels, as references in the transcript", () => {
+    const pack = makePack({
+      start: { room: "hall" },
+      rooms,
+      objects,
+      dialogues: {
+        ann_talk: {
+          with: "ann",
+          start: "a",
+          nodes: { a: { say: "Yes?", options: [{ id: "ask", text: "Where is the {lamp|old lamp}? And the {key}?" }] } },
+        },
+      },
+    });
+    const talk = step(pack, newGame(pack).state, { verb: "talk", object: "ann" });
+    expect(view(pack, talk.state).dialogue?.options).toEqual([
+      { id: "ask", text: "Where is the old lamp? And the key?" },
+    ]);
+    expect(commandLabel(pack, { verb: "choose", object: "ask" })).toBe("Where is the old lamp? And the key?");
+    const choose = step(pack, talk.state, { verb: "choose", object: "ask" });
+    const player = choose.output.find((b) => b.kind === "player");
+    expect(player?.spans.filter((s) => s.ref !== undefined).map((s) => s.ref)).toEqual(["lamp", "key"]);
   });
 });
