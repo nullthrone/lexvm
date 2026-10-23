@@ -11,7 +11,7 @@ license: CC-BY-4.0
 policy: forgiving
 generator:
   pipeline: "lexvm one-shot prompt"
-  notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt."
+  notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt. No human has edited or playtested it yet."
 playtime: 120
 maxScore: 14
 
