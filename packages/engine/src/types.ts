@@ -245,3 +245,88 @@ export interface SaveGame {
   /** ISO timestamp, set by the host. */
   savedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// Play time estimate
+// ---------------------------------------------------------------------------
+
+/**
+ * Parameters of the play time model (spec: "Play time estimate"). Every field
+ * is optional; the defaults are listed in PLAYTIME_DEFAULTS.
+ */
+export interface PlaytimeOptions {
+  /** Silent reading speed in words per minute. Overrides the per-language default. */
+  wordsPerMinute?: number;
+  /** Reading speed per primary language subtag, merged over the defaults (de 200, en 230). */
+  readingSpeeds?: Record<string, number>;
+  /** Reading speed for languages without an entry in readingSpeeds. Default 220. */
+  otherWordsPerMinute?: number;
+  /** t_cmd: seconds per command (perceive the scene, tap object, pick verb). Default 10. */
+  secondsPerCommand?: number;
+  /** t_choice: seconds per dialogue choice. Default 6. */
+  secondsPerChoice?: number;
+  /** c: share of the optional content a typical player sees. Default 0.6. */
+  coverage?: number;
+  /** f: unproductive attempts per productive command. Default 0.5. */
+  failedAttemptsPerCommand?: number;
+  /** Allowed relative deviation of the expected time from the target. Default 0.25. */
+  tolerance?: number;
+  /** Target in minutes; overrides pack.playtime. */
+  targetMinutes?: number;
+}
+
+export interface PlaytimeReport {
+  /** pack.language. */
+  language: string;
+  /** Reading speed used (wpm). */
+  wordsPerMinute: number;
+  words: {
+    /** W_path: words shown while replaying the walkthrough (narration, titles, dialogue, ending). */
+    path: number;
+    /** W_optional: words of pack texts a player can see that the walkthrough never shows. */
+    optional: number;
+  };
+  commands: {
+    /** C_path: accepted walkthrough commands except `choose`. */
+    path: number;
+    /** D_path: accepted `choose` steps. */
+    choices: number;
+    /** L_unseen: objects with a description the walkthrough never examines. */
+    unseenLooks: number;
+    /** O_unchosen: dialogue options the walkthrough never chooses. */
+    unchosenOptions: number;
+    /** f · C_path: expected unproductive attempts. */
+    failedAttempts: number;
+  };
+  /** min: speedrun along the walkthrough; expected: a typical first play. Rounded to 0.01. */
+  minutes: { min: number; expected: number };
+  /** options.targetMinutes ?? pack.playtime ?? null. */
+  target: number | null;
+  /** expected / target - 1, rounded to 0.001; null without a target. */
+  deviation: number | null;
+  /** playtime.estimate (always), playtime.no-target, playtime.too-short, playtime.too-long. */
+  diagnostics: Diagnostic[];
+}
+
+/** Typical ratios of a pack, used to turn a target length into a budget. Defaults in BUDGET_DEFAULTS. */
+export interface BudgetOptions extends PlaytimeOptions {
+  /** W_optional / W_path. Default 0.6. */
+  optionalWordRatio?: number;
+  /** D_path / all walkthrough steps. Default 0.25. */
+  choiceShare?: number;
+  /** W_path / C_path: words of new text per productive command. */
+  wordsPerCommand?: number;
+  /** L_unseen / C_path. */
+  unseenLooksPerCommand?: number;
+  /** O_unchosen / D_path. */
+  unchosenOptionsPerChoice?: number;
+}
+
+export interface PlaytimeBudget {
+  /** Player-visible words in the whole pack (walkthrough path and optional text). */
+  words: { min: number; max: number };
+  /** Walkthrough steps, `choose` steps included. */
+  walkthroughSteps: { min: number; max: number };
+  /** Human- and LLM-readable guidance derived from the budget. */
+  notes: string[];
+}

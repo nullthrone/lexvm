@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Pack, packHash } from "@lexvm/engine";
+import { estimatePlaytime, type Pack, packHash, runWalkthrough } from "@lexvm/engine";
 import { flag, parseArgs, stringOption, UsageError } from "../args.ts";
 import { compileSource, expandTargets, readPackSource } from "../sources.ts";
 import { color, err, formatDiagnostic, out, summarizeCounts } from "../term.ts";
@@ -10,7 +10,8 @@ export const BUILD_HELP = `Usage: lexvm build <packsDir|packDir>... --out <dir>
 Compile content packs to <out>/<id>.lexpack.json (minified, normalised JSON)
 and write the catalog <out>/index.json. A directory without pack.yaml stands
 for all pack directories directly inside it. Packs with errors are reported
-and not written.
+and not written. Catalog entries carry estimatedMinutes, the play time
+estimate of "lexvm check" (rounded), when the walkthrough reaches a win.
 
 Options:
   --out <dir>      Output directory (required)
@@ -28,6 +29,8 @@ export interface CatalogEntry {
   language: string;
   version: string;
   playtime?: number;
+  /** Rounded expected play time from the estimator; omitted when the walkthrough does not reach a win. */
+  estimatedMinutes?: number;
   author: string;
   license: string;
   /** File name relative to index.json. */
@@ -42,6 +45,16 @@ export interface Catalog {
   packs: CatalogEntry[];
 }
 
+/** Rounded expected minutes, or undefined when the walkthrough does not reach a win (the estimate would be partial). */
+export function estimatedMinutes(pack: Pack): number | undefined {
+  try {
+    if (!runWalkthrough(pack).ok) return undefined;
+    return Math.max(1, Math.round(estimatePlaytime(pack).minutes.expected));
+  } catch {
+    return undefined;
+  }
+}
+
 function catalogEntry(pack: Pack, file: string, hash: string, size: number): CatalogEntry {
   // Key order is the documented order; undefined optional fields are dropped by JSON.stringify.
   return {
@@ -52,6 +65,7 @@ function catalogEntry(pack: Pack, file: string, hash: string, size: number): Cat
     language: pack.language,
     version: pack.version,
     playtime: pack.playtime,
+    estimatedMinutes: estimatedMinutes(pack),
     author: pack.author,
     license: pack.license,
     file,

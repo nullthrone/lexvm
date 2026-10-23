@@ -2,27 +2,34 @@ import {
   type Diagnostic,
   type ExploreOptions,
   type ExploreReport,
+  estimatePlaytime,
   explore,
   type Pack,
+  type PlaytimeOptions,
+  type PlaytimeReport,
   runWalkthrough,
   type WalkthroughReport,
 } from "@lexvm/engine";
 import { flag, intOption, parseArgs, UsageError } from "../args.ts";
+import { exploreFallbacks, walkthroughFallbacks } from "../fallbacks.ts";
 import { compileSource, expandTargets, readPackSource } from "../sources.ts";
 import { color, countDiagnostics, formatDiagnostic, out, plural, summarizeCounts } from "../term.ts";
 
 export const CHECK_HELP = `Usage: lexvm check <packDir|packsDir|file>... [options]
 
 Full verification of content packs: schema and semantic checks, replay of the
-walkthrough, and exploration of the reachable state space (winnable from
-every state, no dead ends, no losing endings, unreached content).
+walkthrough, a play time estimate, and exploration of the reachable state
+space (winnable from every state, no dead ends, no losing endings, unreached
+content).
 
 Options:
-  --json             Machine-readable output
-  --max-states <n>   Exploration limit (default: engine default, 200000)
-  --include-drop     Also explore 'drop' commands (much larger state space)
-  --no-explore       Skip the state-space exploration
-  -h, --help         Show this help
+  --json                 Machine-readable output
+  --max-states <n>       Exploration limit (default: engine default, 200000)
+  --include-drop         Also explore 'drop' commands (much larger state space)
+  --no-explore           Skip the state-space exploration
+  --wpm <n>              Reading speed for the play time estimate (default by language: de 200, en 230, other 220)
+  --target-minutes <n>   Target play time; overrides the pack's playtime
+  -h, --help             Show this help
 
 Exit codes: 0 no errors, 1 errors found, 2 usage error.`;
 
@@ -40,6 +47,8 @@ export interface CheckReport {
     /** First step that was not accepted, with its output. */
     failedStep: null | { index: number; command: string; status: string; output: string };
   };
+  /** Play time estimate; its diagnostics are part of `diagnostics`. */
+  playtime: null | Omit<PlaytimeReport, "diagnostics">;
   explore: null | {
     complete: boolean;
     states: number;
@@ -60,36 +69,14 @@ function engineFailure(code: string, what: string, e: unknown): Diagnostic {
   };
 }
 
-function addUnlessPresent(diagnostics: Diagnostic[], d: Diagnostic): void {
-  if (!diagnostics.some((x) => x.code === d.code)) diagnostics.push(d);
-}
-
 function summarizeWalkthrough(
   pack: Pack,
   report: WalkthroughReport,
   diagnostics: Diagnostic[],
 ): CheckReport["walkthrough"] {
-  diagnostics.push(...report.diagnostics);
+  diagnostics.push(...report.diagnostics, ...walkthroughFallbacks(pack, report));
   const failedIndex = report.steps.findIndex((s) => s.status !== "ok");
   const failed = failedIndex >= 0 ? report.steps[failedIndex]! : null;
-  if (!report.ok && !report.diagnostics.some((d) => d.severity === "error")) {
-    diagnostics.push({
-      severity: "error",
-      code: "walkthrough.failed",
-      path: failed ? `walkthrough[${failedIndex}]` : "walkthrough",
-      message: failed
-        ? `Walkthrough step ${failedIndex + 1} "${failed.command}" was rejected: ${failed.output.trim()}`
-        : `The walkthrough does not end in a winning ending (ending: ${report.ending ?? "none"}). Add the missing steps.`,
-    });
-  }
-  if (pack.maxScore !== undefined && report.score !== pack.maxScore) {
-    diagnostics.push({
-      severity: "warning",
-      code: "walkthrough.score-mismatch",
-      path: "maxScore",
-      message: `The walkthrough ends with score ${report.score}, but maxScore is ${pack.maxScore}. Set maxScore to ${report.score} or add the missing score effects.`,
-    });
-  }
   return {
     ok: report.ok,
     steps: report.steps.length,
@@ -100,42 +87,14 @@ function summarizeWalkthrough(
   };
 }
 
-function summarizeExplore(report: ExploreReport, diagnostics: Diagnostic[]): CheckReport["explore"] {
+function summarizePlaytime(report: PlaytimeReport, diagnostics: Diagnostic[]): CheckReport["playtime"] {
   diagnostics.push(...report.diagnostics);
-  // Fallbacks in case the explorer reports a problem only in its result fields. An incomplete
-  // exploration that found no win proves nothing; the explore.incomplete warning covers it.
-  if (!report.winnable && report.complete) {
-    addUnlessPresent(diagnostics, {
-      severity: "error",
-      code: "explore.not-winnable",
-      path: "",
-      message: "No winning ending is reachable from the start.",
-    });
-  }
-  if (report.deadEnds.length > 0) {
-    addUnlessPresent(diagnostics, {
-      severity: "error",
-      code: "explore.dead-end",
-      path: "",
-      message: `${plural(report.deadEnds.length, "dead end")} found: states from which no winning ending is reachable. First: ${report.deadEnds[0]!.path.join("; ")}`,
-    });
-  }
-  if (report.losingEndings.length > 0) {
-    addUnlessPresent(diagnostics, {
-      severity: "error",
-      code: "explore.losing-ending",
-      path: "",
-      message: `Losing ending "${report.losingEndings[0]!.ending}" is reachable: ${report.losingEndings[0]!.path.join("; ")}`,
-    });
-  }
-  if (!report.complete) {
-    addUnlessPresent(diagnostics, {
-      severity: "warning",
-      code: "explore.incomplete",
-      path: "",
-      message: `The state space was not fully explored (${report.states} states). Raise --max-states or bound counters and flags.`,
-    });
-  }
+  const { diagnostics: _omitted, ...summary } = report;
+  return summary;
+}
+
+function summarizeExplore(report: ExploreReport, diagnostics: Diagnostic[]): CheckReport["explore"] {
+  diagnostics.push(...report.diagnostics, ...exploreFallbacks(report));
   return {
     complete: report.complete,
     states: report.states,
@@ -150,6 +109,7 @@ function summarizeExplore(report: ExploreReport, diagnostics: Diagnostic[]): Che
 function checkTarget(
   target: string,
   options: ExploreOptions,
+  playtimeOptions: PlaytimeOptions,
   noExplore: boolean,
 ): { report: CheckReport; baseDir: string } {
   const source = readPackSource(target);
@@ -161,6 +121,7 @@ function checkTarget(
     ok: false,
     diagnostics,
     walkthrough: null,
+    playtime: null,
     explore: null,
   };
   const pack = result.pack;
@@ -169,6 +130,11 @@ function checkTarget(
       report.walkthrough = summarizeWalkthrough(pack, runWalkthrough(pack), diagnostics);
     } catch (e) {
       diagnostics.push(engineFailure("check.walkthrough-crashed", "Walkthrough replay", e));
+    }
+    try {
+      report.playtime = summarizePlaytime(estimatePlaytime(pack, playtimeOptions), diagnostics);
+    } catch (e) {
+      diagnostics.push(engineFailure("check.playtime-crashed", "Play time estimate", e));
     }
     if (!noExplore) {
       try {
@@ -203,6 +169,21 @@ function printReport(report: CheckReport, baseDir: string): void {
       for (const line of w.failedStep.output.trim().split("\n").slice(0, 8)) out(`                  ${line}`);
     }
   }
+  const p = report.playtime;
+  if (p !== null) {
+    const expected = Math.max(1, Math.round(p.minutes.expected));
+    const speedrun = Math.max(1, Math.round(p.minutes.min));
+    let target = "no target (set playtime)";
+    if (p.target !== null && p.deviation !== null) {
+      const pct = Math.round(p.deviation * 100);
+      const text = `target ${p.target} min (${pct > 0 ? "+" : ""}${pct}%)`;
+      const off = report.diagnostics.some((d) => d.code === "playtime.too-short" || d.code === "playtime.too-long");
+      target = off ? color.yellow(text) : text;
+    }
+    out(
+      `  playtime      ≈ ${expected} min expected, speedrun ${speedrun} min, ${target}; ${p.words.path + p.words.optional} words, ${p.wordsPerMinute} wpm`,
+    );
+  }
   const x = report.explore;
   if (x !== null) {
     const parts = [
@@ -231,6 +212,8 @@ export function runCheck(argv: string[]): number {
     "max-states": { type: "string" },
     "include-drop": { type: "boolean" },
     "no-explore": { type: "boolean" },
+    wpm: { type: "string" },
+    "target-minutes": { type: "string" },
     help: { type: "boolean", short: "h" },
   });
   if (flag(args, "help")) {
@@ -242,10 +225,15 @@ export function runCheck(argv: string[]): number {
   const maxStates = intOption(args, "max-states");
   if (maxStates !== undefined) options.maxStates = maxStates;
   if (flag(args, "include-drop")) options.includeDrop = true;
+  const playtimeOptions: PlaytimeOptions = {};
+  const wpm = intOption(args, "wpm");
+  if (wpm !== undefined) playtimeOptions.wordsPerMinute = wpm;
+  const targetMinutes = intOption(args, "target-minutes");
+  if (targetMinutes !== undefined) playtimeOptions.targetMinutes = targetMinutes;
 
   const reports: CheckReport[] = [];
   for (const target of expandTargets(args.positionals)) {
-    const { report, baseDir } = checkTarget(target, options, flag(args, "no-explore"));
+    const { report, baseDir } = checkTarget(target, options, playtimeOptions, flag(args, "no-explore"));
     reports.push(report);
     if (!flag(args, "json")) printReport(report, baseDir);
   }

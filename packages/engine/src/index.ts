@@ -13,6 +13,7 @@ export { explore } from "./explore.ts";
 export { packHash, stateKey } from "./hash.ts";
 export { loadPack, PackError } from "./load.ts";
 export { parseCommand } from "./parser.ts";
+export { BUDGET_DEFAULTS, budgetForMinutes, countWords, estimatePlaytime, PLAYTIME_DEFAULTS } from "./playtime.ts";
 export { hint, newGame, step, view } from "./runtime.ts";
 export * from "./schema.ts";
 export { renderPlain } from "./text.ts";
