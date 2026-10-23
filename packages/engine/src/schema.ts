@@ -16,6 +16,10 @@
  */
 import { z } from "zod";
 
+// No JIT compilation of schemas: zod would probe `Function("")` (eval) for it, which the web player's
+// Content-Security-Policy forbids (and reports as a violation). Packs are small; the interpreter is fast enough.
+z.config({ jitless: true });
+
 export const PACK_FORMAT = "lexvm-pack/1" as const;
 
 /** Reserved location names. They cannot be used as room or object ids. */

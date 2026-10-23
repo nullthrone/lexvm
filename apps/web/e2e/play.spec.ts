@@ -70,7 +70,10 @@ test.beforeEach(async ({ page }) => {
   });
   await page.addInitScript(() => {
     document.addEventListener("securitypolicyviolation", (event) => {
-      console.error(`Content Security Policy violation: ${event.violatedDirective} ${event.blockedURI}`);
+      console.error(
+        `Content Security Policy violation: ${event.violatedDirective} ${event.blockedURI} ` +
+          `"${event.sample}" at ${event.sourceFile}:${event.lineNumber}:${event.columnNumber}`,
+      );
     });
   });
   await page.goto("./");
