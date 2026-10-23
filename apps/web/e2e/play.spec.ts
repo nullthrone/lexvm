@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { watchPolicyViolations } from "./support.ts";
+import { waitForAutosave, watchPolicyViolations } from "./support.ts";
 
 const PACK = "The Locked Study";
 
@@ -346,6 +346,8 @@ test("continues the autosaved game after a reload", async ({ page }) => {
   await startNewGame(page);
   await go(page, /west/i);
   await act(page, "red book", /^Pull/);
+  // The autosave is asynchronous: reload only once both moves are stored.
+  await waitForAutosave(page, 2);
   await page.reload();
   await expect(page.getByRole("button", { name: "Look around: Library" })).toBeVisible();
   // The transcript is rebuilt by replaying the command log.
