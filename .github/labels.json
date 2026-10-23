@@ -1,0 +1,21 @@
+[
+  { "name": "type: feature", "color": "1d76db", "description": "New capability" },
+  { "name": "type: bug", "color": "d73a4a", "description": "Something does not work as specified" },
+  { "name": "type: docs", "color": "0075ca", "description": "Documentation" },
+  { "name": "type: chore", "color": "cfd3d7", "description": "Tooling, CI, maintenance" },
+  { "name": "type: decision", "color": "5319e7", "description": "Needs a decision, recorded as an ADR" },
+  { "name": "type: research", "color": "c5def5", "description": "Exploration with an open outcome" },
+  { "name": "area: engine", "color": "fbca04", "description": "packages/engine: runtime, schema, verification" },
+  { "name": "area: web", "color": "fbca04", "description": "apps/web: PWA player" },
+  { "name": "area: cli", "color": "fbca04", "description": "packages/cli" },
+  { "name": "area: pipeline", "color": "fbca04", "description": "LLM generation pipeline and prompt kit" },
+  { "name": "area: content", "color": "fbca04", "description": "Content packs" },
+  { "name": "area: infra", "color": "fbca04", "description": "CI, GitHub Pages, repository automation" },
+  { "name": "area: community", "color": "fbca04", "description": "Contribution process and governance" },
+  { "name": "content-pack", "color": "0e8a16", "description": "Proposal or review of a content pack" },
+  { "name": "good first issue", "color": "7057ff", "description": "Good for newcomers" },
+  { "name": "help wanted", "color": "008672", "description": "Extra attention is needed" },
+  { "name": "priority: high", "color": "b60205", "description": "" },
+  { "name": "priority: medium", "color": "e99695", "description": "" },
+  { "name": "priority: low", "color": "f9d0c4", "description": "" }
+]

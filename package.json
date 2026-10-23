@@ -1,0 +1,33 @@
+{
+  "name": "lexvm",
+  "private": true,
+  "description": "LexVM: a deterministic, offline-first engine and player for LLM-generatable text adventures.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build -w @lexvm/engine && npm run packs && npm run build -w @lexvm/web",
+    "dev": "npm run packs && npm run dev -w @lexvm/web",
+    "packs": "npm run lexvm -- build packs --out apps/web/public/packs",
+    "check:packs": "npm run lexvm -- check packs",
+    "lexvm": "tsx packages/cli/src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/engine && tsc -p packages/cli && tsc -p apps/web",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.2",
+    "@playwright/test": "1.64.1",
+    "@types/node": "26.6.5",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

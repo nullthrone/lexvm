@@ -1,0 +1,16 @@
+{
+  "name": "@lexvm/cli",
+  "version": "0.1.0",
+  "description": "LexVM command line: validate, build, check, play and generate content packs.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "lexvm": "./src/main.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.2.0"
+  }
+}

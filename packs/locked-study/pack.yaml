@@ -1,0 +1,238 @@
+# yaml-language-server: $schema=../../schema/lexvm-pack-1.schema.json
+#
+# A five-minute demo that exercises most of the format: a locked door, a hidden
+# item, a container, a pack verb, a clue, a conversation, hints and a score.
+# It doubles as the reference example for authors and LLM prompts.
+format: lexvm-pack/1
+id: locked-study
+version: 1.0.0
+title: The Locked Study
+subtitle: A five-minute LexVM demo
+description: Your uncle has vanished and his study is locked. A tiny tour of rooms, items, a locked door, a clue and a conversation.
+language: en
+author: LexVM contributors
+license: CC0-1.0
+playtime: 5
+maxScore: 3
+
+start:
+  room: hall
+  intro: |-
+    Uncle Ambrose invited you for the weekend and then, rather rudely, vanished.
+
+    The house is quiet. Somewhere a clock is ticking.
+
+verbs:
+  read:
+    label: Read
+    synonyms: [read, peruse]
+    default: There is nothing to read there.
+
+flags:
+  book_moved: false
+  letter_read: false
+  told_password: false
+
+rooms:
+  hall:
+    name: Entrance Hall
+    description: A draughty hall with a chequered floor. The library lies to the west; a heavy {study_door|oak door} leads north to the study.
+    exits:
+      west: { to: library }
+      north:
+        to: study
+        door: study_door
+        blocked: The oak door is closed.
+  library:
+    name: Library
+    description:
+      - when: { flag: book_moved }
+        text: Shelves full of unread classics. One {red_book} now leans forward at an odd angle.
+      - text: Shelves full of unread classics. One {red_book} sticks out a little further than the rest.
+    exits:
+      east: { to: hall }
+  study:
+    name: Study
+    description: Your uncle's study smells of pipe smoke and ink. A {desk} stands under the window.
+    exits:
+      south:
+        to: hall
+        door: study_door
+        blocked: The oak door is closed.
+
+objects:
+  graves:
+    name: Graves
+    synonyms: [butler, mr graves]
+    location: hall
+    npc: true
+    dialogue: graves_talk
+    roomText: Graves, the butler, waits by the stairs with professional patience.
+    description: Immaculate, unhurried and entirely unreadable.
+  study_door:
+    name: oak door
+    synonyms: [door, study door]
+    location: hall
+    alsoIn: [study]
+    openable: true
+    open: false
+    locked: true
+    unlockedBy: brass_key
+    description:
+      - when: { isLocked: study_door }
+        text: Solid oak with a brass keyhole. Locked.
+      - when: { isOpen: study_door }
+        text: Solid oak, standing open.
+      - text: Solid oak with a brass keyhole. It is unlocked now.
+  red_book:
+    name: red book
+    synonyms: [book]
+    location: library
+    verbs: [pull]
+    description: A red leather spine without a title. It doesn't quite sit flush with its neighbours.
+  brass_key:
+    name: brass key
+    synonyms: [key]
+    location: library
+    hidden: true
+    portable: true
+    description: A small brass key, warm from its hiding place.
+  desk:
+    name: desk
+    synonyms: [writing desk, drawer]
+    location: study
+    container: true
+    openable: true
+    open: false
+    description: A writing desk with one wide drawer.
+  letter:
+    name: letter
+    synonyms: [note, envelope]
+    location: desk
+    portable: true
+    verbs: [read]
+    description: A letter in your uncle's spidery hand, addressed to you.
+  clue_library:
+    name: Late reading
+    location: nowhere
+    clue: true
+    description: Graves says your uncle was reading in the library late last night.
+  clue_password:
+    name: The password
+    location: nowhere
+    clue: true
+    description: "The letter says: tell Graves the word \"Perihelion\"."
+
+rules:
+  - id: pull_red_book
+    on: { verb: pull, object: red_book }
+    when: { not: { flag: book_moved } }
+    do:
+      - say: The book tilts forward with a click. Something small drops onto the carpet.
+      - set: book_moved
+      - reveal: brass_key
+      - score: 1
+  - id: pull_red_book_again
+    on: { verb: pull, object: red_book }
+    do: { say: The book will not move any further. }
+  - id: take_red_book
+    on: { verb: take, object: red_book }
+    do: { say: It seems to be attached to the shelf. Curious. }
+  - id: read_letter
+    on: { verb: read, object: letter }
+    do:
+      - say: "\"Dear guest, forgive the theatre. I am perfectly safe. Tell Graves the word Perihelion and he will bring you to me. — A.\""
+      - if:
+          when: { not: { flag: letter_read } }
+          then:
+            - set: letter_read
+            - score: 1
+      - learn: clue_password
+  - id: enter_study_first
+    on: { event: enter, room: study }
+    once: true
+    do: { say: "Somewhere below, the clock strikes twelve." }
+
+dialogues:
+  graves_talk:
+    with: graves
+    start: hello
+    nodes:
+      hello:
+        say: "\"Good evening. How may I be of service?\""
+        options:
+          - id: ask_uncle
+            text: "\"Where is my uncle?\""
+            goto: uncle
+          - id: say_password
+            text: "\"Perihelion.\""
+            when: { has: clue_password }
+            goto: password
+          - id: bye
+            text: "\"Nothing, thank you.\""
+      uncle:
+        say: "\"I could not say. He was reading in the library rather late last night.\""
+        do: { learn: clue_library }
+        options:
+          - id: back
+            text: "\"I see.\""
+            goto: hello
+      password:
+        say: "\"Ah. Then you had better follow me upstairs. He is expecting you.\""
+        do:
+          - set: told_password
+          - score: 1
+          - end: found_uncle
+
+endings:
+  found_uncle:
+    title: The Observatory
+    text: Graves leads you up a hidden stair into a glass dome. Uncle Ambrose looks up from his telescope. "You took your time," he says, and hands you a cup of tea.
+    win: true
+
+hints:
+  - id: ask_graves
+    until: { has: clue_library }
+    steps:
+      - Graves might know where your uncle went.
+      - Talk to Graves and ask about your uncle.
+  - id: find_key
+    until: { has: brass_key }
+    steps:
+      - Your uncle was reading in the library. Have a look around there.
+      - One book is not like the others.
+      - Pull the red book, then take the key.
+  - id: open_door
+    until: { visited: study }
+    steps:
+      - The key must fit somewhere in the hall.
+      - Use the brass key with the oak door, open it and go north.
+  - id: read_letter
+    until: { has: clue_password }
+    steps:
+      - The desk might hold something.
+      - Open the desk and read the letter.
+  - id: password
+    until: { flag: told_password }
+    steps:
+      - The letter mentions a word for Graves.
+      - Talk to Graves and say "Perihelion".
+
+walkthrough:
+  - talk graves
+  - choose ask_uncle
+  - choose back
+  - choose bye
+  - go west
+  - pull red_book
+  - take brass_key
+  - go east
+  - use brass_key study_door
+  - open study_door
+  - go north
+  - open desk
+  - take letter
+  - read letter
+  - go south
+  - talk graves
+  - choose say_password
