@@ -325,7 +325,11 @@ describe("English parser", () => {
     // "study" is also a word of the door's synonym "study door"; the room name wins.
     expect(parseCommand(en, study.state, "enter study")).toMatchObject({ ok: false, error: "unknown-object" });
     expect(q("go through the study door")).toEqual({ verb: "go", object: "south" });
-    expect(q("leave")).toEqual({ verb: "go", object: "out" });
+    // The study has a single exit and no 'out' exit: "leave" takes it.
+    expect(q("leave")).toEqual({ verb: "go", object: "south" });
+    expect(p("leave")).toEqual({ verb: "go", object: "out" });
+    expect(q("go back to the hall")).toEqual({ verb: "go", object: "south" });
+    expect(parseCommand(en, study.state, "ask graves about the password")).toMatchObject({ error: "not-here" });
   });
 
   it("parses directions", () => {

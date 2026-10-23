@@ -142,6 +142,9 @@ const LEADING_PREPS = [
   "through",
   "at",
   "about",
+  // "go back to the hall", "geh zurück zum Kai"
+  "back",
+  "zurück",
 ];
 
 const cache = new WeakMap<Pack, Tables>();
@@ -390,11 +393,14 @@ function parseArgs(pc: PCtx, verb: string, rest: Token[]): ParseResult {
       if (r.ok) return command({ verb, object: r.id as string });
       // "frag Wirt nach Foto": fall back to the longest leading phrase naming a character.
       const words = content(t, rest);
+      let err: ParseError = r;
       for (let len = words.length - 1; len >= 1; len--) {
         const p = resolveObject(pc, words.slice(0, len));
         if (p.ok && pack.objects[p.id]?.npc) return command({ verb, object: p.id });
+        // "ask graves about the key" while Graves is elsewhere: say so instead of "unknown words".
+        if (!p.ok && p.error === "not-here") err = better(err, p);
       }
-      return r;
+      return err;
     }
   }
 
@@ -580,6 +586,12 @@ function exactExit(pc: PCtx, tokens: readonly Token[]): string | null {
   if (words.length === 0) return null;
   const phrase = words.join(" ");
   const dir = pc.t.directions.get(phrase);
+  if (dir === "out") {
+    // "leave" / "raus" from a room with a single way out and no explicit 'out' exit: take that way.
+    const exits = listedExits(pc.pack, pc.state);
+    const only = exits[0];
+    if (exits.length === 1 && only && only.id !== "out") return only.id;
+  }
   if (dir !== undefined) return dir;
   for (const { id, exit } of listedExits(pc.pack, pc.state)) {
     const phrases = [exit.label, ...(exit.synonyms ?? [])].filter((p): p is string => p !== undefined).map(fold);
