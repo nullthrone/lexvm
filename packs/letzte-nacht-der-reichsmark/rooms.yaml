@@ -47,11 +47,11 @@ rooms:
     description:
       - when: { has: clue_tally }
         text: |-
-          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand steht die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
+          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand stehen die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
 
           Daneben die verschlossene {glaskabine} des Schuppenmeisters. Das {klemmbrett} hängt schief am Nagel, so wie du es zurückgeschoben hast. Nach Norden geht es zum Baumwall.
       - text: |-
-          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand steht die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
+          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand stehen die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
 
           Daneben die verschlossene {glaskabine} des Schuppenmeisters. Durch einen Spalt über ihrer Tür siehst du ein {klemmbrett} an einem Nagel. Nach Norden geht es zum Baumwall.
     exits:
@@ -117,6 +117,11 @@ rooms:
   speicher_treppe:
     name: Treppenhaus Speicher K
     description:
+      - when: { isOpen: bodentuer }
+        text: |-
+          Im Laternenlicht: verkohlte Stufen, die noch halten. Es riecht nach kaltem Rauch und, absurd, nach Kaffee.
+
+          Oben steht die {bodentuer} zum vierten Boden offen. Unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
       - when: { flag: laterne_an }
         text: |-
           Im Laternenlicht: verkohlte Stufen, die noch halten. Es riecht nach kaltem Rauch und, absurd, nach Kaffee.

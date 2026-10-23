@@ -84,7 +84,10 @@ objects:
     location: kneipe
     npc: true
     dialogue: kroeger_verhoer
-    roomText: Am Ecktisch sitzt {kroeger} vor einem Köm, den er nicht anrührt. Seine Kolonne sitzt zwei Tische weiter und sieht nicht her.
+    roomText:
+      - when: { has: clue_gestaendnis }
+        text: Am Ecktisch sitzt {kroeger} vor einem leeren Glas. Seine Kolonne ist gegangen.
+      - text: Am Ecktisch sitzt {kroeger} vor einem Köm, den er nicht anrührt. Seine Kolonne sitzt zwei Tische weiter und sieht nicht her.
     description:
       - when: { has: clue_gestaendnis }
         text: Willi Kröger, Vorarbeiter. Er sitzt da wie einer, der eine Last abgesetzt hat und nicht weiß, wohin mit den Händen. Das Glas ist leer.
@@ -119,7 +122,7 @@ objects:
 
   asmussen:
     name: Asmussen
-    synonyms: [Konrad Asmussen, Kaufmann, Kaffeemann]
+    synonyms: [Konrad Asmussen, Kaufmann, Mantel, Kaffeemann]
     location: nowhere
     npc: true
     dialogue: asmussen_finale
@@ -211,7 +214,7 @@ objects:
 
   spind_jakob:
     name: Spind 23
-    synonyms: [Spind, Jakobs Spind, 23, Bartschloss]
+    synonyms: [Spind, Jakobs Spind, "23", Bartschloss]
     location: kaischuppen
     container: true
     openable: true
@@ -223,9 +226,9 @@ objects:
       - when:
           - { isOpen: spind_jakob }
           - { not: { in: { object: zigarettenpaeckchen, location: spind_jakob } } }
-        text: "Leer bis auf einen Kleiderhaken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹."
+        text: "Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Am Kleiderhaken hängt nichts mehr."
       - when: { isOpen: spind_jakob }
-        text: "Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
+        text: "Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Hinter der Rückwand klemmt etwas, das die Polizei übersehen hat."
       - text: Jakobs Spind. Ein Bartschloss, frisch verkratzt.
 
   glaskabine:

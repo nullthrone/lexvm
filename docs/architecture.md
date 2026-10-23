@@ -69,6 +69,7 @@ flowchart TB
 | Runtime | `packages/engine` (`newGame`, `step`, `view`, `hint`) | Execute commands. Pure and deterministic. |
 | Parser | `packages/engine` (`parseCommand`) | Turn typed German or English input into the same structured `Command` that taps produce. |
 | Verifier | `packages/engine` (`runWalkthrough`, `explore`) | Replay the walkthrough; explore the reachable state space. |
+| Play time estimate | `packages/engine` (`estimatePlaytime`, `budgetForMinutes`) | Estimate a pack's play time from its walkthrough and texts; turn a target length into a size budget for prompts ([spec section 17](spec/content-pack.md#17-play-time-estimate-informative)). |
 | CLI | `packages/cli` | Authoring tools: `validate`, `build`, `check`, `play`, `new`, `schema`, `prompt`, `generate`. |
 | Player | `apps/web` | The PWA: library, story view, action sheets, parser field, hints, saves, themes, prompt kit, pack import. |
 | Prompt kit | `prompts/` | Prompts for LLMs, generated from the specification, the authoring guide and the demo pack by `npm run prompts`. |
@@ -235,6 +236,9 @@ flowchart LR
    content that is never reached. The search stops at a state limit (200,000
    by default) and then reports an incomplete result as a warning. Counters
    changed by `turn` rules must be bounded, or the state space is infinite.
+
+Alongside, `lexvm check` estimates the play time and warns when it misses the
+pack's `playtime` by more than 25% (informative, never an error).
 
 Where verification runs:
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSafeRelativePath, parseCatalog } from "../src/logic/catalog.ts";
+import { cardMinutes, isSafeRelativePath, parseCatalog } from "../src/logic/catalog.ts";
 
 const entry = {
   id: "locked-study",
@@ -9,6 +9,7 @@ const entry = {
   language: "en",
   version: "1.0.0",
   playtime: 5,
+  estimatedMinutes: 6,
   author: "LexVM contributors",
   license: "CC0-1.0",
   file: "locked-study.lexpack.json",
@@ -49,7 +50,9 @@ describe("parseCatalog", () => {
   it("fills defaults for optional fields and drops invalid ones", () => {
     const result = parseCatalog({
       format: "lexvm-catalog/1",
-      packs: [{ id: "x", title: "X", file: "x.lexpack.json", playtime: -3, language: "not a tag" }],
+      packs: [
+        { id: "x", title: "X", file: "x.lexpack.json", playtime: -3, estimatedMinutes: 2.5, language: "not a tag" },
+      ],
     });
     expect(result.ok && result.entries[0]).toEqual({
       id: "x",
@@ -62,6 +65,14 @@ describe("parseCatalog", () => {
       file: "x.lexpack.json",
       hash: "",
     });
+  });
+});
+
+describe("cardMinutes", () => {
+  it("shows the pack's playtime, else the estimate", () => {
+    expect(cardMinutes({ playtime: 5, estimatedMinutes: 6 })).toBe(5);
+    expect(cardMinutes({ estimatedMinutes: 6 })).toBe(6);
+    expect(cardMinutes({})).toBeUndefined();
   });
 });
 

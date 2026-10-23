@@ -482,7 +482,7 @@ export const PackSchema = z.strictObject({
   policy: z.literal("forgiving").default("forgiving"),
   /** Provenance of generated content. Free text, never executed. */
   generator: z.strictObject({ pipeline: z.string().min(1).optional(), notes: z.string().min(1).optional() }).optional(),
-  /** Estimated play time in minutes. */
+  /** Target play time in minutes; `lexvm check` compares its play time estimate against it (spec section 17). */
   playtime: z.number().int().positive().optional(),
   maxScore: z.number().int().positive().optional(),
   start: z.strictObject({

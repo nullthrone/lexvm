@@ -116,7 +116,7 @@ hints:
     steps:
       - Losnummern verraten das Schiff. Wann kam dieses Los an Land?
       - Vergleiche das Päckchen mit der Löschliste.
-      - Benutze im Notizbuch »Los 4471« mit »Löschliste: 200 Kisten«.
+      - "Benutze im Notizbuch »Los 4471« mit »Löschliste: 200 Kisten«."
   - id: h_nur_kroeger
     until: { has: clue_nur_kroeger }
     steps:
@@ -145,14 +145,14 @@ hints:
     until: { has: clue_tally }
     steps:
       - Im Kaischuppen hängt hinter Glas, was Kröger gezählt hat.
-      - Durch den Spalt reicht dein Arm nicht. Am Zollkanal liegen Boote – und was man an Booten so braucht.
+      - Durch den Spalt über der Glaskabine reicht dein Arm nicht. Am Zollkanal liegen Boote – und was man an Booten so braucht.
       - Nimm den Bootshaken am Zollkanal und benutze ihn im Kaischuppen mit dem Klemmbrett.
   - id: h_zwanzig
     until: { has: clue_zwanzig_kisten }
     steps:
       - Zweihundert laut Löschliste. Und laut Kröger?
       - Leg die beiden Zahlen nebeneinander.
-      - Benutze im Notizbuch »Tallyzettel: 180 Kisten« mit »Löschliste: 200 Kisten«.
+      - "Benutze im Notizbuch »Tallyzettel: 180 Kisten« mit »Löschliste: 200 Kisten«."
   - id: h_hintertuer
     until: { flag: hintertuer_frei }
     steps:
@@ -176,12 +176,12 @@ hints:
     steps:
       - Lene hat Kröger mit einem Kuvert bei den Brodersens gesehen.
       - Davon hat Anni dir nichts erzählt. Frag sie in ihrer Hütte.
-      - Fahr mit der Straßenbahn zur Siedlung, sprich mit Anni und frag nach Krögers Kuvert.
+      - Fahr mit der Straßenbahn zur Siedlung, sprich mit Anni und sprich sie auf Krögers Kuvert an.
   - id: h_verhoer
     until: { has: clue_gestaendnis }
     steps:
-      - Kröger hat vier Behauptungen. Für jede brauchst du den einen Beweis, der sie widerlegt. Lies »Krögers Version«.
-      - Schwund → »Kein Schwund«. Mitternacht → »Jakobs Zählheft«. Dieb → »Untergeschoben«. Brodersens → »Zweihundert Reichsmark«.
+      - Kröger hat vier Behauptungen. Für jede brauchst du den einen Beweis, der sie widerlegt. Lies »Krögers Version« in deinem Notizbuch.
+      - Schwund → »Kein Schwund«. Mitternacht → »Jakobs Zählheft«. Dieb → »Untergeschoben«. Die Brodersens → »Zweihundert Reichsmark«.
       - Sprich mit Kröger, wähle »Reden wir über Donnerstagnacht« und leg die Beweise in dieser Reihenfolge vor.
   - id: h_ueberfahrt
     until: { flag: tadeusz_rudert }

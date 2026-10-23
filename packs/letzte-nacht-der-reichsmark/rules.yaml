@@ -159,7 +159,7 @@ rules:
       - say: |-
           Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
 
-          Du hängst es zurück, so gut es geht. Den Haken lässt du an der Schuppenwand lehnen.
+          Du hängst es zurück. Den Haken lässt du an der Schuppenwand lehnen.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
@@ -171,7 +171,7 @@ rules:
       - say: |-
           Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
 
-          Du hängst es zurück, so gut es geht. Den Haken lässt du an der Schuppenwand lehnen.
+          Du hängst es zurück. Den Haken lässt du an der Schuppenwand lehnen.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
@@ -377,11 +377,6 @@ rules:
     do:
       - say: "»Reichsmark? Ab morgen tapezier ich damit.«"
 
-  - id: give_reichsmark_lene
-    on: { verb: give, object: reichsmark, with: lene }
-    do:
-      - say: "»Seit Freitag nehm ich nur noch Ware. Oder Amis.«"
-
   - id: give_paeckchen_lene
     on: { verb: give, object: zigarettenpaeckchen, with: lene }
     do:
@@ -429,7 +424,7 @@ rules:
     on: { verb: show, object: clue_gestaendnis, with: tadeusz }
     when: { not: { flag: tadeusz_rudert } }
     do:
-      - say: Tadeusz liest. Dann schraubt er die Thermoskanne zu und sieht hinüber zur Speicherstadt.
+      - say: Tadeusz liest. Dann sieht er lange hinüber zur Speicherstadt.
       - dialogue: tadeusz_gespraech
 
   - id: show_paeckchen_tadeusz

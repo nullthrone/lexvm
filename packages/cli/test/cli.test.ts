@@ -92,6 +92,24 @@ describe("lexvm validate", () => {
   );
 
   it(
+    "prints only errors as JSON with --errors-only (for repair loops)",
+    () => {
+      const fixture = join(ROOT, "packages/engine/test/fixtures/runtime/hafen.yaml");
+      type Entry = { ok: boolean; diagnostics: { severity: string }[] };
+      const all = JSON.parse(lexvm(["validate", "--json", fixture]).stdout) as Entry[];
+      expect(all[0]!.diagnostics.some((d) => d.severity === "warning")).toBe(true);
+      const r = lexvm(["validate", "--json", "--errors-only", fixture]);
+      expect(r.code).toBe(0);
+      const errorsOnly = JSON.parse(r.stdout) as Entry[];
+      expect(errorsOnly[0]).toMatchObject({ ok: true, diagnostics: [] });
+      const broken = JSON.parse(lexvm(["validate", "--json", "--errors-only", join(FIXTURES, "broken.yaml")]).stdout);
+      expect((broken as Entry[])[0]!.diagnostics.length).toBeGreaterThan(0);
+      expect((broken as Entry[])[0]!.diagnostics.every((d) => d.severity === "error")).toBe(true);
+    },
+    TIMEOUT,
+  );
+
+  it(
     "reports file:line, severity, code, path and message for a broken pack",
     () => {
       const r = lexvm(["validate", join(FIXTURES, "broken.yaml")]);
@@ -146,6 +164,7 @@ describe("lexvm build", () => {
         "language",
         "version",
         "playtime",
+        "estimatedMinutes",
         "author",
         "license",
         "file",
@@ -177,6 +196,24 @@ describe("lexvm build", () => {
       expect(existsSync(join(out, "locked-study.lexpack.json"))).toBe(true);
       const index = JSON.parse(readFileSync(join(out, "index.json"), "utf8")) as { packs: { id: string }[] };
       expect(index.packs.map((p) => p.id)).toEqual(["locked-study"]);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    "adds the play time estimate to the catalog",
+    () => {
+      const out = join(tmp, "build-estimate");
+      const r = lexvm(["build", "packs/locked-study", "--out", out]);
+      expect(r.code, r.stdout + r.stderr).toBe(0);
+      const index = JSON.parse(readFileSync(join(out, "index.json"), "utf8")) as {
+        packs: Array<{ id: string; playtime?: number; estimatedMinutes?: number }>;
+      };
+      const entry = index.packs.find((p) => p.id === "locked-study")!;
+      expect(entry.playtime).toBe(5);
+      expect(Number.isInteger(entry.estimatedMinutes)).toBe(true);
+      expect(entry.estimatedMinutes).toBeGreaterThanOrEqual(4);
+      expect(entry.estimatedMinutes).toBeLessThanOrEqual(8);
     },
     TIMEOUT,
   );
@@ -308,6 +345,43 @@ describe("lexvm check", () => {
       expect(report!.walkthrough.score).toBe(report!.walkthrough.maxScore);
       expect(report!.explore.winnable).toBe(true);
       expect(report!.explore.complete).toBe(true);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    "prints the play time estimate and its diagnostics",
+    () => {
+      const r = lexvm(["check", "--no-explore", "packs/locked-study"]);
+      expect(r.code, r.stdout + r.stderr).toBe(0);
+      expect(r.stdout).toMatch(/ {2}playtime {6}≈ \d+ min expected, speedrun \d+ min, target 5 min \([+-]\d+%\)/);
+      expect(r.stdout).toContain("playtime.estimate");
+      expect(r.stdout).not.toContain("playtime.too-");
+
+      // --target-minutes overrides playtime; missing the target is a warning, not an error.
+      const long = lexvm([
+        "check",
+        "--no-explore",
+        "--json",
+        "--target-minutes",
+        "30",
+        "--wpm",
+        "200",
+        "packs/locked-study",
+      ]);
+      expect(long.code, long.stderr).toBe(0);
+      const [report] = JSON.parse(long.stdout) as Array<{
+        ok: boolean;
+        diagnostics: Array<{ code: string; severity: string; message: string }>;
+        playtime: { target: number; wordsPerMinute: number; deviation: number; minutes: { expected: number } };
+      }>;
+      expect(report!.ok).toBe(true);
+      expect(report!.playtime).toMatchObject({ target: 30, wordsPerMinute: 200 });
+      expect(report!.playtime.deviation).toBeLessThan(-0.25);
+      const warning = report!.diagnostics.find((d) => d.code === "playtime.too-short");
+      expect(warning?.severity).toBe("warning");
+      expect(warning?.message).toContain("walkthrough commands");
+      expect(lexvm(["check", "--wpm", "0", "packs/locked-study"]).code).toBe(2);
     },
     TIMEOUT,
   );

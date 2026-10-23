@@ -624,8 +624,22 @@ const WARNINGS_AND_INFO: Case[] = [
     "rules[4].on.room",
     (p) => void p.rules!.push({ id: "welcome", on: { event: "start", room: "study" }, do: { say: "Hello." } }),
   ],
-  ["verb.reserved", "warning", "verbs.go", (p) => void (p.verbs!.go = { label: "Walk", synonyms: ["stroll"] })],
-  ["verb.reserved", "warning", "verbs.choose", (p) => void (p.verbs!.choose = { label: "Pick" })],
+  [
+    "verb.reserved",
+    "warning",
+    "verbs.go",
+    (p) => {
+      p.verbs!.go = { label: "Walk", synonyms: ["stroll"] };
+    },
+  ],
+  [
+    "verb.reserved",
+    "warning",
+    "verbs.choose",
+    (p) => {
+      p.verbs!.choose = { label: "Pick" };
+    },
+  ],
 ];
 
 describe("analyze: one fixture per diagnostic", () => {

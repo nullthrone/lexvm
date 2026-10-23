@@ -1,8 +1,17 @@
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { budgetForMinutes } from "@lexvm/engine";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { assemblePrompt, buildSystemPrompt, PROMPT_STAGES, type PromptInputs } from "../src/generate/assemble.ts";
+import {
+  assemblePrompt,
+  BUDGET_TABLE_MINUTES,
+  buildSystemPrompt,
+  PROMPT_STAGES,
+  type PromptInputs,
+  renderBudget,
+  renderBudgetTable,
+} from "../src/generate/assemble.ts";
 import {
   demoteHeadings,
   extractRegions,
@@ -135,6 +144,42 @@ describe("assemblePrompt", () => {
     expect(world).toContain("`hamburg-1948`");
     expect(world).toContain('"Jane Doe (written with an LLM)"');
     expect(world).toContain("lexvm generate");
+  });
+
+  it("gives the one-shot prompt a budget table for 15/30/45/60 minutes and both languages", () => {
+    const text = assemblePrompt(kit, "oneshot", { lang: null, idea: null, minutes: 30 });
+    expect(text).toContain("Pick the row that matches the requested length (no length requested: 30 minutes");
+    expect(text).toContain("| Play time | `de`: walkthrough steps | `de`: words of text | `en`: walkthrough steps |");
+    for (const minutes of BUDGET_TABLE_MINUTES) {
+      const de = budgetForMinutes(minutes, "de");
+      const en = budgetForMinutes(minutes, "en");
+      const row = text.split("\n").find((l) => l.startsWith(`| ${minutes} min |`));
+      expect(row, `${minutes} min`).toBeDefined();
+      expect(row).toContain(`${de.walkthroughSteps.min}–${de.walkthroughSteps.max}`);
+      expect(row).toContain(`${en.walkthroughSteps.min}–${en.walkthroughSteps.max}`);
+    }
+    // A requested length outside the standard rows gets its own row; a known language gets one column pair.
+    const table = renderBudgetTable(40, "en");
+    expect(table.split("\n")).toHaveLength(2 + 5);
+    expect(table).toContain("| 40 min |");
+    expect(table).not.toContain("`de`");
+    // The shared system prompt has no run-specific budget.
+    expect(buildSystemPrompt(kit)).not.toContain("Size budget");
+  });
+
+  it("puts the budget for --minutes into the stage prompts", () => {
+    const b = budgetForMinutes(40, "de");
+    for (const stage of ["concept", "puzzles", "world", "logic"] as const) {
+      const text = assemblePrompt(kit, stage, fullInputs);
+      expect(text, stage).toContain("Size budget for about 40 minutes");
+      expect(text, stage).toContain(`${b.walkthroughSteps.min}–${b.walkthroughSteps.max} steps`);
+      for (const note of b.notes) expect(text, stage).toContain(note);
+    }
+    const both = renderBudget(40, null);
+    expect(both).toContain("German pack (`de`)");
+    expect(both).toContain("English pack (`en`)");
+    expect(assemblePrompt(kit, "world", fullInputs)).toContain("`playtime: 40` (the target play time; keep it)");
+    expect(assemblePrompt(kit, "repair", fullInputs)).toContain("`playtime.too-short`");
   });
 
   it("contains no model identifiers", () => {
