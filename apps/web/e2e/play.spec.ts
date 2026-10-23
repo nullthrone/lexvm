@@ -138,6 +138,19 @@ test("plays the demo with typed commands", async ({ page }) => {
   await expectWinningEnding(page);
 });
 
+test("the menu offers waiting", async ({ page }) => {
+  await expect(packCard(page)).toContainText("about 5 min");
+  await startNewGame(page);
+  await page.getByRole("button", { name: "Menu" }).tap();
+  await sheet(page).getByRole("button", { name: "Wait" }).tap();
+  await expect(sheet(page)).toHaveCount(0);
+  await expect(transcript(page)).toContainText("Time passes.");
+  // Inside a conversation only dialogue choices work, so waiting is disabled.
+  await act(page, "Graves", /^Talk/);
+  await page.getByRole("button", { name: "Menu" }).tap();
+  await expect(sheet(page).getByRole("button", { name: "Wait" })).toBeDisabled();
+});
+
 test("undo takes back the last move", async ({ page }) => {
   await startNewGame(page);
   await go(page, /west/i);
@@ -171,14 +184,18 @@ test("the single-file offline version runs from file://", async ({ page }) => {
 });
 
 test("imports a pasted pack, checks its walkthrough and plays it", async ({ page }) => {
+  // Without playtime, the library card shows the estimate computed at import.
   const yaml = readFileSync(fileURLToPath(new URL("../../../packs/locked-study/pack.yaml", import.meta.url)), "utf8")
     .replace("id: locked-study", "id: my-study")
-    .replace("title: The Locked Study", "title: My Study");
+    .replace("title: The Locked Study", "title: My Study")
+    .replace(/^playtime: \d+\n/m, "");
   await page.getByRole("button", { name: "Create your own" }).tap();
   await expect(page.getByRole("heading", { name: "Create your own adventure" })).toBeVisible();
   await page.getByRole("textbox", { name: /paste here/i }).fill(yaml);
   await page.getByRole("button", { name: "Check and import" }).tap();
   await expect(page.getByText(/Walkthrough verified: 17 moves/)).toBeVisible();
+  await expect(page.getByText(/Estimated play time: about \d+ min \(speedrun: \d+ min\)/)).toBeVisible();
+  await expect(page.getByText(/Suggest playtime: \d+/)).toBeVisible();
   await expect(page.getByText("“My Study” is now in your library.")).toBeVisible();
   await page.getByRole("button", { name: "Play now" }).tap();
   await expect(transcript(page)).toContainText("Entrance Hall");
@@ -186,6 +203,7 @@ test("imports a pasted pack, checks its walkthrough and plays it", async ({ page
   await page.getByRole("button", { name: "Library", exact: true }).tap();
   const card = page.getByRole("article", { name: "My Study" });
   await expect(card).toContainText("imported");
+  await expect(card).toContainText(/about \d+ min/);
   await card.getByRole("button", { name: /Delete/ }).tap();
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).tap();
   await expect(card).toHaveCount(0);

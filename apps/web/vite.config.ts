@@ -17,10 +17,6 @@ const pkg = JSON.parse(readFileSync(here("./package.json"), "utf8")) as { versio
 
 const OFFLINE_DIR = "dist-offline";
 const OFFLINE_NAME = "lexvm-offline.html";
-const ENGINE_SRC = here("../../packages/engine/src/");
-
-/** The engine is pure; marking it side-effect free lets the bundler drop unused modules (the compiler and YAML). */
-const isEngineModule = (id: string) => id.replaceAll("\\", "/").startsWith(ENGINE_SRC.replaceAll("\\", "/"));
 
 export default defineConfig(({ mode }) => {
   const singlefile = mode === "singlefile";
@@ -31,17 +27,13 @@ export default defineConfig(({ mode }) => {
       __LEXVM_VERSION__: JSON.stringify(pkg.version),
       __LEXVM_SINGLEFILE__: JSON.stringify(singlefile),
     },
-    resolve: {
-      // The compiler is imported dynamically from its own module so YAML stays out of the main chunk.
-      alias: [{ find: /^@lexvm\/engine\/compile$/, replacement: `${ENGINE_SRC}compile.ts` }],
-    },
+    // The compiler (and with it the YAML parser) is imported dynamically from "@lexvm/engine/compile", a
+    // subpath export of the engine, so it lands in its own chunk. The engine's package.json declares
+    // "sideEffects": false, so the main chunk keeps only the engine modules it uses.
     build: {
       outDir: singlefile ? OFFLINE_DIR : "dist",
       emptyOutDir: true,
       sourcemap: false,
-      rolldownOptions: {
-        treeshake: { moduleSideEffects: (id: string) => !isEngineModule(id) },
-      },
     },
     plugins: [
       builtinPacksPlugin({ inline: singlefile, packsDir: here("./public/packs") }),

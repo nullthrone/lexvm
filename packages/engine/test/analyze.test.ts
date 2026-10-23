@@ -257,11 +257,11 @@ const ERRORS: Case[] = [
     },
   ],
   [
-    "rule.trigger-object-not-allowed",
+    "ref.unknown-room",
     "error",
     "rules[0].on.room",
     (p) => {
-      p.rules![0]!.on = { event: "turn", room: "hall" };
+      p.rules![0]!.on = { event: "turn", room: "garden" };
     },
   ],
   [
@@ -618,6 +618,14 @@ const WARNINGS_AND_INFO: Case[] = [
     },
   ],
   ["object.verb-not-applicable", "warning", "objects.note.verbs[1]", (p) => void p.objects!.note!.verbs!.push("go")],
+  [
+    "rule.start-room",
+    "warning",
+    "rules[4].on.room",
+    (p) => void p.rules!.push({ id: "welcome", on: { event: "start", room: "study" }, do: { say: "Hello." } }),
+  ],
+  ["verb.reserved", "warning", "verbs.go", (p) => void (p.verbs!.go = { label: "Walk", synonyms: ["stroll"] })],
+  ["verb.reserved", "warning", "verbs.choose", (p) => void (p.verbs!.choose = { label: "Pick" })],
 ];
 
 describe("analyze: one fixture per diagnostic", () => {
@@ -631,6 +639,27 @@ describe("analyze: one fixture per diagnostic", () => {
 });
 
 describe("analyze: details", () => {
+  it("accepts 'room' on turn rules (they fire only while the player is in that room)", () => {
+    const diagnostics = diagnose((p) => {
+      p.rules!.push({ id: "tick", on: { event: "turn", room: "study" }, do: { say: "Tick." } });
+    });
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("explains a start rule whose room is not the start room", () => {
+    const d = find(
+      diagnose((p) => void p.rules!.push({ id: "w", on: { event: "start", room: "study" }, do: { say: "Hi." } })),
+      "rule.start-room",
+    );
+    expect(d.message).toContain("from ever firing");
+    expect(d.message).toContain("event: enter, room: study");
+    const same = find(
+      diagnose((p) => void p.rules!.push({ id: "w", on: { event: "start", room: "hall" }, do: { say: "Hi." } })),
+      "rule.start-room",
+    );
+    expect(same.message).toContain("repeats the start room");
+  });
+
   it("suggests the closest id for typos", () => {
     const d = find(
       diagnose((p) => {

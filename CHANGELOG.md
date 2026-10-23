@@ -33,6 +33,11 @@ First release in preparation: v0.1 "Playable".
   progressive hints, score, saves and undo, content pack import, in-app
   prompt kit, book typography with sepia, light and dark themes, German and
   English UI.
+- Play time estimate (`estimatePlaytime`, `budgetForMinutes`): `lexvm check`
+  prints it and warns when a pack misses its `playtime` by more than 25%,
+  `lexvm build` writes `estimatedMinutes` to the catalog, the prompts carry a
+  size budget for the target length, `lexvm generate` enforces `--minutes`,
+  and the player shows the estimate on library cards and after an import.
 - Single-file offline build `lexvm-offline.html`.
 - Demo content pack `locked-study` (English, CC0-1.0), the reference example
   for authors and prompts.

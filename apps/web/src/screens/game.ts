@@ -603,10 +603,13 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
         ),
       );
     const ended = view?.ended !== null && view?.ended !== undefined;
+    // `wait` (arity 0) is an offered action like look around; it lives here to keep the dock uncluttered.
+    const canWait = !ended && view?.dialogue === null && (view?.verbs.some((v) => v.id === "wait") ?? false);
     sheet.setBody(
       h(
         "ul",
         { class: "menu" },
+        item("hourglass", t("game.wait"), () => run({ verb: "wait" }), !canWait),
         item("bulb", t("game.hint"), openHint, ended),
         item("undo", t("game.undo"), undo, !game.session.canUndo),
         item("restart", t("game.restart"), () => restart(true)),

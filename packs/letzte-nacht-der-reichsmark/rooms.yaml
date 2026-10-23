@@ -1,0 +1,159 @@
+# yaml-language-server: $schema=../../schema/lexvm-pack-1.schema.json
+#
+# Eleven rooms. Map and gates: design/world.md.
+rooms:
+  detektei:
+    name: Detektei Voss
+    description: |-
+      Dritter Stock eines halben Kontorhauses; die andere Hälfte liegt seit dreiundvierzig unten auf der Straße. Durch die Decke tropft der Regen in einen {regeneimer}, Takt für Takt. Auf dem {schreibtisch} liegen unbezahlte Rechnungen.
+
+      Die Treppe führt hinunter zum Baumwall.
+    exits:
+      down:
+        to: baumwall
+        when: { flag: auftrag_angenommen }
+        blocked: Anni Brodersen sitzt noch in deinem Besucherstuhl. Erst hörst du ihr zu.
+
+  baumwall:
+    name: Am Baumwall
+    description: |-
+      Unter dem Viadukt der Hochbahn stehen Pfützen voller Ziegelstaub. An der Litfaßsäule klebt die {bekanntmachung} zum neuen Geld, darüber ragen Kräne wie Galgen in den Regen.
+
+      Nach Süden geht es zum Kaischuppen 17, nach Osten zum Zollkanal, nach Westen in die Kneipen von St. Pauli. An der Haltestelle wartet die Straßenbahn zur Siedlung. Die Treppe hinauf führt in deine Detektei.
+    exits:
+      up: { to: detektei }
+      south: { to: kaischuppen }
+      east: { to: zollkanal }
+      west: { to: kneipe }
+      strassenbahn:
+        to: nissenhuette
+        label: Straßenbahn zur Siedlung
+        synonyms: [Straßenbahn, Bahn, Siedlung, Tram]
+
+  nissenhuette:
+    name: Nissenhütte 14
+    description: |-
+      Ein halbes Wellblechfass im Schlamm, eins von hundert hinter dem Bahndamm. Der Regen trommelt aufs Dach.
+
+      Ein {kanonenofen}, zwei Feldbetten, eine Wolldecke als Wand; dahinter schläft {lotte}. Auf dem Bord neben der Tür steht eine {blechdose}. Draußen hält die Straßenbahn in die Stadt.
+    exits:
+      stadt:
+        to: baumwall
+        label: Straßenbahn in die Stadt
+        synonyms: [Straßenbahn, Bahn, Stadt, Baumwall, Tram]
+
+  kaischuppen:
+    name: Kaischuppen 17
+    description:
+      - when: { has: clue_tally }
+        text: |-
+          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand steht die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
+
+          Daneben die verschlossene {glaskabine} des Schuppenmeisters. Das {klemmbrett} hängt schief am Nagel, so wie du es zurückgeschoben hast. Nach Norden geht es zum Baumwall.
+      - text: |-
+          Der Schuppen ist lang wie eine Straße und leer bis auf den Geruch: nasse Jute, Teer, Tabak. Am Tor hängt ein {aushang}. An der Wand steht die {spindreihe}; einer ist mit Kreide markiert: {spind_jakob}.
+
+          Daneben die verschlossene {glaskabine} des Schuppenmeisters. Durch einen Spalt über ihrer Tür siehst du ein {klemmbrett} an einem Nagel. Nach Norden geht es zum Baumwall.
+    exits:
+      north: { to: baumwall }
+
+  kneipe:
+    name: Zum Letzten Groschen
+    description:
+      - when: { flag: hintertuer_frei }
+        text: |-
+          Eine Kellerkneipe in St. Pauli, die Decke so niedrig, dass der Rauch nicht weiß, wohin. Hinter dem Tresen zapft der {wirt} Dünnbier. Auf der {kreidetafel} steht etwas über Reichsmark.
+
+          Die Hintertür zum Hof steht dir jetzt offen. Nach Osten geht es zurück zum Baumwall.
+      - text: |-
+          Eine Kellerkneipe in St. Pauli, die Decke so niedrig, dass der Rauch nicht weiß, wohin. Hinter dem Tresen zapft der {wirt} Dünnbier. Auf der {kreidetafel} steht etwas über Reichsmark.
+
+          Eine Hintertür führt auf den Hof. Nach Osten geht es zurück zum Baumwall.
+    exits:
+      east: { to: baumwall }
+      hintertuer:
+        to: hinterhof
+        label: Durch die Hintertür
+        synonyms: [Hintertür, Tür, Hof, Hinterhof]
+        when: { flag: hintertuer_frei }
+        blocked: Der Wirt stellt sich vor die Tür. »Da hinten nur Kundschaft, die zahlt.«
+
+  hinterhof:
+    name: Hinterhof
+    description: |-
+      Zwischen zwei Brandmauern spannt sich eine Plane. Darunter wird geflüstert und getauscht: Feuersteine, Nylons, Kaffee in Tüten. Ein Pfiff, und der Hof wäre leer.
+
+      Unter der Plane steht {lene} mit ihrem {bauchladen}. Die Tür führt hinein in die Kneipe.
+    exits:
+      in: { to: kneipe }
+
+  zollkanal:
+    name: Am Zollkanal
+    description: |-
+      Schwarzes Wasser zwischen Kaimauern. {schuten|Schuten} liegen Bordwand an Bordwand und sammeln Regen. Drüben stehen die Giebel der Speicherstadt ohne Dächer, mittendrin {speicher_k}.
+
+      Die Brücke hinüber sperrt ein {zollgitter}. In der {wachbude} brennt Petroleum. Nach Westen geht es zum Baumwall.
+    exits:
+      west: { to: baumwall }
+      ueberfahrt:
+        to: speicher_wasserseite
+        label: Mit Tadeusz übersetzen
+        synonyms: [Boot, übersetzen, rüber, hinüber]
+        visibleWhen: { flag: tadeusz_rudert }
+
+  speicher_wasserseite:
+    name: Speicher K, Wasserseite
+    description: |-
+      Eine glitschige Wassertreppe, grün bis zur Hochwassermarke. An einem Ring liegt die leere {schute_elise}; sie riecht nach Rohkaffee.
+
+      Über dir vier Stockwerke Backstein, schwarz vom Feuer. Eine Ladeluke steht offen, dahinter geht eine Treppe hinauf. Tadeusz wartet im Boot.
+    exits:
+      up: { to: speicher_treppe }
+      boot:
+        to: zollkanal
+        label: Zurück ins Boot
+        synonyms: [Boot, zurück, Tadeusz]
+
+  speicher_treppe:
+    name: Treppenhaus Speicher K
+    description:
+      - when: { flag: laterne_an }
+        text: |-
+          Im Laternenlicht: verkohlte Stufen, die noch halten. Es riecht nach kaltem Rauch und, absurd, nach Kaffee.
+
+          Oben verschließt eine {bodentuer} den vierten Boden. Unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
+      - text: |-
+          Fast dunkel. Verkohlte Stufen, die noch halten; es riecht nach kaltem Rauch und, absurd, nach Kaffee.
+
+          Oben ahnst du eine {bodentuer}. Unten liegt ein Lichtstreifen unter der {kontortuer}. Hinaus geht es zur Wasserseite.
+    exits:
+      up:
+        to: vierter_boden
+        door: bodentuer
+        blocked: Die Bodentür ist zu.
+      down:
+        to: kontor
+        when: { has: clue_jakob_aussage }
+        blocked: Unter der Kontortür liegt ein Lichtstreifen. Asmussen kann warten. Erst Jakob.
+      out: { to: speicher_wasserseite }
+
+  vierter_boden:
+    name: Vierter Boden
+    description: |-
+      Kisten bis an die verbrannten Balken, sorgfältig gestapelt: der einzige trockene Ort in Hamburg. {kisten|NAAFI-Kisten}, {kaffeesaecke|Säcke mit Rohkaffee}.
+
+      Am Pfeiler liegt {jakob}, das Bein mit zwei Latten geschient. Neben ihm steht eine {wasserkanne}; darunter klemmt ein {zettel}. Durch die offene {bodentuer} führt die Treppe hinunter.
+    exits:
+      down:
+        to: speicher_treppe
+        door: bodentuer
+        blocked: Die Bodentür ist zu.
+
+  kontor:
+    name: Kontor Asmussen
+    description: |-
+      Mahagoni, ein {kachelofen}, der wirklich brennt, und der Geruch von echtem Bohnenkaffee. Auf dem Schreibtisch liegt ein {fuellhalter} neben einer {kaffeetasse}.
+
+      Hier unten ist es, als hätte es den Krieg nie gegeben. Die Treppe führt hinauf.
+    exits:
+      up: { to: speicher_treppe }

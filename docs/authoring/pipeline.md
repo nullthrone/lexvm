@@ -25,7 +25,7 @@ All prompts are assembled from files in the repository at runtime:
 | [`docs/spec/content-pack.md`](../spec/content-pack.md) | The normative format specification, embedded in full. |
 | [`docs/authoring/guide.md`](guide.md) | The regions between `<!-- prompt:begin guide -->` markers form the condensed guide; the `checklist` region is the self-check list. |
 | [`packs/locked-study/pack.yaml`](../../packs/locked-study/pack.yaml) | The worked example. |
-| [`prompts/templates/`](../../prompts/templates/) | One Markdown template per stage, with placeholders such as `{{SPEC}}`, `{{GUIDE}}`, `{{EXAMPLE}}`, `{{LANG}}`, `{{IDEA}}`, `{{MINUTES}}`, `{{FILES}}`, `{{DIAGNOSTICS}}`. |
+| [`prompts/templates/`](../../prompts/templates/) | One Markdown template per stage, with placeholders such as `{{SPEC}}`, `{{GUIDE}}`, `{{EXAMPLE}}`, `{{LANG}}`, `{{IDEA}}`, `{{MINUTES}}`, `{{BUDGET}}`, `{{BUDGET_TABLE}}`, `{{FILES}}`, `{{DIAGNOSTICS}}`. |
 
 `npm run prompts` renders the generic one-shot prompt to
 [`prompts/oneshot.md`](../../prompts/oneshot.md), which the web app bundles
@@ -48,6 +48,28 @@ The stages:
 The staged prompts share one system prompt (`system.md`: the guide, the
 checklist, the spec and the example). It contains nothing run-specific, so
 the API can cache it across all calls of a run.
+
+### Play time budget
+
+Generated packs should roughly hit their target length, so every prompt
+gives the model a size budget up front. The budget comes from
+`budgetForMinutes` in the engine, the inverse of the play time estimate
+(spec section 17): for a target length and language it gives a range of
+walkthrough steps and of player-visible words, plus the typical proportions
+(about a quarter of the steps are dialogue choices, about 60% of the words
+appear along the walkthrough).
+
+- The stage prompts (`concept`, `puzzles`, `world`, `logic`) contain the
+  budget for `--minutes` (`{{BUDGET}}`); without `--lang` they list it for
+  German and English packs.
+- The generic one-shot prompt contains a table for 15, 30, 45 and 60 minutes
+  (`{{BUDGET_TABLE}}`, plus the `--minutes` value if it is another one) and
+  tells the model to pick the row matching the requested length, 30 minutes
+  if the idea names none.
+- `lexvm check` prints the estimate, and warns (`playtime.too-short`,
+  `playtime.too-long`) when it misses `playtime` by more than 25%, with
+  concrete numbers: how many puzzles, walkthrough commands or words to add or
+  cut. Paste these warnings back like any other diagnostic.
 
 ## Flow A: bring your own LLM
 
@@ -132,7 +154,7 @@ to any file.
 | `--idea <text>` / `--idea-file <path>` | — | The idea, in any language. |
 | `--out <dir>` | — | Output directory. Its name is the pack id (kebab-case). |
 | `--lang de\|en` | language of the idea | Pack language. |
-| `--minutes <n>` | 30 | Target play time. |
+| `--minutes <n>` | 30 | Target play time: written to `playtime`, sizes the budget in the prompts, checked by the play time estimate. |
 | `--model <id>` | `LEXVM_MODEL` | Claude model id (required). |
 | `--max-repairs <n>` | 6 | Repair rounds after the first check. |
 | `--from-stage <stage>` | `concept` | Resume at `concept`, `puzzles`, `world`, `logic` or `verify`. |
@@ -184,13 +206,20 @@ engine, in this order, stopping at the first gate with errors:
 3. **Exploration** — a breadth-first search over all reachable states proves
    that a win is always still reachable (no dead ends) and that no losing
    ending exists. If the state space exceeds `--max-states`, the result is
-   incomplete and reported as a warning.
+   incomplete and reported as a warning (an incomplete exploration proves
+   neither winnability nor its absence, so it never reports "not winnable").
+
+Once the walkthrough gate passes, the play time estimate runs against the
+`--minutes` target. The pipeline writes that target to `playtime` in
+`pack.yaml` after the world stage and restores it before every check, so a
+repair round cannot move the goalposts.
 
 ### The repair loop
 
 When a gate reports errors, the pipeline sends a repair prompt with the
-diagnostics — all errors first, then the most important warnings
-(exploration and walkthrough findings before style and text-length notes) —
+diagnostics — all errors first, then the most important warnings (play time
+first, then exploration and walkthrough findings, style and text-length notes
+last) —
 together with the current files and the design documents. The model returns
 only the files it changed, each in full; they replace the files on disk, and
 the pack is verified again. This repeats until no errors remain or
@@ -198,6 +227,13 @@ the pack is verified again. This repeats until no errors remain or
 model is asked to fix them where that is easy. If the verifier itself crashes
 twice in the same way (an engine bug, not a pack problem), the loop stops
 early.
+
+The length is the one warning the loop acts on by itself: when a pack passes
+every gate but its estimated play time misses the target by more than 25%
+(`playtime.too-short` / `playtime.too-long`), the pipeline spends one more
+repair round on the length, if `--max-repairs` leaves one. If that round
+breaks the pack and the remaining rounds cannot fix it, the last passing
+version is restored, so a length repair never costs a working pack.
 
 On failure, look at the remaining diagnostics (`npm run lexvm -- check
 packs/<id>`), fix what you can by hand, and continue with
@@ -291,3 +327,4 @@ is not legal advice.**
 | Errors about `thinking` | The model does not support adaptive thinking: add `--no-thinking`. |
 | The repair loop does not converge | Read the diagnostics; often the design itself has a dead end. Fix `design/puzzles.md` and rerun `--from-stage world`, or fix the YAML by hand and rerun `--from-stage verify`. |
 | `yaml.*` errors in a chat-generated pack | See "YAML pitfalls" in the [guide](guide.md): usually an unquoted `: ` or `, ` inside `{ … }`. |
+| `playtime.too-short` / `playtime.too-long` | The pack misses its target length; the message says how many puzzles, commands or words to add or cut. If the length is right and the target was wrong, change `playtime` instead (by hand; `lexvm generate` keeps it at `--minutes`). |

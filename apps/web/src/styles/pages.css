@@ -495,6 +495,12 @@ fieldset.field + .field__note {
   font-weight: 600;
 }
 
+.results__playtime {
+  margin: 0.75rem 0;
+  font-family: var(--sans);
+  font-size: 0.9375rem;
+}
+
 .diags {
   margin: 0.75rem 0;
   padding: 0;

@@ -12,7 +12,8 @@ Output: one line per diagnostic, "file:line  severity  code  path  message".
 
 Options:
   --json           Machine-readable output: [{ target, pack, ok, diagnostics }]
-  --errors-only    Print errors only (warnings and info are still counted)
+  --errors-only    Print errors only (warnings and info are still counted); with --json,
+                   diagnostics holds the errors only (handy for LLM repair loops)
   -h, --help       Show this help
 
 Exit codes: 0 no errors, 1 errors found, 2 usage error.`;
@@ -42,13 +43,13 @@ export function runValidate(argv: string[]): number {
     const result = compileSource(source);
     const ok = result.pack !== null;
     if (!ok) failed = true;
-    if (flag(args, "json")) {
-      entries.push({ target, pack: result.pack?.id ?? null, ok, diagnostics: result.diagnostics });
-      continue;
-    }
     const shown = flag(args, "errors-only")
       ? result.diagnostics.filter((d) => d.severity === "error")
       : result.diagnostics;
+    if (flag(args, "json")) {
+      entries.push({ target, pack: result.pack?.id ?? null, ok, diagnostics: shown });
+      continue;
+    }
     for (const d of shown) out(formatDiagnostic(d, source.baseDir, target));
     out(`${ok ? color.green("ok") : color.red("FAILED")}  ${target}: ${summarizeCounts(result.diagnostics)}`);
   }

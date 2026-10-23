@@ -7,7 +7,16 @@ LexVM is an offline text-adventure player for phones and tablets. Players mostly
 ## Parameters
 
 - **Pack language:** the language the idea is written in — `de` for German, `en` for English. LexVM supports these two pack languages; if the idea is written in another language, use English (`en`) unless the user asks for German.
-- **Target play time:** about 30 minutes, unless the idea asks for a different length.
+- **Target play time:** the length the idea asks for; if it names none, about 30 minutes. Write it into `playtime`.
+- **Size budget:** LexVM estimates the play time from the walkthrough and the texts, and `lexvm check` warns when the estimate misses `playtime` by more than 25%. Pick the row that matches the requested length (no length requested: 30 minutes; between two rows: interpolate) and keep the walkthrough and the player-visible text of the whole pack within it. About a quarter of the walkthrough steps are dialogue choices, and about 60% of the words appear along the walkthrough.
+
+| Play time | `de`: walkthrough steps | `de`: words of text | `en`: walkthrough steps | `en`: words of text |
+|---|---|---|---|---|
+| 15 min | 37–47 | 890–1,130 | 39–49 | 920–1,180 |
+| 30 min | 74–94 | 1,800–2,250 | 77–98 | 1,850–2,350 |
+| 45 min | 111–142 | 2,700–3,400 | 115–147 | 2,800–3,500 |
+| 60 min | 148–189 | 3,550–4,550 | 154–197 | 3,700–4,700 |
+
 - **Policy:** `forgiving` — no deaths, no losing endings, no dead ends.
 
 Everything below up to "How to answer" is reference material: first the authoring guide (how to make the game good), then the normative format specification (what is valid), then a complete worked example.
@@ -20,6 +29,11 @@ Everything below up to "How to answer" is reference material: first the authorin
 - Structure the game in 2–3 chapters separated by bottlenecks (a key event everything converges on). Within a chapter several puzzles are open at once.
 - End with a climax that uses what the player learned (a confrontation, a deduction), then a winning ending.
 - Score is a progress signal: usually 1 point per solved puzzle, 2 for a major deduction. Award each point exactly once (guard with a flag, a `not: { has: … }` condition or a `once` rule). `maxScore` equals the total score collected by the walkthrough.
+
+## Length budget
+- LexVM estimates the play time of a pack: reading the text the walkthrough shows (German 200, English 230 words per minute), about 10 seconds per walkthrough command and 6 per dialogue choice, plus part of the optional content (descriptions the walkthrough never examines, unchosen dialogue options, custom responses) and of the wrong attempts a player makes. `lexvm check` warns when the estimate misses `playtime` by more than 25%; set `playtime` to the target length.
+- Typical proportions: about 20 words of new text per walkthrough command; about a quarter of the walkthrough steps are dialogue choices; optional text about 60% of the walkthrough's text; about one described object for every two walkthrough commands that the walkthrough never examines.
+- Follow the size budget the prompt gives for the target length (walkthrough steps and words of player-visible text). Length comes from content, not padding: add a puzzle, a character to question, custom responses and side dialogue rather than longer descriptions (the text budgets for phone screens still apply). To shorten, cut a side puzzle or trim descriptions.
 
 ## Puzzle dependency chart
 - Design the puzzles as a dependency chart (Ron Gilbert): start from the winning ending and work backwards — what must be true right before it, and what before that. Nodes are puzzles, events, items and clues; an arrow means "is needed for".
@@ -179,7 +193,7 @@ which is what the player loads. The player can also import `.yaml` and
 | `license` | SPDX id | yes | License of the content, e.g. `CC-BY-4.0`. |
 | `policy` | `"forgiving"` | no | Default and currently the only policy: no losing endings, no dead ends. |
 | `generator` | `{pipeline?, notes?}` | no | Provenance, free text. |
-| `playtime` | int (minutes) | no | Estimated play time. |
+| `playtime` | int (minutes) | no | Target play time. `lexvm check` compares its play time estimate against it (section 17). |
 | `maxScore` | int | no | Enables the score display. |
 | `start` | `{room, intro?}` | yes | Starting room and intro text. |
 | `verbs` | map id → Verb | no | Pack verbs and overrides for core verbs. |
@@ -262,7 +276,7 @@ Everything the player can refer to is an object.
 | `description` | Text printed on *look*. |
 | `roomText` | Sentence appended to the room description while the object lies directly in the current room (or the current room is listed in its `alsoIn`). Objects without `roomText` that are portable are listed automatically ("You see here: …"). Scenery without `roomText` must be mentioned in the room description. |
 | `location` | **Required.** Room id, container object id, `inventory` or `nowhere` (not in play yet). |
-| `alsoIn` | Extra rooms where a non-portable object is present (doors, the sea, the sky). |
+| `alsoIn` | Extra rooms where a non-portable object is present (doors, the sea, the sky). Only the object itself is present there, not its contents. |
 | `portable` | Can be taken and dropped. |
 | `clue` | A clue (piece of knowledge). Lives in the notebook part of the inventory; cannot be dropped. Usually starts `nowhere` and is acquired with the `learn` effect. |
 | `npc` | A character: offers *talk*, receives *give* and *show*. |
@@ -276,7 +290,9 @@ Everything the player can refer to is an object.
 **Presence.** An object is *present* when it is not hidden and either its
 location chain leads to the current room or to `inventory` (through containers
 that are open or not openable), or the current room is listed in `alsoIn`.
-Commands can only refer to present objects.
+`alsoIn` makes only the object itself present: a container listed in another
+room's `alsoIn` does not bring its contents along. Commands can only refer to
+present objects.
 
 ### 7. Verbs
 
@@ -310,6 +326,13 @@ verbs:
 Pack verbs have `arity` 1 (default) or 2 (with `prep`). A pack verb only
 appears in an object's action sheet if the object lists it in `verbs`; the
 parser accepts it everywhere.
+
+An entry for a core verb relabels it and adds parser words. For `push`,
+`pull`, `use` and `wait` its `default` text also replaces the generic message
+("Nothing happens.", "That doesn't work.", "Time passes."); other core verbs
+ignore `default`. `go` and `choose` have fixed behaviour (exit chips, dialogue
+option buttons): an entry for them changes nothing a player sees, and the
+validator warns (`verb.reserved`).
 
 **Action sheets.** Tapping an object offers `look`; `talk` for an `npc`;
 `take` for a portable object or clue lying around; `open` or `close` for an
@@ -354,7 +377,7 @@ effects see the changes of earlier ones.
 | `{ counter: { name: c, add: 1 } }` / `{ counter: { name: c, set: 0 } }` | Change a counter. |
 | `{ open: obj }` `{ close: obj }` `{ lock: obj }` `{ unlock: obj }` | Change object state. Silent. |
 | `{ reveal: obj }` / `{ hide: obj }` | Make an object visible / hidden. Silent. |
-| `{ learn: clue }` | Put a clue into the notebook and announce it. No-op if already known. |
+| `{ learn: clue }` | Put a clue into the notebook and announce it; a hidden clue becomes visible. No-op if already known. |
 | `{ dialogue: id }` | Start a dialogue. |
 | `{ endDialogue: true }` | Leave the current dialogue. |
 | `{ score: n }` | Add points and announce them. |
@@ -392,9 +415,16 @@ validator warns about rules shadowed by earlier, more general rules.
 
 **Event rules** (`on: { event: … }`): `start` fires once when a new game begins
 (after the intro, before the first room description). `enter` fires after the
-player enters a room (optionally only `room`), after the room description; all
-matching `enter` rules fire, in order. `turn` fires at the end of each accepted
-command (step 7). An event rule's `when` and `once` apply as usual.
+player enters a room, after the room description; all matching `enter` rules
+fire, in order. `turn` fires at the end of each accepted command (step 7). An
+event rule's `when` and `once` apply as usual.
+
+A `room` on an event trigger restricts the rule to that room: an `enter` rule
+fires only when the player enters that room (even if an earlier `enter` rule
+moved the player on); a `turn` or `start` rule fires only while the player is
+currently in that room. A `start` rule always runs in the start room, so
+`room` there is redundant or keeps the rule from ever firing; the validator
+warns (`rule.start-room`).
 
 `once: true` rules fire at most once per game and need an `id`.
 
@@ -408,12 +438,12 @@ Default behaviours (messages are localized by the engine):
 | `drop obj` | If held and not a clue: move to the current room. |
 | `open obj` | If openable and closed: open (if locked and the player holds `unlockedBy`: unlock and open). Lists contents. |
 | `close obj` | If openable and open: close. |
-| `use a with b` | If `b.unlockedBy == a` and `b` is locked: unlock `b`. Otherwise "that doesn't work". |
-| `use a`, `push`, `pull` | "Nothing happens." |
+| `use a with b` | If `b.unlockedBy == a` and `b` is locked: unlock `b`. Both orders work: `use door key` unlocks the door as well. Otherwise the `default` text of `use`, or "that doesn't work". |
+| `use a`, `push`, `pull` | The verb's `default` text (`verbs.push.default`, …), or "Nothing happens." |
 | `talk npc` | Start `npc.dialogue` if set; otherwise "no answer". |
 | `give a b`, `show a b` | `b` is not interested. |
 | `go exit` | Move if usable; otherwise print `blocked` (or a default). |
-| `wait` | "Time passes." |
+| `wait` | `verbs.wait.default`, or "Time passes." |
 | `inventory` | List items and clues. |
 | pack verb | The verb's `default` text. |
 
@@ -440,7 +470,7 @@ rules:
 | Key | Meaning |
 |---|---|
 | `id` | Required for `once` rules; recommended always (diagnostics refer to it). |
-| `on` | `{ verb, object?, with? }` or `{ event: start | enter | turn, room? }` |
+| `on` | `{ verb, object?, with? }` or `{ event: start | enter | turn, room? }` (`room`: see section 10) |
 | `when` | Conditions (default: always). |
 | `do` | Effects. |
 | `once` | Fire at most once. |
@@ -543,7 +573,11 @@ ids, e.g. `take brass_key`, `use brass_key study_door`, `go north`,
    explored as well: no losing ending may be reachable with them, and states
    reachable only by typing must not be dead ends either.
 
-A pack is publishable when `lexvm check` reports no errors.
+`lexvm check` also prints a play time estimate and warns when it misses the
+pack's `playtime` by more than 25% (section 17).
+
+A pack is publishable when `lexvm check` reports no errors. Every diagnostic
+has a stable code; Appendix A lists them all.
 
 ### 15. Saves
 
@@ -557,6 +591,232 @@ Breaking changes to the format get a new `format` string (`lexvm-pack/2`).
 Additive, backwards-compatible changes keep `lexvm-pack/1` and are listed in
 the changelog.
 
+### 17. Play time estimate (informative)
+
+LexVM estimates how long a pack takes to play from its walkthrough and its
+texts. `lexvm check` prints the estimate, `lexvm build` writes it to the
+catalog, `lexvm generate` steers generated packs towards a target length with
+it, and the player's import screen shows it. The estimate never makes a pack
+invalid; it warns when a pack misses its target.
+
+**Model.** Two numbers: a *speedrun* that follows the walkthrough without
+detours, and the *expected* time of a typical first play.
+
+```
+minutes_min      = W_path / wpm + (C_path · t_cmd + D_path · t_choice) / 60
+minutes_expected = minutes_min + (c · W_optional) / wpm
+                   + (c · L_unseen · t_cmd + c · O_unchosen · t_choice + f · C_path · t_cmd) / 60
+```
+
+| Term | Meaning |
+|---|---|
+| `W_path` | Words output while replaying the walkthrough from a new game: blocks of kind text, room title, NPC line, player line and ending (not the echo of the command, not system lines such as exits or score). |
+| `W_optional` | Words of pack texts a player can see but the walkthrough never displays: object descriptions (if an object has several variants, only the longest one), dialogue node `say` and option texts, the `say` texts of command rules (including inside `if`), and room description variants. |
+| `C_path`, `D_path` | Walkthrough commands except `choose`, and `choose` steps. |
+| `L_unseen` | Objects with a description that the walkthrough never examines (`look <object>`). |
+| `O_unchosen` | Dialogue options the walkthrough never chooses. |
+
+Counting rules: words are counted on plain rendered text, with markup
+resolved (`{id}` → the object's name, `{id|text}` → `text`), as maximal runs of
+letters and digits that may be joined by an apostrophe or a hyphen
+(`/[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/u` on NFC-normalised text), so
+"Messingschlüssel", "don't", "Hafen-Kontor" and "1948" are one word each. A
+pack text counts as *seen* when exactly its rendered paragraph appeared in the
+walkthrough output; every paragraph counts at most once. A walkthrough that
+fails is measured up to its first failing step, and the estimate then says so.
+The computation is deterministic and uses no locale-dependent functions.
+
+**Parameters.** All of them are options of `estimatePlaytime(pack, options)`
+in `@lexvm/engine`.
+
+| Parameter | Default | Option | Meaning |
+|---|---|---|---|
+| `wpm` | `de` 200, `en` 230, other languages 220 | `wordsPerMinute`, `readingSpeeds`, `otherWordsPerMinute`; CLI `--wpm` | Silent reading speed in words per minute, chosen by the primary language subtag. |
+| `t_cmd` | 10 s | `secondsPerCommand` | Per command: perceive the scene, tap the object, pick the verb. |
+| `t_choice` | 6 s | `secondsPerChoice` | Per dialogue choice. |
+| `c` | 0.6 | `coverage` | Share of the optional content a typical player sees. |
+| `f` | 0.5 | `failedAttemptsPerCommand` | Unproductive attempts per productive command. |
+| tolerance | 0.25 | `tolerance` | Allowed relative deviation from the target. |
+| target | `playtime` | `targetMinutes`; CLI `--target-minutes` | The length the pack should have. |
+
+Sources for the reading speeds: a meta-analysis of 190 studies (Brysbaert,
+2019, *Journal of Memory and Language* 109) puts adult silent reading of
+English at 238 words per minute for non-fiction and 260 for fiction. The
+IReST norm texts (Trauzettel-Klosinski et al., 2012, *Investigative
+Ophthalmology & Visual Science* 53) measured young adults at 1126 characters
+per minute in German and 1234 in English; German words are longer, so German
+gets fewer words per minute. The defaults are deliberately below the lab
+values: the text is read on a phone screen, in a game, and partly re-read.
+
+**Diagnostics** (path `playtime`; Appendix A):
+
+- `playtime.estimate` (info, always): "≈ 34 min expected (speedrun 21 min);
+  target 35 min", followed by the counts the estimate is based on.
+- `playtime.no-target` (info): the pack has no `playtime`; suggests the
+  rounded expected time.
+- `playtime.too-short` / `playtime.too-long` (warning): `|expected / target − 1|`
+  is greater than the tolerance. The message gives concrete numbers derived
+  from the pack's own proportions, e.g. "≈ 12 min short: add 1-2 puzzles, or ≈
+  25 walkthrough commands, or ≈ 900 words of optional dialogue/description" or
+  "≈ 4 min too long: trim ≈ 1,100 words or ≈ 20 commands". They are left out
+  while the walkthrough does not reach a winning ending.
+
+**Budget.** `budgetForMinutes(minutes, language)` inverts the model for a
+target length with typical ratios of a pack: `W_optional ≈ 0.6 · W_path`,
+`D_path ≈ 0.25 ·` all walkthrough steps, `W_path ≈ 20 · C_path` (words of new
+text per productive command), `L_unseen ≈ 0.5 · C_path` and
+`O_unchosen ≈ 0.25 · D_path`. The ratios are calibrated against the reference
+pack `packs/locked-study` (English) and the German test fixture
+`packages/engine/test/fixtures/runtime/hafen.yaml`, pooled over both
+walkthroughs: measured 0.34, 0.28, 20.7, 0.56 and 0.14. The optional-word
+ratio is set higher than measured because these two packs are tiny, and a
+full-length game carries more side content (custom responses to wrong
+attempts, dialogue branches); the unchosen-option ratio is rounded up for the
+same reason. The budget gives ranges of walkthrough steps and player-visible
+words of ±tolerance/2 around the target, so a pack that stays within both
+ranges lands within the tolerance under the model's assumptions.
+
+**Where it is used.**
+
+- `lexvm check` prints the estimate for every pack and includes the
+  diagnostics (also in `--json`). `--wpm <n>` sets the reading speed,
+  `--target-minutes <n>` overrides `playtime`.
+- `lexvm build` adds `estimatedMinutes` (the rounded expected time) to each
+  catalog entry in `index.json` when the walkthrough reaches a win. The
+  player's library shows `playtime` and falls back to `estimatedMinutes`;
+  imported packs keep the estimate computed at import.
+- `lexvm generate --minutes <n>` writes the target to `playtime` in the
+  metadata (world) stage and keeps it there, puts the budget into the stage
+  prompts, and checks the estimate in its verification gate. Play time
+  warnings come right after the errors in repair prompts. A pack that passes
+  every gate but misses the target gets one more repair round for its length
+  (if `--max-repairs` allows); if that round breaks the pack and the
+  remaining rounds cannot fix it, the last passing version is restored. The
+  generic one-shot prompt contains a budget table for 15, 30, 45 and 60
+  minutes.
+
+### Appendix A. Diagnostic codes
+
+Every diagnostic has a stable code, a severity, a path into the pack (and a
+file and line where known) and a message that says how to fix the problem.
+Errors make a pack invalid; warnings and info do not. For repair loops,
+`lexvm validate --errors-only --json <pack>` prints only the errors as JSON
+(`[{ target, pack, ok, diagnostics }]`); `lexvm check --json` adds the
+walkthrough, play time and exploration results.
+
+**Reading and merging files** (compile)
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `yaml.<code>` | error (warning for YAML warnings) | YAML syntax problem, e.g. `yaml.block-in-flow`, `yaml.block-as-implicit-key`, `yaml.bad-indent`, `yaml.tab-as-indent`, `yaml.missing-char`, `yaml.duplicate-key`; the message often names the usual cause (unquoted `: ` or `, `). |
+| `yaml.unreadable` | error | The file could not be parsed at all. |
+| `compile.no-files` | error | No source files were given. |
+| `compile.not-a-map` | error | The top level of a file is not a mapping of pack keys. |
+| `compile.duplicate-key` | error | The same entry (or top-level scalar) is defined in two files. |
+| `compile.type-mismatch` | error | A top-level key is a map in one file and a list or scalar in another. |
+| `compile.failed` | error | Internal failure while compiling (e.g. absurdly deep nesting). |
+| `load.failed` | error | A compiled `.lexpack.json` could not be read (player import, `loadPack`). |
+
+**Schema** (structure and types)
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `schema.unrecognized_keys` | error | Unknown key (often a typo or a key at the wrong level). |
+| `schema.invalid_type` | error | Missing key or a value of the wrong type. |
+| `schema.invalid_union` | error | A value matches none of the allowed forms (e.g. a trigger with both `verb` and `event`). |
+| `schema.invalid_key` | error | A map key is not a valid id. |
+| `schema.invalid_value` | error | A value outside the allowed set (e.g. `format`, `event`). |
+| `schema.invalid_format` | error | A string in the wrong format (ids, pack id, version, language). |
+| `schema.too_small`, `schema.too_big` | error | Empty text or list, number out of range. |
+| `schema.custom` | error | A condition or effect without exactly one key, a counter effect without exactly one of `add`/`set`. |
+| `schema.<code>` | error | Any other schema issue. |
+
+**Semantics** (validator; `lexvm validate`)
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `ref.unknown-room`, `ref.unknown-object`, `ref.unknown-location`, `ref.unknown-flag`, `ref.unknown-counter`, `ref.unknown-verb`, `ref.unknown-dialogue`, `ref.unknown-ending`, `ref.unknown-node`, `ref.unknown-exit` | error | An id that is used is not declared (or is of the wrong kind). |
+| `ref.not-a-container` | error | Something is located in an object that is not a container. |
+| `id.reserved` | error | A room or object is called `inventory` or `nowhere`. |
+| `id.collision` | error | A room and an object share an id. |
+| `object.contains-itself` | error | An object is (indirectly) located in itself. |
+| `object.alsoIn-portable` | error | A portable object has `alsoIn`. |
+| `object.dialogue-not-npc` | warning | An object with a dialogue is not an `npc`, so its sheet does not offer *talk*. |
+| `object.verb-not-applicable` | warning | An object lists a verb that takes no object (`go`, `choose`, `wait`, `inventory`). |
+| `object.unmentioned` | info | A present object is mentioned neither in the room description nor by a `roomText`. |
+| `npc.no-talk` | info | A character has no dialogue and no talk rule. |
+| `verb.reserved` | warning | A pack entry for `go` or `choose`, whose behaviour is fixed. |
+| `exit.label-required` | error | A non-standard exit id without `label`. |
+| `exit.door-not-openable` | error | An exit's door is not openable, so the exit can never be used. |
+| `exit.door-not-here` | warning | An exit's door is not present in the exit's room. |
+| `rule.once-without-id` | error | A `once` rule without `id`. |
+| `rule.duplicate-id` | error | Two rules with the same id. |
+| `rule.choose-trigger` | error | A rule triggered by `choose` (rules never fire for it). |
+| `rule.trigger-object-not-allowed` | error | A trigger names an object the verb cannot take (e.g. `wait lamp`, `with` on a one-object verb). |
+| `rule.start-room` | warning | `room` on a `start` rule. |
+| `rule.shadowed` | warning | A command rule can never fire because an earlier, more general rule always matches first. |
+| `learn.not-a-clue` | error | `learn` on an object that is not a clue. |
+| `condition.counter-no-test` | warning | A counter condition without comparison always holds. |
+| `flag.never-read`, `flag.never-set` | warning | A flag that no condition reads, or that starts false and is never set. |
+| `counter.never-read`, `counter.never-changed` | warning | A counter that no condition tests, or that no effect changes. |
+| `counter.unbounded-turn-rule` | warning | A `turn` rule changes a counter every turn without bounding it, so the state space is infinite. |
+| `counter.unbounded` | info | A rule may change a counter without bound. |
+| `dialogue.duplicate-option` | error | Two options with the same id in one dialogue. |
+| `dialogue.unknown-goto` | error | An option goes to a node that does not exist. |
+| `dialogue.unreachable-node` | warning | A node no option leads to. |
+| `dialogue.no-exit` | warning | A dialogue that can never be left. |
+| `dialogue.unused` | warning | A dialogue that is never started. |
+| `dialogue.with-not-npc` | warning | A dialogue's `with` is not an `npc`. |
+| `ending.none-winning` | error | No ending has `win: true`. |
+| `policy.losing-ending` | error | An ending with `win: false` under the forgiving policy. |
+| `ending.unused` | warning | An ending no `end` effect leads to. |
+| `score.maxScore-missing` | info | Score effects without `maxScore`. |
+| `score.maxScore-unreachable` | warning | `maxScore` is higher than all score effects together. |
+| `hint.none` | warning | The pack has no hints. |
+| `hint.duplicate-id` | error | Two hints with the same id. |
+| `room.unreachable` | warning | A room that no exit or `goto` leads to. |
+| `text.unknown-ref` | error | Markup `{id}` that names no object (or has empty display text). |
+| `text.stray-brace` | warning | An unbalanced `{` or `}` in a text. |
+| `text.too-long` | warning | A text over its phone budget (section 4). |
+| `text.variant-after-default` | warning | A text variant after a variant without `when`, so it is never used. |
+| `walkthrough.malformed` | error | A walkthrough step is not a canonical command. |
+
+**Walkthrough replay** (`lexvm check`)
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `walkthrough.rejected` | error | A step was rejected; the message describes the situation (room, objects, exits, dialogue). |
+| `walkthrough.ended-early` | error | The game ended before the last step. |
+| `walkthrough.not-won` | error | The walkthrough does not end in a winning ending. |
+| `walkthrough.not-offered` | warning | A step works only as a typed command: no action sheet offers it. |
+| `walkthrough.score-mismatch` | warning | The walkthrough's final score differs from `maxScore`. |
+
+**Exploration** (`lexvm check`)
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `explore.not-winnable` | error | No winning ending is reachable with the offered actions (reported only for a complete exploration). |
+| `explore.dead-end` | error | A reachable state from which no winning ending can be reached. |
+| `explore.losing-ending` | error | A non-winning ending is reachable. |
+| `explore.incomplete` | warning | The state limit was hit; dead ends and winnability were not proven. |
+| `explore.unreached-room`, `explore.unreached-ending`, `explore.unreached-rule`, `explore.unreached-option` | info | Content never reached in any explored state. |
+
+**Play time** (section 17)
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `playtime.estimate` | info | The estimate and what it is based on. |
+| `playtime.no-target` | info | No `playtime`; suggests a value. |
+| `playtime.too-short`, `playtime.too-long` | warning | The expected time misses the target by more than the tolerance, with concrete advice. |
+
+**Tools**
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `check.walkthrough-crashed`, `check.playtime-crashed`, `check.explore-crashed` | error | `lexvm check` hit an internal error (an engine bug; please report it). |
+| `verify.compile-crashed`, `verify.walkthrough-crashed`, `verify.exploration-crashed` | error | A verification gate of `lexvm generate` hit an internal error. |
+| `verify.no-pack` | error | The files did not compile to a pack, but no error was reported. |
+
 # Worked example
 
 A complete five-minute pack. Copy its structure and style, not its content.
@@ -567,7 +827,7 @@ A complete five-minute pack. Copy its structure and style, not its content.
 # It doubles as the reference example for authors and LLM prompts.
 format: lexvm-pack/1
 id: locked-study
-version: 1.0.0
+version: 1.0.1
 title: The Locked Study
 subtitle: A five-minute LexVM demo
 description: Your uncle has vanished and his study is locked. A tiny tour of rooms, items, a locked door, a clue and a conversation.
@@ -615,7 +875,7 @@ rooms:
       east: { to: hall }
   study:
     name: Study
-    description: Your uncle's study smells of pipe smoke and ink. A {desk} stands under the window.
+    description: Your uncle's study smells of pipe smoke and ink. A {desk} stands under the window; the {study_door|oak door} leads back to the hall.
     exits:
       south:
         to: hall
@@ -814,7 +1074,7 @@ Answer in exactly three parts, in this order.
 **Part 2 — The pack:** ONE complete `pack.yaml` in a single fenced code block that starts with ```` ```yaml ````. Everything goes into this one file. Write the top-level keys in this order: metadata, `start`, `verbs`, `flags`, `counters`, `rooms`, `objects`, `rules`, `dialogues`, `endings`, `hints`, and **`walkthrough` last** — write it after everything else, replaying the game step by step, so it only uses ids that exist. Never abbreviate: no "…", no "and so on", no comments standing in for content.
 
 Metadata:
-- `format: lexvm-pack/1`, a kebab-case `id` derived from the title, `version: 1.0.0`, `title`, optional `subtitle`, a one- or two-sentence `description`, `language`, `playtime` (minutes), `maxScore` (the walkthrough's total score), `policy: forgiving`;
+- `format: lexvm-pack/1`, a kebab-case `id` derived from the title, `version: 1.0.0`, `title`, optional `subtitle`, a one- or two-sentence `description`, `language`, `playtime` (the target play time in minutes), `maxScore` (the walkthrough's total score), `policy: forgiving`;
 - `author`: the user's name or handle if they gave one, otherwise `Anonymous`, followed by ` (written with an LLM)`;
 - `license`: `CC-BY-4.0` unless the user asks for another SPDX license id;
 - `generator`: `{ pipeline: "lexvm one-shot prompt", notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt." }`.

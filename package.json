@@ -22,6 +22,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p packages/engine && tsc -p packages/cli && tsc -p apps/web",
     "lint": "biome check .",
+    "e2e": "npm run e2e -w @lexvm/web",
     "format": "biome format --write ."
   },
   "devDependencies": {

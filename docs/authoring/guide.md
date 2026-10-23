@@ -35,6 +35,23 @@ often offline. The first pack targets 30–45 minutes.
 - Score is a progress signal: usually 1 point per solved puzzle, 2 for a major deduction. Award each point exactly once (guard with a flag, a `not: { has: … }` condition or a `once` rule). `maxScore` equals the total score collected by the walkthrough.
 <!-- prompt:end guide -->
 
+### Length budget
+
+`playtime` is the length a pack aims for, and LexVM checks it: `lexvm check`
+estimates the play time from the walkthrough and the texts (spec section 17)
+and warns when the estimate misses `playtime` by more than 25%. The warning
+says how much is missing or too much, in puzzles, walkthrough commands or
+words. To see the budget for a length before you write, print a stage prompt
+(`npm run lexvm -- prompt --stage concept --minutes 40 --lang de`) or look at
+the table in [`prompts/oneshot.md`](../../prompts/oneshot.md).
+
+<!-- prompt:begin guide -->
+## Length budget
+- LexVM estimates the play time of a pack: reading the text the walkthrough shows (German 200, English 230 words per minute), about 10 seconds per walkthrough command and 6 per dialogue choice, plus part of the optional content (descriptions the walkthrough never examines, unchosen dialogue options, custom responses) and of the wrong attempts a player makes. `lexvm check` warns when the estimate misses `playtime` by more than 25%; set `playtime` to the target length.
+- Typical proportions: about 20 words of new text per walkthrough command; about a quarter of the walkthrough steps are dialogue choices; optional text about 60% of the walkthrough's text; about one described object for every two walkthrough commands that the walkthrough never examines.
+- Follow the size budget the prompt gives for the target length (walkthrough steps and words of player-visible text). Length comes from content, not padding: add a puzzle, a character to question, custom responses and side dialogue rather than longer descriptions (the text budgets for phone screens still apply). To shorten, cut a side puzzle or trim descriptions.
+<!-- prompt:end guide -->
+
 ## 2. Puzzle dependency charts
 
 Ron Gilbert's *puzzle dependency chart* is the tool for designing adventure

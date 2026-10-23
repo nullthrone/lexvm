@@ -334,15 +334,17 @@ function checkRuleTriggers(refs: Refs): void {
     const p = `rules[${i}].on`;
     const on = rule.on;
     if ("event" in on) {
-      if (on.room !== undefined) {
-        if (on.event === "enter") refs.room(on.room, `${p}.room`);
-        else {
-          out.error(
-            "rule.trigger-object-not-allowed",
-            `${p}.room`,
-            `'room' only applies to enter events; a ${on.event} rule fires regardless of the room. Remove room, or use when: { at: ${on.room} }.`,
-          );
-        }
+      // enter: only when entering that room; turn and start: only while the player is in that room.
+      if (on.room !== undefined && refs.room(on.room, `${p}.room`) && on.event === "start") {
+        out.warning(
+          "rule.start-room",
+          `${p}.room`,
+          `A start rule fires once, in the start room "${pack.start.room}", so 'room' only ${
+            on.room === pack.start.room
+              ? "repeats the start room"
+              : `keeps it from ever firing ("${on.room}" is not the start room)`
+          }. Remove room; for something that should happen on arrival in "${on.room}", use on: { event: enter, room: ${on.room} }.`,
+        );
       }
       return;
     }
@@ -430,7 +432,24 @@ function checkDialogueRefs(refs: Refs): void {
   }
 }
 
+/** Pack entries for `go` and `choose`: their behaviour is fixed (exit chips, dialogue option buttons). */
+function checkPackVerbs(refs: Refs): void {
+  for (const id of Object.keys(refs.ix.pack.verbs)) {
+    if (id !== "go" && id !== "choose") continue;
+    const effect =
+      id === "go"
+        ? "Exits have their own chips and their own labels, so this entry only adds parser words (its default text is never used)"
+        : "Dialogue options are chosen with their own buttons and rules never fire for choose, so this entry has no effect";
+    refs.out.warning(
+      "verb.reserved",
+      `verbs.${id}`,
+      `The verb id "${id}" has reserved behaviour. ${effect}. Remove verbs.${id}; for a new verb, choose another id.`,
+    );
+  }
+}
+
 export function checkReferences(refs: Refs): void {
+  checkPackVerbs(refs);
   checkRoomsAndExits(refs);
   checkObjects(refs);
   checkRuleTriggers(refs);

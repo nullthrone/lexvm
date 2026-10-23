@@ -2,10 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["vite/client", "node"],
-    "paths": {
-      "@lexvm/engine/compile": ["../../packages/engine/src/compile.ts"]
-    }
+    "types": ["vite/client", "node"]
   },
   "include": ["src", "test", "build", "scripts", "e2e", "vite.config.ts", "playwright.config.ts"]
 }

@@ -1,0 +1,699 @@
+# yaml-language-server: $schema=../../schema/lexvm-pack-1.schema.json
+#
+# Game logic. Only the first matching command rule fires, so specific rules
+# come before general ones and the per-character catch-alls come last.
+# Wrong attempts only print text; every state change is listed in
+# design/puzzles.md ("State-changing rules").
+rules:
+  # -------------------------------------------------------------------------
+  # Global
+  # -------------------------------------------------------------------------
+  - id: drop_im_regen
+    on: { verb: drop }
+    do:
+      - say: Im Regen lässt man nichts liegen. Nicht in Hamburg, 1948.
+
+  # -------------------------------------------------------------------------
+  # Act I: Der Auftrag
+  # -------------------------------------------------------------------------
+  - id: talk_anni_auftrag
+    on: { verb: talk, object: anni }
+    when: { not: { flag: auftrag_angenommen } }
+    do:
+      - dialogue: anni_auftrag
+
+  # -------------------------------------------------------------------------
+  # Forced event: Asmussen at the Baumwall after the first talk with Kröger
+  # -------------------------------------------------------------------------
+  - id: asmussen_hinterhalt
+    on: { event: enter, room: baumwall }
+    when:
+      - { has: clue_kroeger_version }
+      - { not: { flag: asmussen_getroffen } }
+    do:
+      - move: { object: asmussen, to: baumwall }
+      - set: asmussen_getroffen
+      - dialogue: asmussen_warnung
+
+  # -------------------------------------------------------------------------
+  # Documents (pack verb lesen)
+  # -------------------------------------------------------------------------
+  - id: lesen_bekanntmachung
+    on: { verb: lesen, object: bekanntmachung }
+    do:
+      - say: "Das Plakat der Militärregierung: ›Am Sonntag, dem 20. Juni 1948, erhält jeder Einwohner bei seiner Kartenstelle 40 Deutsche Mark gegen 40 Reichsmark. Ab Montag gilt das neue Geld.‹"
+
+  - id: lesen_aushang
+    on: { verb: lesen, object: aushang }
+    do:
+      - say: |-
+          Mit Schreibmaschine, schon etwas aufgeweicht:
+          LÖSCHLISTE · Kaischuppen 17
+          Do. 17.6.48, Nachtschicht
+          D. Elspeth Gray, NAAFI-Ware, Los 4471: 200 Kisten Zigaretten
+          Abtransport NAAFI-Depot Fr. 5 Uhr unter Bewachung
+      - learn: clue_loeschliste
+
+  - id: lesen_kreidetafel
+    on: { verb: lesen, object: kreidetafel }
+    do:
+      - say: "In großen Buchstaben: ›Reichsmark nur noch bis Sonntag!‹ Darunter, kleiner: ›Ab Montag nur gegen DM. Anschreiben zwecklos.‹"
+
+  - id: lesen_wachbude_heft
+    on: { verb: lesen, object: wachbude }
+    when: { has: clue_zaehlheft }
+    do:
+      - say: "Tadeusz schiebt dir das Register hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+
+  - id: lesen_wachbude
+    on: { verb: lesen, object: wachbude }
+    do:
+      - say: Tadeusz legt die Hand auf das Register. »Das ist nicht für Fremde.«
+
+  - id: lesen_zettel
+    on: { verb: lesen, object: zettel }
+    do:
+      - say: |-
+          Grüne Tinte, steile Schrift: ›W. – Der Mann bleibt oben. Wasser ja, Licht nein. Montag sechs Uhr geht die Ware raus, dann lass ihn laufen. Wer glaubt schon einem Dieb.‹
+
+          Keine Unterschrift. Jedes »g« hat eine Schleife nach rechts.
+      - learn: clue_anweisung
+
+  - id: take_zettel
+    on: { verb: take, object: zettel }
+    do:
+      - say: Du lässt ihn liegen; wer immer den Fall bekommt, soll ihn hier finden. Aber du schreibst ihn ab, Wort für Wort.
+      - learn: clue_anweisung
+
+  # -------------------------------------------------------------------------
+  # P1: Spind 23
+  # -------------------------------------------------------------------------
+  - id: open_spind
+    on: { verb: open, object: spind_jakob }
+    when:
+      - { isLocked: spind_jakob }
+      - { has: spindschluessel }
+    do:
+      - unlock: spind_jakob
+      - open: spind_jakob
+      - move: { object: spindschluessel, to: nowhere }
+      - say: "Der Schlüssel dreht sich schwer, dann gibt das Bartschloss nach und bleibt stecken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Der Spind ist leer. Fast: Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
+      - learn: clue_zweitschluessel
+      - score: 1
+
+  - id: use_schluessel_spind
+    on: { verb: use, object: spindschluessel, with: spind_jakob }
+    when:
+      - { isLocked: spind_jakob }
+      - { has: spindschluessel }
+    do:
+      - unlock: spind_jakob
+      - open: spind_jakob
+      - move: { object: spindschluessel, to: nowhere }
+      - say: "Der Schlüssel dreht sich schwer, dann gibt das Bartschloss nach und bleibt stecken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Der Spind ist leer. Fast: Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
+      - learn: clue_zweitschluessel
+      - score: 1
+
+  - id: use_schluessel_glaskabine
+    on: { verb: use, object: spindschluessel, with: glaskabine }
+    do:
+      - say: Zu klein. Der gehört zu einem Spind, nicht zu einem Glaskasten.
+
+  - id: close_spind
+    on: { verb: close, object: spind_jakob }
+    do:
+      - say: Du lässt ihn offen. Jakob hat nichts zu verbergen.
+
+  - id: pull_spind
+    on: { verb: pull, object: spind_jakob }
+    do:
+      - say: Festgeschraubt. Und laut wäre es auch.
+
+  - id: take_spindreihe
+    on: { verb: take, object: spindreihe }
+    do:
+      - say: Zwanzig Blechspinde. Du hast zwei Hände.
+
+  - id: take_paeckchen
+    on: { verb: take, object: zigarettenpaeckchen }
+    when: { not: { has: zigarettenpaeckchen } }
+    do:
+      - move: { object: zigarettenpaeckchen, to: inventory }
+      - say: "Du ziehst das Päckchen hinter der Rückwand hervor. Auf der Banderole: ›NAAFI – LOT 4471‹. Ein Los, ein Schiff – das weißt du noch aus der Versicherung."
+      - learn: clue_los4471
+
+  # -------------------------------------------------------------------------
+  # P2: Der Tallyzettel
+  # -------------------------------------------------------------------------
+  - id: take_bootshaken
+    on: { verb: take, object: bootshaken }
+    when: { not: { has: bootshaken } }
+    do:
+      - move: { object: bootshaken, to: inventory }
+      - say: "»Nehmen Sie«, sagt Tadeusz, ohne aufzusehen. »Er gehört mir sowieso nicht.«"
+
+  - id: angeln_klemmbrett
+    on: { verb: use, object: bootshaken, with: klemmbrett }
+    when: { not: { has: clue_tally } }
+    do:
+      - say: |-
+          Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
+
+          Du hängst es zurück, so gut es geht. Den Haken lässt du an der Schuppenwand lehnen.
+      - move: { object: bootshaken, to: nowhere }
+      - learn: clue_tally
+      - score: 1
+
+  - id: angeln_glaskabine
+    on: { verb: use, object: bootshaken, with: glaskabine }
+    when: { not: { has: clue_tally } }
+    do:
+      - say: |-
+          Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
+
+          Du hängst es zurück, so gut es geht. Den Haken lässt du an der Schuppenwand lehnen.
+      - move: { object: bootshaken, to: nowhere }
+      - learn: clue_tally
+      - score: 1
+
+  - id: open_glaskabine
+    on: { verb: open, object: glaskabine }
+    do:
+      - say: Abgeschlossen. Der Schuppenmeister ist bis Montag bei seiner Schwester in Harburg.
+
+  - id: push_glaskabine
+    on: { verb: push, object: glaskabine }
+    do:
+      - say: Glas einschlagen, im Hafen, am Sonnabend? Dann steht morgen dein Name in der Zeitung, nicht Krögers.
+
+  - id: take_klemmbrett_fertig
+    on: { verb: take, object: klemmbrett }
+    when: { has: clue_tally }
+    do:
+      - say: Was draufsteht, hast du im Notizbuch. Das Brett soll hängen, wo Kröger es sucht.
+
+  - id: take_klemmbrett
+    on: { verb: take, object: klemmbrett }
+    do:
+      - say: Zu weit für deinen Arm. Du bräuchtest etwas Langes mit einem Haken.
+
+  - id: use_streichhoelzer_klemmbrett
+    on: { verb: use, object: streichhoelzer, with: klemmbrett }
+    do:
+      - say: Beweise verbrennt man nicht. Das machen andere.
+
+  # -------------------------------------------------------------------------
+  # Deductions D1–D6 (use clue clue; the engine also tries the swapped order)
+  # -------------------------------------------------------------------------
+  - id: d1_zwanzig_kisten
+    on: { verb: use, object: clue_tally, with: clue_loeschliste }
+    when: { not: { has: clue_zwanzig_kisten } }
+    do:
+      - say: Zweihundert gelöscht, hundertachtzig gezählt. Zwanzig Kisten haben sich zwischen Schiff und Schuppen in Luft aufgelöst. Und gezählt hat Kröger.
+      - learn: clue_zwanzig_kisten
+      - score: 1
+
+  - id: d1_schon
+    on: { verb: use, object: clue_tally, with: clue_loeschliste }
+    do:
+      - say: "Schon notiert: {clue_zwanzig_kisten}."
+
+  - id: d2_frisch_an_land
+    on: { verb: use, object: clue_los4471, with: clue_loeschliste }
+    when: { not: { has: clue_frisch_an_land } }
+    do:
+      - say: "Los 4471: die »Elspeth Gray«, Donnerstagnacht. Was in Jakobs Spind lag, war vorher noch auf See."
+      - learn: clue_frisch_an_land
+      - score: 1
+
+  - id: d2_schon
+    on: { verb: use, object: clue_los4471, with: clue_loeschliste }
+    do:
+      - say: "Schon notiert: {clue_frisch_an_land}."
+
+  - id: d3_nur_kroeger
+    on: { verb: use, object: clue_schluessel, with: clue_zweitschluessel }
+    when: { not: { has: clue_nur_kroeger } }
+    do:
+      - say: Jakobs Schlüssel hing zu Hause, der zweite beim Vorarbeiter. Seit Donnerstagmittag hatte nur einer Zugang zu Spind 23.
+      - learn: clue_nur_kroeger
+      - score: 1
+
+  - id: d3_schon
+    on: { verb: use, object: clue_schluessel, with: clue_zweitschluessel }
+    do:
+      - say: "Schon notiert: {clue_nur_kroeger}."
+
+  - id: d4_untergeschoben
+    on: { verb: use, object: clue_frisch_an_land, with: clue_nur_kroeger }
+    when: { not: { has: clue_untergeschoben } }
+    do:
+      - say: Die Ware kam an Land, als Jakob nicht mehr an seinen Spind konnte. Kröger schon. Jakob ist kein Dieb. Man hat ihn dazu gemacht.
+      - learn: clue_untergeschoben
+      - score: 2
+
+  - id: d4_schon
+    on: { verb: use, object: clue_frisch_an_land, with: clue_nur_kroeger }
+    do:
+      - say: "Schon notiert: {clue_untergeschoben}."
+
+  - id: d5_kein_schwund
+    on: { verb: use, object: clue_zwanzig_kisten, with: clue_lene }
+    when: { not: { has: clue_kein_schwund } }
+    do:
+      - say: Zwanzig Kisten fehlen, und Kröger verkauft genau dieses Los. Das ist kein Schwund. Das ist ein Geschäft.
+      - learn: clue_kein_schwund
+      - score: 1
+
+  - id: d5_schon
+    on: { verb: use, object: clue_zwanzig_kisten, with: clue_lene }
+    do:
+      - say: "Schon notiert: {clue_kein_schwund}."
+
+  - id: d6_dieselbe_hand
+    on: { verb: use, object: clue_anweisung, with: clue_persilschein }
+    when: { not: { has: clue_dieselbe_hand } }
+    do:
+      - say: Grüne Tinte, steile Schrift, das »g« mit der Schleife. Der Mann, der Kröger reingewaschen hat, hat auch Jakobs Gefängnis bestellt.
+      - learn: clue_dieselbe_hand
+      - score: 2
+
+  - id: d6_schon
+    on: { verb: use, object: clue_anweisung, with: clue_persilschein }
+    do:
+      - say: "Schon notiert: {clue_dieselbe_hand}."
+
+  # Near misses: plausible wrong pairs point to the missing piece.
+  - id: nm_tally_los
+    on: { verb: use, object: clue_tally, with: clue_los4471 }
+    do:
+      - say: Auf dem Tallyzettel steht keine Losnummer. Aber irgendwo anders vielleicht.
+
+  - id: nm_auftrag_zweitschluessel
+    on: { verb: use, object: clue_auftrag, with: clue_zweitschluessel }
+    do:
+      - say: Ein Zweitschlüssel beim Vorarbeiter. Und wo war Jakobs eigener Schlüssel?
+
+  - id: nm_frisch_zweitschluessel
+    on: { verb: use, object: clue_frisch_an_land, with: clue_zweitschluessel }
+    do:
+      - say: Die Ware kam Donnerstagnacht, und der Vorarbeiter hat einen Zweitschlüssel. Aber Jakob hatte auch einen. Wo war der?
+
+  - id: nm_nur_kroeger_auftrag
+    on: { verb: use, object: clue_nur_kroeger, with: clue_auftrag }
+    do:
+      - say: Seit Donnerstagmittag konnte nur Kröger an den Spind. Aber vorher Jakob. Wann kam die Ware an Land?
+
+  - id: nm_nur_kroeger_los
+    on: { verb: use, object: clue_nur_kroeger, with: clue_los4471 }
+    do:
+      - say: Seit Donnerstagmittag konnte nur Kröger an den Spind. Und wann kam dieses Los an Land?
+
+  - id: nm_frisch_auftrag
+    on: { verb: use, object: clue_frisch_an_land, with: clue_auftrag }
+    do:
+      - say: Die Ware kam Donnerstagnacht. Jakob war Donnerstagnacht an Bord. Hatte er seinen Schlüssel dabei?
+
+  - id: nm_lene_tally
+    on: { verb: use, object: clue_lene, with: clue_tally }
+    do:
+      - say: Kröger verkauft Los 4471. Aber fehlt überhaupt etwas? Leg erst den Tallyzettel neben die Löschliste.
+
+  - id: nm_zwanzig_zaehlheft
+    on: { verb: use, object: clue_zwanzig_kisten, with: clue_zaehlheft }
+    do:
+      - say: Jakob hat dasselbe gezählt wie du. Aber dem Heft eines Verschwundenen glaubt keiner. Wer verdient an den zwanzig Kisten?
+
+  - id: nm_schweigegeld_asmussen
+    on: { verb: use, object: clue_schweigegeld, with: clue_asmussen }
+    do:
+      - say: Asmussens Stempel auf Krögers Kuvert. Das Geld kam von oben. Beweisen musst du es zuerst Kröger.
+
+  - id: nm_anweisung_asmussen
+    on: { verb: use, object: clue_anweisung, with: clue_asmussen }
+    do:
+      - say: Asmussens Karte ist gedruckt. Du brauchst etwas, das er mit der Hand geschrieben hat.
+
+  - id: nm_anweisung_gestaendnis
+    on: { verb: use, object: clue_anweisung, with: clue_gestaendnis }
+    do:
+      - say: Kröger hat gestanden, aber diese Anweisung ist an ihn gerichtet, nicht von ihm. Wessen grüne Tinte hast du heute noch gesehen?
+
+  # -------------------------------------------------------------------------
+  # P4: St. Pauli – Hintertür und Bauchladen
+  # -------------------------------------------------------------------------
+  - id: give_reichsmark_wirt
+    on: { verb: give, object: reichsmark, with: wirt }
+    when: { not: { flag: hintertuer_frei } }
+    do:
+      - say: Der Wirt zählt nicht nach. »Zweihundert. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen's nehmen.« Er nickt zur Hintertür. »Geh'n Se ruhig durch.«
+      - move: { object: reichsmark, to: nowhere }
+      - set: hintertuer_frei
+      - score: 1
+
+  - id: show_reichsmark_wirt
+    on: { verb: show, object: reichsmark, with: wirt }
+    do:
+      - say: "»Zeigen nützt nix. Hergeben.«"
+
+  - id: give_paeckchen_wirt
+    on: { verb: give, object: zigarettenpaeckchen, with: wirt }
+    do:
+      - say: "»Stecken Se das weg. Hier vorne wird nur Bier verkauft.«"
+
+  - id: talk_wirt_frei
+    on: { verb: talk, object: wirt }
+    when: { flag: hintertuer_frei }
+    do:
+      - say: "»Hinten is offen. Ab Montag nur noch gegen D-Mark.«"
+
+  - id: talk_wirt
+    on: { verb: talk, object: wirt }
+    do:
+      - say: "»Dünnbier oder Dünnbier?« Der Wirt nickt zur Hintertür. »Da hinten nur Kundschaft, die zahlt. Heut nehm ich sogar noch Reichsmark. Die Brauerei will bis Sonntag ihr Geld.«"
+
+  - id: give_reichsmark_kroeger
+    on: { verb: give, object: reichsmark, with: kroeger }
+    do:
+      - say: "»Reichsmark? Ab morgen tapezier ich damit.«"
+
+  - id: give_reichsmark_lene
+    on: { verb: give, object: reichsmark, with: lene }
+    do:
+      - say: "»Seit Freitag nehm ich nur noch Ware. Oder Amis.«"
+
+  - id: give_paeckchen_lene
+    on: { verb: give, object: zigarettenpaeckchen, with: lene }
+    do:
+      - say: "»Ein Päckchen? Dafür kriegst du zwei Feuersteine. Und keine Antwort.« Du steckst es wieder ein."
+
+  - id: show_paeckchen_lene
+    on: { verb: show, object: zigarettenpaeckchen, with: lene }
+    when: { not: { has: clue_lene } }
+    do:
+      - say: Lene sieht das Päckchen an, dann dich. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer. ›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt.«
+      - say: "»Am Abend is er bei den Brodersens rein. Mit 'nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.«"
+      - learn: clue_lene
+      - score: 1
+
+  - id: show_los_lene
+    on: { verb: show, object: clue_los4471, with: lene }
+    when: { not: { has: clue_lene } }
+    do:
+      - say: Lene liest die Nummer in deinem Notizbuch, dann sieht sie dich an. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer. ›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt.«
+      - say: "»Am Abend is er bei den Brodersens rein. Mit 'nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.«"
+      - learn: clue_lene
+      - score: 1
+
+  - id: show_tally_lene
+    on: { verb: show, object: clue_tally, with: lene }
+    do:
+      - say: "»Zahlen interessieren mich nur, wenn Geld davorsteht.«"
+
+  - id: take_bauchladen
+    on: { verb: take, object: bauchladen }
+    do:
+      - say: Lene legt die Hand darauf. »Gucken kostet nix. Anfassen schon.«
+
+  # -------------------------------------------------------------------------
+  # P5: Tadeusz' Schweigen (tap-first redirects into the dialogue)
+  # -------------------------------------------------------------------------
+  - id: show_untergeschoben_tadeusz
+    on: { verb: show, object: clue_untergeschoben, with: tadeusz }
+    when: { not: { has: clue_zaehlheft } }
+    do:
+      - say: Tadeusz liest lange in deinem Notizbuch.
+      - dialogue: tadeusz_gespraech
+
+  - id: show_gestaendnis_tadeusz
+    on: { verb: show, object: clue_gestaendnis, with: tadeusz }
+    when: { not: { flag: tadeusz_rudert } }
+    do:
+      - say: Tadeusz liest. Dann schraubt er die Thermoskanne zu und sieht hinüber zur Speicherstadt.
+      - dialogue: tadeusz_gespraech
+
+  - id: show_paeckchen_tadeusz
+    on: { verb: show, object: zigarettenpaeckchen, with: tadeusz }
+    do:
+      - say: "»Das haben mir die Polizisten am Freitag auch gezeigt. Mit der Frage, wo ich den Rest versteckt habe.«"
+
+  - id: give_reichsmark_tadeusz
+    on: { verb: give, object: reichsmark, with: tadeusz }
+    do:
+      - say: "»Ich habe genug Geld gesehen, das nichts wert ist.«"
+
+  # -------------------------------------------------------------------------
+  # P6: Annis Blechdose
+  # -------------------------------------------------------------------------
+  - id: show_lene_anni
+    on: { verb: show, object: clue_lene, with: anni }
+    when: { not: { has: clue_schweigegeld } }
+    do:
+      - say: Anni sieht weg. Dann sieht sie dich an.
+      - dialogue: anni_huette
+
+  - id: show_untergeschoben_anni
+    on: { verb: show, object: clue_untergeschoben, with: anni }
+    do:
+      - say:
+          - when: { has: clue_schweigegeld }
+            text: Anni atmet aus, als hätte sie zwei Tage die Luft angehalten. »Dann sagen Sie es allen, Voss. Laut.«
+          - text: Anni atmet aus, als hätte sie zwei Tage die Luft angehalten. Ihr Blick geht zur Blechdose.
+
+  - id: show_zaehlheft_anni
+    on: { verb: show, object: clue_zaehlheft, with: anni }
+    do:
+      - say: Anni erkennt die Schrift sofort. »Jakobs Heft. Das sollte ich kriegen, wenn er nicht zurückkommt.« Sie sieht lange darauf.
+
+  - id: give_reichsmark_anni
+    on: { verb: give, object: reichsmark, with: anni }
+    do:
+      - say: Sie schiebt es zurück. »Das gehört jetzt Ihnen. So wertlos, wie es ist.«
+
+  - id: open_blechdose_leer
+    on: { verb: open, object: blechdose }
+    when: { has: clue_schweigegeld }
+    do:
+      - say: Anni schüttelt den Kopf. »Da ist nichts mehr drin, Voss. Nur das Kuvert.«
+
+  - id: open_blechdose
+    on: { verb: open, object: blechdose }
+    do:
+      - say: Anni stellt sich vor das Bord. »Das ist meins, Voss.«
+
+  - id: take_blechdose
+    on: { verb: take, object: blechdose }
+    do:
+      - say: Anni stellt sich vor das Bord. »Das ist meins, Voss.«
+
+  - id: talk_lotte
+    on: { verb: talk, object: lotte }
+    do:
+      - say: Du lässt sie schlafen.
+
+  - id: use_lotte
+    on: { verb: use, object: lotte }
+    do:
+      - say: Du lässt sie schlafen.
+
+  # -------------------------------------------------------------------------
+  # P8: Vierter Boden
+  # -------------------------------------------------------------------------
+  - id: open_zollgitter
+    on: { verb: open, object: zollgitter }
+    do:
+      - say: Die Kette ist dicker als dein Handgelenk.
+
+  - id: use_zollgitter
+    on: { verb: use, object: zollgitter }
+    do:
+      - say: Die Kette ist dicker als dein Handgelenk.
+
+  - id: laterne_anzuenden
+    on: { verb: use, object: streichhoelzer, with: sturmlaterne }
+    when: { not: { flag: laterne_an } }
+    do:
+      - say: Der Docht fängt beim zweiten Streichholz. Du hebst die Laterne an. Gelbes Licht auf schwarzen Stufen.
+      - set: laterne_an
+      - move: { object: sturmlaterne, to: inventory }
+
+  - id: laterne_brennt
+    on: { verb: use, object: streichhoelzer, with: sturmlaterne }
+    do:
+      - say: Sie brennt schon.
+
+  - id: bodentuer_dunkel
+    on: { verb: open, object: bodentuer }
+    when: { not: { flag: laterne_an } }
+    do:
+      - say:
+          - when: { has: sturmlaterne }
+            text: Im Dunkeln findest du das Schlüsselloch nicht. Die Laterne in deiner Hand nützt nichts, solange sie nicht brennt.
+          - text: Im Dunkeln findest du das Schlüsselloch nicht. Auf dem Absatz stand doch eine Laterne.
+
+  - id: bodentuer_dunkel_use
+    on: { verb: use, object: bodenschluessel, with: bodentuer }
+    when: { not: { flag: laterne_an } }
+    do:
+      - say:
+          - when: { has: sturmlaterne }
+            text: Im Dunkeln findest du das Schlüsselloch nicht. Die Laterne in deiner Hand nützt nichts, solange sie nicht brennt.
+          - text: Im Dunkeln findest du das Schlüsselloch nicht. Auf dem Absatz stand doch eine Laterne.
+
+  - id: bodentuer_auf
+    on: { verb: open, object: bodentuer }
+    when:
+      - { flag: laterne_an }
+      - { isLocked: bodentuer }
+      - { has: bodenschluessel }
+    do:
+      - unlock: bodentuer
+      - open: bodentuer
+      - say: "Der Schlüssel passt. Kein Wunder: Das Schloss ist das einzig Neue in diesem Haus. Die Tür schwingt nach innen auf."
+      - score: 1
+
+  - id: bodentuer_auf_use
+    on: { verb: use, object: bodenschluessel, with: bodentuer }
+    when:
+      - { flag: laterne_an }
+      - { isLocked: bodentuer }
+    do:
+      - unlock: bodentuer
+      - open: bodentuer
+      - say: "Der Schlüssel passt. Kein Wunder: Das Schloss ist das einzig Neue in diesem Haus. Die Tür schwingt nach innen auf."
+      - score: 1
+
+  - id: close_bodentuer
+    on: { verb: close, object: bodentuer }
+    do:
+      - say: Du lässt sie offen. Hinter dieser Tür war lange genug zu.
+
+  - id: open_kontortuer_frei
+    on: { verb: open, object: kontortuer }
+    when: { has: clue_jakob_aussage }
+    do:
+      - say: Sie ist nur angelehnt. Geh hinunter.
+
+  - id: open_kontortuer
+    on: { verb: open, object: kontortuer }
+    do:
+      - say: Asmussen kann warten. Erst Jakob.
+
+  - id: use_streichhoelzer_kisten
+    on: { verb: use, object: streichhoelzer, with: kisten }
+    do:
+      - say: Feuer in einem Speicher? Hamburg hat genug gebrannt.
+
+  - id: use_streichhoelzer_kaffeesaecke
+    on: { verb: use, object: streichhoelzer, with: kaffeesaecke }
+    do:
+      - say: Feuer in einem Speicher? Hamburg hat genug gebrannt.
+
+  - id: use_streichhoelzer_zettel
+    on: { verb: use, object: streichhoelzer, with: zettel }
+    do:
+      - say: Beweise verbrennt man nicht. Das machen andere.
+
+  - id: take_kisten
+    on: { verb: take, object: kisten }
+    do:
+      - say: Zwanzig Kisten. Du hast zwei Hände.
+
+  - id: take_jakob
+    on: { verb: take, object: jakob }
+    do:
+      - say: Mit dem Bein? Nicht ohne Trage. Und nicht ohne Arzt.
+
+  # -------------------------------------------------------------------------
+  # Finale: Kontor Asmussen
+  # -------------------------------------------------------------------------
+  - id: take_kaffeetasse
+    on: { verb: take, object: kaffeetasse }
+    do:
+      - say: Asmussen hebt eine Augenbraue. Das reicht.
+
+  - id: take_fuellhalter
+    on: { verb: take, object: fuellhalter }
+    do:
+      - say: Asmussen hebt eine Augenbraue. Das reicht.
+
+  # -------------------------------------------------------------------------
+  # Catch-alls per character (after every specific give/show rule)
+  # -------------------------------------------------------------------------
+  - id: show_anni
+    on: { verb: show, with: anni }
+    do:
+      - say: "»Ich versteh nichts von Kisten, Voss. Ich versteh was von Jakob.«"
+
+  - id: give_anni
+    on: { verb: give, with: anni }
+    do:
+      - say: "»Behalten Sie es.«"
+
+  - id: show_kroeger
+    on: { verb: show, with: kroeger }
+    do:
+      - say: Kröger schiebt dein Notizbuch weg. »Wenn Se was wollen, reden Se mit mir.«
+
+  - id: give_kroeger
+    on: { verb: give, with: kroeger }
+    do:
+      - say: "»Behalten Se's.«"
+
+  - id: show_wirt
+    on: { verb: show, with: wirt }
+    do:
+      - say: "»Zeigen nützt nix.«"
+
+  - id: give_wirt
+    on: { verb: give, with: wirt }
+    do:
+      - say: "»Behalten Se's.«"
+
+  - id: show_lene_wieder
+    on: { verb: show, object: zigarettenpaeckchen, with: lene }
+    do:
+      - say: "»Hab ich dir doch alles erzählt. Steck das weg, bevor's einer sieht.«"
+
+  - id: show_lene
+    on: { verb: show, with: lene }
+    do:
+      - say: "»Zeigen kostet nix. Kaufen schon.«"
+
+  - id: give_lene
+    on: { verb: give, with: lene }
+    do:
+      - say: "»Ich nehm nix, was ich nicht verkaufen kann.«"
+
+  - id: show_tadeusz
+    on: { verb: show, with: tadeusz }
+    do:
+      - say:
+          - when: { has: clue_zaehlheft }
+            text: Tadeusz schüttelt den Kopf. »Das müssen Sie nicht mir zeigen, Voss.«
+          - text: Tadeusz sieht hin und wieder weg. »Ich habe gelernt, nichts zu sehen.«
+
+  - id: give_tadeusz
+    on: { verb: give, with: tadeusz }
+    do:
+      - say: "»Behalten Sie es.«"
+
+  - id: show_jakob
+    on: { verb: show, with: jakob }
+    do:
+      - say: "»Reden Sie mit mir, Voss. Nicht mit Ihrem Notizbuch.«"
+
+  - id: give_jakob
+    on: { verb: give, with: jakob }
+    do:
+      - say: "»Behalten Sie es.«"
+
+  - id: show_asmussen
+    on: { verb: show, with: asmussen }
+    do:
+      - say: "»Papier, Voss. Ich handle mit Kaffee.«"
+
+  - id: give_asmussen
+    on: { verb: give, with: asmussen }
+    do:
+      - say: Asmussen rührt es nicht an. »Behalten Sie das, Voss.«

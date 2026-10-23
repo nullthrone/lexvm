@@ -2,9 +2,17 @@
  * "Create your own adventure": the bring-your-own-LLM flow.
  * 1) copy the prompt, 2) paste it with an idea into any AI chat, 3) import the
  * resulting YAML/JSON here. Imports are compiled (lazy chunk), checked, their
- * walkthrough replayed, and stored on the device.
+ * walkthrough replayed, their play time estimated, and stored on the device.
  */
-import { type Diagnostic, type Pack, runWalkthrough, type SourceFile, type WalkthroughReport } from "@lexvm/engine";
+import {
+  type Diagnostic,
+  estimatePlaytime,
+  type Pack,
+  type PlaytimeReport,
+  runWalkthrough,
+  type SourceFile,
+  type WalkthroughReport,
+} from "@lexvm/engine";
 import promptText from "../../../../prompts/oneshot.md?raw";
 import { navigate, type Screen } from "../app.ts";
 import { confirmDialog } from "../components/confirm.ts";
@@ -120,7 +128,7 @@ export function createCreateScreen(): Screen {
     return [{ name: pastedSourceName(text), text }];
   }
 
-  async function store(pack: Pack): Promise<HTMLElement> {
+  async function store(pack: Pack, estimatedMinutes: number | undefined): Promise<HTMLElement> {
     if (await importedPackExists(pack.id)) {
       const replace = await confirmDialog({
         title: t("create.replaceTitle"),
@@ -129,7 +137,7 @@ export function createCreateScreen(): Screen {
       });
       if (!replace) return h("p", { class: "muted", text: t("common.cancel") });
     }
-    if (!(await storeImportedPack(pack, new Date()))) {
+    if (!(await storeImportedPack(pack, new Date(), estimatedMinutes))) {
       return h("p", { class: "notice notice--error", text: t("create.notSaved") });
     }
     return h(
@@ -174,8 +182,6 @@ export function createCreateScreen(): Screen {
         return;
       }
       const result = compile(sources);
-      const counts = { error: 0, warning: 0, info: 0 };
-      for (const d of result.diagnostics) counts[d.severity] += 1;
       let walkthrough: WalkthroughReport | null = null;
       let walkthroughNode: HTMLElement | null = null;
       if (result.pack) {
@@ -209,7 +215,39 @@ export function createCreateScreen(): Screen {
           walkthroughNode = h("p", { class: "notice notice--warning", text: t("create.walkthroughError") });
         }
       }
-      const report = diagnosticsText(result.diagnostics, walkthrough);
+      // The play time estimate replays the walkthrough as well. Its warnings join the other diagnostics; the
+      // estimate itself is shown as a line of its own (the too-short/too-long warnings repeat its numbers).
+      let playtime: PlaytimeReport | null = null;
+      if (result.pack) {
+        try {
+          playtime = estimatePlaytime(result.pack);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      const diagnostics = [
+        ...result.diagnostics,
+        ...(playtime?.diagnostics.filter((d) => d.code !== "playtime.estimate") ?? []),
+      ];
+      const counts = { error: 0, warning: 0, info: 0 };
+      for (const d of diagnostics) counts[d.severity] += 1;
+      // A walkthrough that fails gives only a partial estimate; the walkthrough notice explains the problem.
+      const playtimeNode =
+        playtime && walkthrough?.ok
+          ? h("p", {
+              class: "results__playtime",
+              text: [
+                t("create.playtime", {
+                  expected: Math.max(1, Math.round(playtime.minutes.expected)),
+                  min: Math.max(1, Math.round(playtime.minutes.min)),
+                }),
+                playtime.target === null ? null : t("create.playtimeTarget", { target: playtime.target }),
+              ]
+                .filter((part) => part !== null)
+                .join(" · "),
+            })
+          : null;
+      const report = diagnosticsText(diagnostics, walkthrough);
       const copyButton =
         report.length > 0
           ? h(
@@ -234,9 +272,10 @@ export function createCreateScreen(): Screen {
           { class: "results__summary" },
           t("create.summary", { errors: counts.error, warnings: counts.warning, infos: counts.info }),
         ),
-        result.diagnostics.length > 0 ? h("ul", { class: "diags" }, ...result.diagnostics.map(renderDiagnostic)) : null,
+        diagnostics.length > 0 ? h("ul", { class: "diags" }, ...diagnostics.map(renderDiagnostic)) : null,
         result.pack ? null : h("p", { class: "notice notice--error", text: t("create.failed") }),
         walkthroughNode,
+        playtimeNode,
         result.pack && walkthrough?.ok
           ? null
           : report.length > 0
@@ -245,7 +284,11 @@ export function createCreateScreen(): Screen {
         copyButton,
       );
       results.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
-      if (result.pack) results.appendChild(await store(result.pack));
+      if (result.pack) {
+        // Only a walkthrough that reaches a win gives a full estimate worth showing on the library card.
+        const estimate = walkthrough?.ok && playtime ? Math.max(1, Math.round(playtime.minutes.expected)) : undefined;
+        results.appendChild(await store(result.pack, estimate));
+      }
     } catch (error) {
       console.error(error);
       showError(t("create.unexpected", { message: error instanceof Error ? error.message : String(error) }));
