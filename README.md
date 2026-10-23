@@ -16,19 +16,6 @@ Plays offline on your phone. Written by humans or LLMs, **proven winnable** by m
 
 </div>
 
-```text
-HAMBURG, SONNABEND, 19. JUNI 1948
-
-Es regnet seit Tagen. Seit gestern Abend weiß es die ganze Stadt aus dem
-Radio: Am Sonntag gibt es neues Geld. Vierzig Mark pro Kopf.
-
-In deinem Besucherstuhl sitzt eine Frau in einem umgefärbten
-Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr
-wegnehmen.
-
-  ( Anni )  ( Handtasche )  ( Schreibtisch )        🎒  📓  💡  ⌨️
-```
-
 ## 🎮 What is LexVM?
 
 LexVM is a player for text adventures that runs in the browser and works
