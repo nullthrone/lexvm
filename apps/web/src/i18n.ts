@@ -1,0 +1,471 @@
+/**
+ * UI string tables (German and English) and the `t()` lookup.
+ *
+ * Only the UI chrome is translated here. Story text always comes from the
+ * pack in the pack's own language. Both tables must have exactly the same
+ * keys and placeholders (asserted by test/i18n.test.ts).
+ *
+ * Placeholders use `{name}` and are filled by `t(key, { name: value })`.
+ */
+
+export type Lang = "de" | "en";
+export const LANGS: readonly Lang[] = ["de", "en"];
+
+const de = {
+  "app.name": "LexVM",
+  "app.tagline": "Textabenteuer für unterwegs – offline, im Browser.",
+  "app.skip": "Zum Inhalt springen",
+
+  "common.back": "Zurück",
+  "common.close": "Schließen",
+  "common.cancel": "Abbrechen",
+  "common.ok": "OK",
+  "common.delete": "Löschen",
+  "common.retry": "Erneut versuchen",
+  "common.loading": "Lade …",
+  "common.details": "Details",
+
+  "nav.library": "Bibliothek",
+  "nav.create": "Eigenes Abenteuer",
+  "nav.settings": "Einstellungen",
+  "nav.about": "Über LexVM",
+
+  "library.heading": "Bibliothek",
+  "library.continue": "Weiterspielen",
+  "library.newGame": "Neues Spiel",
+  "library.confirmNewTitle": "Neues Spiel beginnen?",
+  "library.confirmNewText": "Dein Spielstand für „{title}“ wird dabei überschrieben.",
+  "library.confirmNewOk": "Neu beginnen",
+  "library.imported": "importiert",
+  "library.deleteTitle": "Abenteuer löschen?",
+  "library.deleteText": "„{title}“ und der zugehörige Spielstand werden von diesem Gerät entfernt.",
+  "library.playtime": "ca. {n} Min.",
+  "library.savedAt": "Spielstand vom {date}",
+  "library.finished": "Abgeschlossen",
+  "library.meta": "{author} · Lizenz: {license} · Version {version}",
+  "library.languageBadge": "Sprache: {language}",
+  "library.empty": "Noch keine Abenteuer vorhanden.",
+  "library.emptyText": "Unter „Eigenes Abenteuer“ kannst du mit einem KI-Chat dein erstes Abenteuer schreiben.",
+  "library.loadError": "Die mitgelieferten Abenteuer konnten nicht geladen werden.",
+  "library.loadErrorText": "Prüfe die Verbindung und versuch es noch einmal. Eigene Abenteuer funktionieren trotzdem.",
+  "library.offlineReady": "Offline bereit ✓",
+  "library.offlinePreparing": "Wird für die Offline-Nutzung vorbereitet …",
+  "library.offlineUnavailable": "Offline-Modus ist hier nicht verfügbar.",
+  "library.offlineError": "Offline-Vorbereitung fehlgeschlagen.",
+  "library.singlefile": "Offline-Version: alles steckt in dieser einen Datei.",
+  "library.install": "Installieren",
+  "library.iosInstall": "Installieren: Teilen-Symbol antippen → „Zum Home-Bildschirm“.",
+  "library.downloadOffline": "Offline-Version herunterladen (eine HTML-Datei)",
+  "library.storageOff": "Gerätespeicher nicht verfügbar – Spielstände werden nicht dauerhaft gesichert.",
+  "library.packs": "Abenteuer",
+
+  "game.menu": "Menü",
+  "game.lookAround": "Umsehen",
+  "game.here": "Hier",
+  "game.exits": "Ausgänge",
+  "game.nothingHere": "Nichts, was ins Auge fällt.",
+  "game.noExits": "Kein Weg hinaus.",
+  "game.inventory": "Inventar",
+  "game.notebook": "Notizbuch",
+  "game.hint": "Hinweis",
+  "game.keyboard": "Tastatur",
+  "game.undo": "Rückgängig",
+  "game.tools": "Werkzeuge",
+  "game.score": "Punkte: {value} von {max}",
+  "game.inventoryEmpty": "Du hast nichts bei dir.",
+  "game.notebookEmpty": "Noch keine Notizen.",
+  "game.commandLabel": "Befehl",
+  "game.commandPlaceholder": "Was tust du?",
+  "game.send": "Ausführen",
+  "game.didYouMean": "Meintest du:",
+  "game.undone": "Zug zurückgenommen.",
+  "game.nothingToUndo": "Es gibt nichts zurückzunehmen.",
+  "game.restart": "Neu starten",
+  "game.restartTitle": "Neu starten?",
+  "game.restartText": "Das Abenteuer beginnt von vorn. Dein bisheriger Fortschritt geht verloren.",
+  "game.exportSave": "Spielstand exportieren",
+  "game.importSave": "Spielstand importieren",
+  "game.saveExported": "Spielstand exportiert: {file}",
+  "game.saveImported": "Spielstand geladen.",
+  "game.saveInvalid": "Das ist keine gültige Spielstand-Datei.",
+  "game.saveOtherPack": "Dieser Spielstand gehört zu einem anderen Abenteuer („{pack}“).",
+  "game.packChangedTitle": "Das Abenteuer wurde aktualisiert",
+  "game.packChangedText":
+    "Der Spielstand stammt aus Version {saved}, gespielt wird Version {current}. Sollen deine {n} Züge in der neuen Version nachgespielt werden?",
+  "game.replay": "Nachspielen",
+  "game.replayResult": "{applied} von {total} Zügen übernommen.",
+  "game.engineError": "Die Spiel-Engine hat einen Fehler gemeldet.",
+  "game.loadError": "Dieses Abenteuer konnte nicht geladen werden.",
+  "game.notFound": "Dieses Abenteuer ist hier nicht (mehr) vorhanden.",
+  "game.toLibrary": "Zur Bibliothek",
+  "game.playAgain": "Nochmal spielen",
+  "game.theEnd": "Ende",
+  "game.readText": "Text lesen",
+  "game.finalScore": "{value} von {max} Punkten",
+  "game.dialogueWith": "Gespräch mit {npc}",
+  "game.dialogue": "Gespräch",
+  "game.justUse": "nur so",
+  "game.nobodyHere": "Hier ist niemand, dem du das zeigen könntest.",
+  "game.nothingToPick": "Hier gibt es nichts Passendes.",
+  "game.groupHere": "Hier",
+  "game.groupInventory": "Inventar",
+  "game.groupNotebook": "Notizbuch",
+  "game.kind.item": "Gegenstand",
+  "game.kind.clue": "Notiz",
+  "game.kind.npc": "Person",
+  "game.kind.container": "Behälter",
+  "game.kind.scenery": "Umgebung",
+  "game.new": "neu",
+  "game.notPresent": "Das ist gerade nicht hier.",
+  "game.help":
+    "Tippe auf Dinge, Personen und Ausgänge, um zu handeln. Hervorgehobene Wörter im Text lassen sich ebenfalls antippen. Mit der Tastatur kannst du Befehle auch schreiben.",
+  "game.helpMeta": "Außerdem verstanden: rückgängig, neustart, tipp, hilfe, speichern, laden.",
+  "game.helpExamples.de": "Beispiele: nimm Lampe · öffne Tür · geh nach Norden · benutze Schlüssel mit Tür",
+  "game.helpExamples.en": "Examples: take lamp · open door · go north · use key with door",
+
+  "hint.title": "Hinweis",
+  "hint.more": "Noch ein Tipp",
+  "hint.none": "Gerade gibt es keinen Tipp. Sieh dich in Ruhe um – verloren ist nichts.",
+  "hint.allShown": "Mehr Tipps gibt es dazu nicht.",
+  "hint.step": "Tipp {n} von {total}",
+
+  "settings.heading": "Einstellungen",
+  "settings.theme": "Erscheinungsbild",
+  "settings.theme.system": "System",
+  "settings.theme.light": "Hell",
+  "settings.theme.sepia": "Sepia",
+  "settings.theme.dark": "Dunkel",
+  "settings.textSize": "Schriftgröße",
+  "settings.textSize.1": "Klein",
+  "settings.textSize.2": "Normal",
+  "settings.textSize.3": "Groß",
+  "settings.textSize.4": "Sehr groß",
+  "settings.textSample": "Der Regen trommelte gegen die Scheiben des Hafenkontors. Irgendwo schlug eine Tür.",
+  "settings.language": "Sprache der Bedienung",
+  "settings.language.auto": "Automatisch",
+  "settings.languageNote": "Die Sprache der Geschichte legt das jeweilige Abenteuer fest.",
+  "settings.haptics": "Haptisches Feedback",
+  "settings.hapticsNote": "Kurzes Vibrieren bei jeder Aktion.",
+  "settings.hapticsUnsupported": "Dieses Gerät oder dieser Browser unterstützt keine Vibration.",
+  "settings.motion": "Bewegung",
+  "settings.motionNote": "Animationen folgen der Systemeinstellung „Bewegung reduzieren“.",
+
+  "about.heading": "Über LexVM",
+  "about.intro":
+    "LexVM ist ein Player für Textabenteuer, inspiriert von ScummVM. Eine deterministische Engine spielt „Content Packs“: reine Daten, die Menschen oder Sprachmodelle schreiben können.",
+  "about.version": "Version {version}",
+  "about.edition.web": "Web-App",
+  "about.edition.singlefile": "Offline-Version (eine Datei)",
+  "about.licenseHeading": "Lizenz",
+  "about.license":
+    "Der Code steht unter der MIT-Lizenz. Jedes Abenteuer hat seine eigene Lizenz – sie steht auf seiner Karte in der Bibliothek.",
+  "about.source": "Quellcode auf GitHub",
+  "about.createHeading": "Eigene Abenteuer erstellen",
+  "about.createText":
+    "Kopiere den Prompt, gib ihn zusammen mit deiner Idee in einen beliebigen KI-Chat ein und importiere das Ergebnis. LexVM prüft das Abenteuer und sagt dir genau, was noch zu reparieren ist. Ein API-Schlüssel ist nicht nötig.",
+  "about.createLink": "Zum Abenteuer-Baukasten",
+  "about.offlineHeading": "Offline spielen",
+  "about.offlineText":
+    "Füge LexVM zum Home-Bildschirm hinzu oder lade die Offline-Version als einzelne HTML-Datei herunter. Beides läuft auch im Flugmodus.",
+  "about.privacyHeading": "Privatsphäre",
+  "about.privacy": "Keine Konten, keine Werbung, kein Tracking. Spielstände und eigene Abenteuer bleiben auf deinem Gerät.",
+  "about.creditsHeading": "Mitwirkende",
+  "about.credits":
+    "Geschrieben von den LexVM-Mitwirkenden. Inspiriert von ScummVM und den Abenteuern von LucasArts und Infocom: Niemand soll in einer Sackgasse landen.",
+
+  "create.heading": "Eigenes Abenteuer",
+  "create.intro":
+    "Schreib dein eigenes Textabenteuer mit einem beliebigen KI-Chat – ohne API-Schlüssel. LexVM prüft das Ergebnis und spielt es offline.",
+  "create.step1Title": "Prompt kopieren",
+  "create.step1Text": "Der Prompt erklärt der KI das LexVM-Format und die Regeln für ein gutes Abenteuer.",
+  "create.copy": "Prompt kopieren",
+  "create.copied": "Prompt kopiert.",
+  "create.copyFailed": "Kopieren ist hier nicht möglich – lade den Prompt stattdessen herunter.",
+  "create.download": "Als .md herunterladen",
+  "create.preview": "Prompt ansehen",
+  "create.step2Title": "Mit deiner Idee in einen KI-Chat einfügen",
+  "create.step2Text":
+    "Füge den Prompt in einen beliebigen KI-Chat ein und beschreibe darunter deine Idee, zum Beispiel: „Ein Gruselabenteuer in einem Leuchtturm, 20 Minuten, auf Deutsch.“",
+  "create.step3Title": "Ergebnis hier importieren",
+  "create.step3Text":
+    "Wähle die YAML-Datei aus (auch mehrere) oder füge den Text der Antwort ein. LexVM prüft das Abenteuer sofort.",
+  "create.pickFile": "Datei wählen",
+  "create.files": "Gewählt: {names}",
+  "create.pasteLabel": "Oder hier einfügen (YAML oder JSON)",
+  "create.check": "Prüfen und importieren",
+  "create.checking": "Prüfe …",
+  "create.tooLarge": "Zu groß: höchstens {max} pro Abenteuer.",
+  "create.empty": "Bitte wähle eine Datei oder füge den Text ein.",
+  "create.summary": "{errors} Fehler, {warnings} Warnungen, {infos} Hinweise",
+  "create.severity.error": "Fehler",
+  "create.severity.warning": "Warnung",
+  "create.severity.info": "Hinweis",
+  "create.failed": "Das Abenteuer enthält noch Fehler und kann so nicht gespielt werden.",
+  "create.repairTip": "Tipp: Kopiere die Meldungen in den Chat und bitte die KI, sie zu beheben.",
+  "create.copyDiagnostics": "Meldungen kopieren",
+  "create.diagnosticsCopied": "Meldungen kopiert.",
+  "create.walkthroughOk": "Lösungsweg geprüft: {steps} Züge bis zum Ende „{ending}“.",
+  "create.walkthroughFailed": "Der mitgelieferte Lösungsweg erreicht kein gutes Ende.",
+  "create.walkthroughStep": "Erster Fehler bei Zug {n}: {command}",
+  "create.walkthroughError": "Der Lösungsweg konnte nicht geprüft werden.",
+  "create.saved": "„{title}“ steht jetzt in deiner Bibliothek.",
+  "create.notSaved": "Konnte nicht gespeichert werden – der Gerätespeicher ist nicht verfügbar.",
+  "create.play": "Jetzt spielen",
+  "create.replaceTitle": "Abenteuer ersetzen?",
+  "create.replaceText": "Es gibt schon ein importiertes Abenteuer mit der Kennung „{id}“. Soll es ersetzt werden?",
+  "create.replace": "Ersetzen",
+  "create.compilerError": "Der Prüfer konnte nicht geladen werden.",
+  "create.unexpected": "Unerwarteter Fehler: {message}",
+
+  "pwa.update": "Neue Version verfügbar – neu laden",
+  "pwa.reload": "Neu laden",
+} as const;
+
+export type StringKey = keyof typeof de;
+
+const en: Record<StringKey, string> = {
+  "app.name": "LexVM",
+  "app.tagline": "Text adventures to go – offline, in your browser.",
+  "app.skip": "Skip to content",
+
+  "common.back": "Back",
+  "common.close": "Close",
+  "common.cancel": "Cancel",
+  "common.ok": "OK",
+  "common.delete": "Delete",
+  "common.retry": "Try again",
+  "common.loading": "Loading …",
+  "common.details": "Details",
+
+  "nav.library": "Library",
+  "nav.create": "Create your own",
+  "nav.settings": "Settings",
+  "nav.about": "About LexVM",
+
+  "library.heading": "Library",
+  "library.continue": "Continue",
+  "library.newGame": "New game",
+  "library.confirmNewTitle": "Start a new game?",
+  "library.confirmNewText": "Your saved game for “{title}” will be overwritten.",
+  "library.confirmNewOk": "Start over",
+  "library.imported": "imported",
+  "library.deleteTitle": "Delete adventure?",
+  "library.deleteText": "“{title}” and its saved game will be removed from this device.",
+  "library.playtime": "about {n} min",
+  "library.savedAt": "Saved {date}",
+  "library.finished": "Finished",
+  "library.meta": "{author} · License: {license} · Version {version}",
+  "library.languageBadge": "Language: {language}",
+  "library.empty": "No adventures yet.",
+  "library.emptyText": "Use “Create your own” to write your first adventure with any AI chat.",
+  "library.loadError": "The built-in adventures could not be loaded.",
+  "library.loadErrorText": "Check your connection and try again. Your own adventures still work.",
+  "library.offlineReady": "Ready offline ✓",
+  "library.offlinePreparing": "Preparing for offline use …",
+  "library.offlineUnavailable": "Offline mode is not available here.",
+  "library.offlineError": "Offline preparation failed.",
+  "library.singlefile": "Offline edition: everything is inside this one file.",
+  "library.install": "Install",
+  "library.iosInstall": "To install: tap the Share icon → “Add to Home Screen”.",
+  "library.downloadOffline": "Download offline version (single HTML file)",
+  "library.storageOff": "Device storage is unavailable – saved games will not persist.",
+  "library.packs": "Adventures",
+
+  "game.menu": "Menu",
+  "game.lookAround": "Look around",
+  "game.here": "Here",
+  "game.exits": "Exits",
+  "game.nothingHere": "Nothing that catches the eye.",
+  "game.noExits": "No way out.",
+  "game.inventory": "Inventory",
+  "game.notebook": "Notebook",
+  "game.hint": "Hint",
+  "game.keyboard": "Keyboard",
+  "game.undo": "Undo",
+  "game.tools": "Tools",
+  "game.score": "Score: {value} of {max}",
+  "game.inventoryEmpty": "You are carrying nothing.",
+  "game.notebookEmpty": "No notes yet.",
+  "game.commandLabel": "Command",
+  "game.commandPlaceholder": "What do you do?",
+  "game.send": "Enter",
+  "game.didYouMean": "Did you mean:",
+  "game.undone": "Move taken back.",
+  "game.nothingToUndo": "There is nothing to undo.",
+  "game.restart": "Restart",
+  "game.restartTitle": "Restart?",
+  "game.restartText": "The adventure starts over. Your progress so far will be lost.",
+  "game.exportSave": "Export saved game",
+  "game.importSave": "Import saved game",
+  "game.saveExported": "Saved game exported: {file}",
+  "game.saveImported": "Saved game loaded.",
+  "game.saveInvalid": "That is not a valid saved game file.",
+  "game.saveOtherPack": "This saved game belongs to another adventure (“{pack}”).",
+  "game.packChangedTitle": "The adventure has been updated",
+  "game.packChangedText":
+    "The saved game is from version {saved}; this is version {current}. Replay your {n} moves in the new version?",
+  "game.replay": "Replay",
+  "game.replayResult": "{applied} of {total} moves replayed.",
+  "game.engineError": "The game engine reported an error.",
+  "game.loadError": "This adventure could not be loaded.",
+  "game.notFound": "This adventure is not available here (any more).",
+  "game.toLibrary": "Back to library",
+  "game.playAgain": "Play again",
+  "game.theEnd": "The End",
+  "game.readText": "Read the text",
+  "game.finalScore": "{value} of {max} points",
+  "game.dialogueWith": "Conversation with {npc}",
+  "game.dialogue": "Conversation",
+  "game.justUse": "just use it",
+  "game.nobodyHere": "There is nobody here to show it to.",
+  "game.nothingToPick": "Nothing suitable here.",
+  "game.groupHere": "Here",
+  "game.groupInventory": "Inventory",
+  "game.groupNotebook": "Notebook",
+  "game.kind.item": "Item",
+  "game.kind.clue": "Clue",
+  "game.kind.npc": "Character",
+  "game.kind.container": "Container",
+  "game.kind.scenery": "Scenery",
+  "game.new": "new",
+  "game.notPresent": "That is not here right now.",
+  "game.help":
+    "Tap things, people and exits to act. Highlighted words in the text can be tapped too. With the keyboard you can also type commands.",
+  "game.helpMeta": "Also understood: undo, restart, hint, help, save, load.",
+  "game.helpExamples.de": "Beispiele: nimm Lampe · öffne Tür · geh nach Norden · benutze Schlüssel mit Tür",
+  "game.helpExamples.en": "Examples: take lamp · open door · go north · use key with door",
+
+  "hint.title": "Hint",
+  "hint.more": "Another hint",
+  "hint.none": "No hint right now. Take a calm look around – nothing is lost.",
+  "hint.allShown": "That's all the hints for this one.",
+  "hint.step": "Hint {n} of {total}",
+
+  "settings.heading": "Settings",
+  "settings.theme": "Appearance",
+  "settings.theme.system": "System",
+  "settings.theme.light": "Light",
+  "settings.theme.sepia": "Sepia",
+  "settings.theme.dark": "Dark",
+  "settings.textSize": "Text size",
+  "settings.textSize.1": "Small",
+  "settings.textSize.2": "Normal",
+  "settings.textSize.3": "Large",
+  "settings.textSize.4": "Extra large",
+  "settings.textSample": "The rain drummed against the windows of the harbour office. Somewhere a door slammed.",
+  "settings.language": "Interface language",
+  "settings.language.auto": "Automatic",
+  "settings.languageNote": "The story language is set by each adventure.",
+  "settings.haptics": "Haptic feedback",
+  "settings.hapticsNote": "A short vibration with every action.",
+  "settings.hapticsUnsupported": "This device or browser does not support vibration.",
+  "settings.motion": "Motion",
+  "settings.motionNote": "Animations follow your system's “Reduce motion” setting.",
+
+  "about.heading": "About LexVM",
+  "about.intro":
+    "LexVM is a player for text adventures, inspired by ScummVM. A deterministic engine runs “content packs”: pure data that people or language models can write.",
+  "about.version": "Version {version}",
+  "about.edition.web": "Web app",
+  "about.edition.singlefile": "Offline edition (single file)",
+  "about.licenseHeading": "License",
+  "about.license":
+    "The code is MIT licensed. Every adventure has its own license – it is shown on its card in the library.",
+  "about.source": "Source code on GitHub",
+  "about.createHeading": "Create your own adventure",
+  "about.createText":
+    "Copy the prompt, paste it with your idea into any AI chat and import the result. LexVM checks the adventure and tells you exactly what still needs fixing. No API key needed.",
+  "about.createLink": "Open the adventure workshop",
+  "about.offlineHeading": "Play offline",
+  "about.offlineText":
+    "Add LexVM to your home screen or download the offline version as a single HTML file. Both work in airplane mode.",
+  "about.privacyHeading": "Privacy",
+  "about.privacy": "No accounts, no ads, no tracking. Saved games and your own adventures stay on your device.",
+  "about.creditsHeading": "Credits",
+  "about.credits":
+    "Written by the LexVM contributors. Inspired by ScummVM and the adventures of LucasArts and Infocom: nobody should end up in a dead end.",
+
+  "create.heading": "Create your own adventure",
+  "create.intro":
+    "Write your own text adventure with any AI chat – no API key needed. LexVM checks the result and plays it offline.",
+  "create.step1Title": "Copy the prompt",
+  "create.step1Text": "The prompt teaches the AI the LexVM format and the rules for a good adventure.",
+  "create.copy": "Copy prompt",
+  "create.copied": "Prompt copied.",
+  "create.copyFailed": "Copying is not possible here – download the prompt instead.",
+  "create.download": "Download as .md",
+  "create.preview": "View prompt",
+  "create.step2Title": "Paste it into an AI chat with your idea",
+  "create.step2Text":
+    "Paste the prompt into any AI chat and describe your idea below it, for example: “A spooky adventure in a lighthouse, 20 minutes, in English.”",
+  "create.step3Title": "Import the result here",
+  "create.step3Text":
+    "Choose the YAML file (or several) or paste the text of the answer. LexVM checks the adventure right away.",
+  "create.pickFile": "Choose file",
+  "create.files": "Selected: {names}",
+  "create.pasteLabel": "Or paste here (YAML or JSON)",
+  "create.check": "Check and import",
+  "create.checking": "Checking …",
+  "create.tooLarge": "Too large: at most {max} per adventure.",
+  "create.empty": "Please choose a file or paste the text.",
+  "create.summary": "{errors} errors, {warnings} warnings, {infos} notes",
+  "create.severity.error": "Error",
+  "create.severity.warning": "Warning",
+  "create.severity.info": "Note",
+  "create.failed": "The adventure still contains errors and cannot be played yet.",
+  "create.repairTip": "Tip: copy the messages into the chat and ask the AI to fix them.",
+  "create.copyDiagnostics": "Copy messages",
+  "create.diagnosticsCopied": "Messages copied.",
+  "create.walkthroughOk": "Walkthrough verified: {steps} moves to the ending “{ending}”.",
+  "create.walkthroughFailed": "The included walkthrough does not reach a winning ending.",
+  "create.walkthroughStep": "First problem at move {n}: {command}",
+  "create.walkthroughError": "The walkthrough could not be checked.",
+  "create.saved": "“{title}” is now in your library.",
+  "create.notSaved": "Could not be saved – device storage is unavailable.",
+  "create.play": "Play now",
+  "create.replaceTitle": "Replace adventure?",
+  "create.replaceText": "There already is an imported adventure with the id “{id}”. Replace it?",
+  "create.replace": "Replace",
+  "create.compilerError": "The checker could not be loaded.",
+  "create.unexpected": "Unexpected error: {message}",
+
+  "pwa.update": "New version available – reload",
+  "pwa.reload": "Reload",
+};
+
+export const STRINGS: Record<Lang, Record<StringKey, string>> = { de, en };
+
+let current: Lang = "en";
+
+/** Pick the UI language from a list of BCP 47 tags (e.g. navigator.languages). */
+export function detectLanguage(preferred: readonly string[] | undefined): Lang {
+  for (const tag of preferred ?? []) {
+    const base = tag.toLowerCase().split("-")[0];
+    if (base === "de") return "de";
+    if (base === "en") return "en";
+  }
+  return "en";
+}
+
+export function setLanguage(lang: Lang): void {
+  current = lang;
+}
+
+export function getLanguage(): Lang {
+  return current;
+}
+
+/** Placeholder names used in a string, e.g. "{title}" -> ["title"]. */
+export function placeholders(text: string): string[] {
+  return [...text.matchAll(/\{([a-zA-Z]+)\}/g)].map((m) => m[1] ?? "").sort();
+}
+
+/** Look up a UI string in the current language and fill `{placeholders}`. */
+export function t(key: StringKey, params?: Record<string, string | number>): string {
+  const table = STRINGS[current];
+  const template = table[key] ?? STRINGS.en[key] ?? key;
+  if (!params) return template;
+  return template.replace(/\{([a-zA-Z]+)\}/g, (whole, name: string) =>
+    Object.hasOwn(params, name) ? String(params[name]) : whole,
+  );
+}
