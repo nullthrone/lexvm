@@ -177,6 +177,10 @@ export interface Diagnostic {
   path: string;
   /** Human- and LLM-readable explanation including how to fix it. */
   message: string;
+  /** Source file the problem was found in, when known (compile only). */
+  file?: string;
+  /** 1-based line in `file`, when known. */
+  line?: number;
 }
 
 export interface SourceFile {

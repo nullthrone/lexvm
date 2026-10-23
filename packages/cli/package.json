@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "1.2.0"
+    "@anthropic-ai/sdk": "1.2.0",
+    "@lexvm/engine": "0.1.0"
   }
 }
