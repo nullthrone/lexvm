@@ -181,9 +181,30 @@ test("undo takes back the last move", async ({ page }) => {
   await startNewGame(page);
   await go(page, /west/i);
   await expect(page.getByRole("button", { name: "Look around: Library" })).toBeVisible();
+  await expect(transcript(page)).toContainText("Shelves full of unread classics");
   await page.getByRole("button", { name: "Undo" }).tap();
   await expect(page.getByRole("button", { name: "Look around: Entrance Hall" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
+  // The undone move's output goes too, also after leaving the game screen and coming back.
+  await expect(transcript(page)).not.toContainText("Shelves full of unread classics");
+  await page.getByRole("button", { name: "Menu" }).tap();
+  await sheet(page).getByRole("button", { name: "Settings" }).tap();
+  await page.goBack();
+  await expect(page.getByRole("button", { name: "Look around: Entrance Hall" })).toBeVisible();
+  await expect(transcript(page)).not.toContainText("Shelves full of unread classics");
+});
+
+test("a link to a new game asks before it replaces the saved one", async ({ page }) => {
+  await startNewGame(page);
+  await go(page, /west/i);
+  await expect(page.getByRole("button", { name: "Look around: Library" })).toBeVisible();
+  await page.goto("./#/play/builtin/locked-study/new");
+  const confirm = page.getByRole("dialog", { name: "Start a new game?" });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Cancel" }).tap();
+  // The saved game continues.
+  await expect(page.getByRole("button", { name: "Look around: Library" })).toBeVisible();
+  await expect(page).toHaveURL(/#\/play\/builtin\/locked-study$/);
 });
 
 test("works offline after the first visit", async ({ page, context }) => {
@@ -260,6 +281,57 @@ test("imports a pasted pack, checks its walkthrough and plays it", async ({ page
   await card.getByRole("button", { name: /Delete/ }).tap();
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).tap();
   await expect(card).toHaveCount(0);
+});
+
+const CLUE_PACK = `format: lexvm-pack/1
+id: zollkanal
+version: 1.0.0
+title: Am Zollkanal
+description: Zwei Notizen, ein Schluss.
+language: de
+author: tests
+license: CC0-1.0
+start: { room: kai }
+flags: { geloest: false }
+rooms:
+  kai: { name: Am Kai, description: Regen auf dem Kopfsteinpflaster. }
+objects:
+  los: { name: Los 4471, location: inventory, clue: true, description: Eine Losnummer auf einer Kiste. }
+  liste: { name: Löschliste, location: inventory, clue: true, description: Zweihundert Kisten, gelöscht am Donnerstag. }
+  schirm: { name: Schirm, location: inventory, portable: true }
+rules:
+  - on: { verb: use, object: los, with: liste }
+    do: [{ say: "Das Los kam am Donnerstag an Land." }, { end: geloest }]
+hints:
+  - { id: h, until: { flag: geloest }, steps: [Kombiniere das Los mit der Löschliste.] }
+endings:
+  geloest: { title: Gelöst, text: Der Fall ist klar., win: true }
+walkthrough: [use los liste]
+`;
+
+test("clues in the notebook are combined with “Kombinieren mit …”", async ({ page }) => {
+  await page.getByRole("button", { name: "Create your own" }).tap();
+  await page.getByRole("textbox", { name: /paste here/i }).fill(CLUE_PACK);
+  await page.getByRole("button", { name: "Check and import" }).tap();
+  await page.getByRole("button", { name: "Play now" }).tap();
+  await expect(transcript(page)).toContainText("Am Kai");
+
+  await page.getByRole("button", { name: /^Notebook/ }).tap();
+  await expect(sheet(page)).toContainText(
+    "Tippe einen Eintrag an und wähle »Kombinieren mit …«, um Schlüsse zu ziehen.",
+  );
+  await expect(sheet(page)).toContainText("Eine Losnummer auf einer Kiste.");
+  await sheet(page)
+    .getByRole("button", { name: /Los 4471/ })
+    .tap();
+  await sheet(page).getByRole("button", { name: "Kombinieren mit …" }).tap();
+  await expect(sheet(page)).toContainText("Los 4471 kombinieren mit …");
+  // The other clue comes first.
+  const chips = sheet(page).locator("[data-object]");
+  await expect(chips.first()).toHaveAttribute("data-object", "liste");
+  await chips.first().tap();
+  await expect(transcript(page)).toContainText("Das Los kam am Donnerstag an Land.");
+  await expect(page.getByRole("dialog", { name: "Gelöst" })).toBeVisible();
 });
 
 test("continues the autosaved game after a reload", async ({ page }) => {
