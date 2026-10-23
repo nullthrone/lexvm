@@ -5,6 +5,8 @@ name: Repo sync
 
 on:
   push:
+    # Reviewed changes only: the job writes labels and milestones.
+    branches: [main]
     paths:
       - .github/labels.json
       - .github/milestones.json
@@ -21,9 +23,12 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/github-script@v7
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const fs = require("fs");

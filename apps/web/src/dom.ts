@@ -3,8 +3,9 @@
  *
  * Security rule: pack text and imported files are untrusted. This helper only
  * ever creates text nodes for string children (never parses HTML), and the
- * code base must not use innerHTML/outerHTML/insertAdjacentHTML at all
- * (asserted by test/no-html-injection.test.ts).
+ * code base must not use innerHTML/outerHTML/insertAdjacentHTML or any other
+ * HTML or script sink at all (asserted by the "no HTML injection" test in
+ * test/styles.test.ts; the Content-Security-Policy enforces Trusted Types).
  */
 
 export type Child = Node | string | number | null | undefined | false;

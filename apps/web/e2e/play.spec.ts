@@ -283,6 +283,29 @@ test("imports a pasted pack, checks its walkthrough and plays it", async ({ page
   await expect(card).toHaveCount(0);
 });
 
+test("two tabs on one game do not silently overwrite each other's progress", async ({ page, context }) => {
+  await startNewGame(page);
+  await go(page, /west/i);
+  await expect(page.getByRole("button", { name: "Look around: Library" })).toBeVisible();
+
+  // A second tab continues the same game and plays on.
+  const other = await context.newPage();
+  await other.goto("./#/play/builtin/locked-study");
+  await expect(other.getByRole("button", { name: "Look around: Library" })).toBeVisible();
+  await other.getByRole("region", { name: "Here" }).getByRole("button", { name: "red book", exact: true }).tap();
+  await other.getByRole("dialog").getByRole("button", { name: /^Pull/ }).tap();
+  await expect(other.getByLabel("Score: 1 of 3")).toBeVisible();
+
+  // The first tab, still before that move, moves too: it asks instead of overwriting.
+  await go(page, /east/i);
+  const question = page.getByRole("dialog", { name: "Continued in another tab" });
+  await expect(question).toBeVisible();
+  await question.getByRole("button", { name: "Continue from there" }).tap();
+  await expect(page.getByRole("button", { name: "Look around: Library" })).toBeVisible();
+  await expect(page.getByLabel("Score: 1 of 3")).toBeVisible();
+  await other.close();
+});
+
 const CLUE_PACK = `format: lexvm-pack/1
 id: zollkanal
 version: 1.0.0
@@ -297,7 +320,7 @@ rooms:
   kai: { name: Am Kai, description: Regen auf dem Kopfsteinpflaster. }
 objects:
   los: { name: Los 4471, location: inventory, clue: true, description: Eine Losnummer auf einer Kiste. }
-  liste: { name: Löschliste, location: inventory, clue: true, description: Zweihundert Kisten, gelöscht am Donnerstag. }
+  liste: { name: Löschliste, location: inventory, clue: true, description: "Zweihundert Kisten, gelöscht am Donnerstag." }
   schirm: { name: Schirm, location: inventory, portable: true }
 rules:
   - on: { verb: use, object: los, with: liste }

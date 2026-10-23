@@ -75,12 +75,29 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("no HTML injection", () => {
-  it("src never uses innerHTML, outerHTML, insertAdjacentHTML or document.write", () => {
-    const offenders = sourceFiles(srcDir).filter((file) =>
-      /\.(innerHTML|outerHTML|insertAdjacentHTML)\b|document\.write\(|createContextualFragment|DOMParser/.test(
-        readFileSync(file, "utf8"),
-      ),
+  it("src never uses an HTML or script sink", () => {
+    // HTML parsing (innerHTML & co., also as el["innerHTML"]), document.write/writeln, iframe srcdoc, script
+    // URLs and eval. The Content-Security-Policy with Trusted Types blocks most of these at run time as well.
+    const sinks = new RegExp(
+      [
+        String.raw`\.(innerHTML|outerHTML|insertAdjacentHTML)\b`,
+        String.raw`\[\s*["'\x60](innerHTML|outerHTML|srcdoc)["'\x60]\s*\]`,
+        String.raw`document\.write(ln)?\(`,
+        String.raw`(set|parse)HTMLUnsafe`,
+        "createContextualFragment",
+        "DOMParser",
+        String.raw`\bsrcdoc\b`,
+        String.raw`\.src\s*=`,
+        String.raw`\beval\(`,
+        String.raw`\bnew Function\(`,
+      ].join("|"),
     );
+    const offenders = sourceFiles(srcDir).filter((file) => sinks.test(readFileSync(file, "utf8")));
     expect(offenders).toEqual([]);
+    expect(sinks.test('el["innerHTML"] = x')).toBe(true);
+    expect(sinks.test("document.writeln(x)")).toBe(true);
+    expect(sinks.test("frame.srcdoc = x")).toBe(true);
+    expect(sinks.test("script.src = url")).toBe(true);
+    expect(sinks.test("el.textContent = x")).toBe(false);
   });
 });
