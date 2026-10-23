@@ -1,0 +1,130 @@
+name: Bug report
+description: Something in the player, the engine, the CLI or a content pack does not work as it should.
+title: "Bug: "
+labels: ["type: bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting. The engine is deterministic: a command log or a save file
+        reproduces the exact game state, so please include one if you can.
+        Security issues: do not report them here; see SECURITY.md.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A short description of the problem.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - Player (web app)
+        - Content pack (story, puzzle, text, hint)
+        - Text parser
+        - CLI (lexvm)
+        - Prompt kit or generation pipeline
+        - Other or not sure
+    validations:
+      required: true
+
+  - type: input
+    id: pack
+    attributes:
+      label: Content pack
+      description: Pack title or id and version (shown in the library or in pack.yaml), if a game was running.
+      placeholder: "locked-study 1.0.0"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you tap or type, in order?
+      placeholder: |
+        1. Start "The Locked Study"
+        2. Go west
+        3. Tap the red book, choose "Pull"
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include error messages exactly as shown.
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Command log or save file
+      description: |
+        Paste the command log (one canonical command per line, e.g. `take brass_key`) or the
+        contents of the save file. To attach a save file instead, use the last field of this form.
+      render: text
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run LexVM?
+      options:
+        - Web app in the browser (nullthrone.github.io/lexvm)
+        - Installed app (Add to Home Screen / Install app)
+        - Single-file offline version (lexvm-offline.html)
+        - CLI (lexvm play, check, ...)
+        - Local development build
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and operating system
+      placeholder: "e.g. iPhone 15 with iOS 26, Pixel 8 with Android 16, Windows 11 laptop"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: For the CLI, give the Node.js version instead.
+      placeholder: "e.g. Safari 26, Chrome 141, Firefox 144, Node.js 22.20"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network state
+      options:
+        - Online
+        - Offline or airplane mode
+        - Not sure
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots and other context
+      description: Screenshots, save file attachments, LexVM version or commit, UI language, theme, anything else that helps.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues and this is not a duplicate.
+          required: true

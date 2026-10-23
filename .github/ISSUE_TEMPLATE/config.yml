@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Content pack format specification
+    url: https://github.com/nullthrone/lexvm/blob/main/docs/spec/content-pack.md
+    about: The normative description of lexvm-pack/1. Check it before reporting a format question.
+  - name: Documentation
+    url: https://github.com/nullthrone/lexvm/blob/main/docs/README.md
+    about: Authoring guide, generation pipeline, architecture and decision records.
+  - name: Report a security vulnerability
+    url: https://github.com/nullthrone/lexvm/security/advisories/new
+    about: Please report security issues privately, not in a public issue.

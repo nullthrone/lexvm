@@ -1,0 +1,70 @@
+name: Feature request
+description: Suggest an improvement to the player, the engine, the CLI, the pipeline or the docs.
+title: "Feature: "
+labels: ["type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the problem first and the solution second. Changes to the content pack
+        format need an architecture decision record; see CONTRIBUTING.md.
+        For a new adventure, use the "Content pack proposal" form instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+      placeholder: "When I play on a tablet in landscape mode, ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work? Mock-ups, example commands or YAML snippets are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways to solve the problem, including workarounds you use today.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Player (web app)
+        - Engine (runtime, parser, verifier)
+        - Content pack format
+        - CLI
+        - Prompt kit or generation pipeline
+        - Documentation
+        - Infrastructure (CI, Pages, releases)
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - label: This changes the content pack format or the save format (needs an ADR).
+        - label: This adds a runtime dependency.
+        - label: I would like to implement this myself.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues and this is not a duplicate.
+          required: true
+        - label: This fits the project principles in CONTRIBUTING.md (deterministic engine, packs are data, offline-first, accessible, mobile-first).
+          required: true

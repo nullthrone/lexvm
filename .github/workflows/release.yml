@@ -1,0 +1,73 @@
+# On a version tag (v*), builds the player and publishes a GitHub Release with the
+# single-file offline build and the compiled content packs attached.
+# Tags with a hyphen (v0.1.0-rc.1) become pre-releases.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Verify content packs
+        run: npm run check:packs
+
+      - name: Build
+        run: npm run build
+
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p release-assets
+          test -f apps/web/dist/lexvm-offline.html || { echo "::error::apps/web/dist/lexvm-offline.html is missing"; exit 1; }
+          packs=(apps/web/dist/packs/*.lexpack.json)
+          if [ ${#packs[@]} -eq 0 ]; then
+            echo "::error::no compiled content packs in apps/web/dist/packs"
+            exit 1
+          fi
+          cp apps/web/dist/lexvm-offline.html release-assets/
+          cp "${packs[@]}" release-assets/
+          (cd release-assets && sha256sum -- * > SHA256SUMS.txt)
+          ls -l release-assets
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --clobber
+          else
+            flags=(--title "LexVM $TAG" --generate-notes --verify-tag)
+            if [[ "$TAG" == *-* ]]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$TAG" "${flags[@]}" release-assets/*
+          fi
