@@ -6,7 +6,7 @@
 
 import { bundled } from "virtual:lexvm-builtin-packs";
 import { loadPack, type Pack, packHash } from "@lexvm/engine";
-import { type CatalogEntry, parseCatalog } from "../logic/catalog.ts";
+import { type CatalogEntry, isMinutes, parseCatalog } from "../logic/catalog.ts";
 import { deleteSave } from "./saves.ts";
 import { kvDelete, kvGet, kvKeys, kvSet } from "./storage.ts";
 
@@ -23,6 +23,8 @@ export interface LibraryEntry {
   language: string;
   version: string;
   playtime?: number;
+  /** Play time estimate (catalog for built-in packs, computed at import for imported ones). */
+  estimatedMinutes?: number;
   author: string;
   license: string;
   /** Built-in only: pack file relative to the catalog. */
@@ -35,6 +37,8 @@ export interface ImportedPackRecord {
   importedAt: string;
   /** The compiled, normalised pack. Validated again on every load. */
   pack: unknown;
+  /** Rounded expected play time, computed at import when the walkthrough reaches a win. */
+  estimatedMinutes?: number;
 }
 
 const CATALOG_PATH = "packs/index.json";
@@ -106,7 +110,9 @@ function importedEntry(record: unknown): LibraryEntry | null {
   };
   const subtitle = str(p.subtitle);
   if (subtitle) entry.subtitle = subtitle;
-  if (typeof p.playtime === "number" && p.playtime > 0) entry.playtime = p.playtime;
+  if (isMinutes(p.playtime)) entry.playtime = p.playtime;
+  const estimate = (record as ImportedPackRecord).estimatedMinutes;
+  if (isMinutes(estimate)) entry.estimatedMinutes = estimate;
   return entry;
 }
 
@@ -139,6 +145,7 @@ function builtinEntry(e: CatalogEntry): LibraryEntry {
   };
   if (e.subtitle) entry.subtitle = e.subtitle;
   if (e.playtime) entry.playtime = e.playtime;
+  if (e.estimatedMinutes) entry.estimatedMinutes = e.estimatedMinutes;
   return entry;
 }
 
@@ -202,9 +209,10 @@ export async function importedPackExists(id: string): Promise<boolean> {
   return (await kvGet("packs", id)) !== undefined;
 }
 
-/** Store an imported (compiled and validated) pack. Returns false if storage failed. */
-export async function storeImportedPack(pack: Pack, now: Date): Promise<boolean> {
+/** Store an imported (compiled and validated) pack with its play time estimate. Returns false if storage failed. */
+export async function storeImportedPack(pack: Pack, now: Date, estimatedMinutes?: number): Promise<boolean> {
   const record: ImportedPackRecord = { format: "lexvm-imported/1", importedAt: now.toISOString(), pack };
+  if (isMinutes(estimatedMinutes)) record.estimatedMinutes = estimatedMinutes;
   const ok = await kvSet("packs", pack.id, record);
   packCache.delete(libraryKey("imported", pack.id));
   return ok;

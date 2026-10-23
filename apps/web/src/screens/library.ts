@@ -5,6 +5,7 @@ import { formatDate, languageName } from "../components/header.ts";
 import { h, replaceChildren, uid } from "../dom.ts";
 import { getLanguage, t } from "../i18n.ts";
 import { icon } from "../icons.ts";
+import { cardMinutes } from "../logic/catalog.ts";
 import type { StoredSave } from "../logic/saves.ts";
 import { deleteImportedPack, type LibraryEntry, loadLibrary } from "../services/packs.ts";
 import { promptInstall, pwa } from "../services/pwa.ts";
@@ -90,6 +91,7 @@ function card(entry: LibraryEntry, save: StoredSave | undefined, refresh: () => 
     refresh();
   };
   const language = languageName(entry.language, ui);
+  const minutes = cardMinutes(entry);
   return h(
     "article",
     { class: "card", attrs: { "aria-labelledby": titleId }, dataset: { pack: entry.key } },
@@ -104,9 +106,7 @@ function card(entry: LibraryEntry, save: StoredSave | undefined, refresh: () => 
         },
         text: entry.language.toUpperCase(),
       }),
-      entry.playtime
-        ? h("span", { class: "tag tag--plain", text: t("library.playtime", { n: entry.playtime }) })
-        : null,
+      minutes ? h("span", { class: "tag tag--plain", text: t("library.playtime", { n: minutes }) }) : null,
       entry.source === "imported" ? h("span", { class: "tag tag--accent", text: t("library.imported") }) : null,
     ),
     h("h3", { class: "card__title", id: titleId, lang: entry.language, text: entry.title }),

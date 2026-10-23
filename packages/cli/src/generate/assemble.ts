@@ -3,6 +3,7 @@
  * an LLM. Used by `lexvm prompt` (copy-paste prompts for any LLM) and by
  * `lexvm generate` (staged API pipeline), so both always use the same words.
  */
+import { budgetForMinutes, PLAYTIME_DEFAULTS, type PlaytimeBudget } from "@lexvm/engine";
 import { fenceFile } from "./fenced.ts";
 import { type PromptKit, renderTemplate } from "./kit.ts";
 
@@ -13,6 +14,8 @@ export const PACK_LANGUAGES = ["de", "en"] as const;
 export type PackLanguage = (typeof PACK_LANGUAGES)[number];
 
 export const DEFAULT_MINUTES = 30;
+/** Rows of the size budget table in the one-shot prompt (plus the requested length, if different). */
+export const BUDGET_TABLE_MINUTES = [15, 30, 45, 60] as const;
 export const DEFAULT_LICENSE = "CC-BY-4.0";
 
 export interface NamedText {
@@ -106,6 +109,57 @@ function renderDiagnostics(text: string | null | undefined): string {
   return fence(text.trim(), "text");
 }
 
+const TOLERANCE_PERCENT = Math.round(PLAYTIME_DEFAULTS.tolerance * 100);
+
+function range(r: { min: number; max: number }): string {
+  const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${fmt(r.min)}–${fmt(r.max)}`;
+}
+
+function budgetIntro(minutes: number): string {
+  return (
+    `Size budget for about ${minutes} minutes. LexVM estimates the play time from the walkthrough and the texts; ` +
+    `\`lexvm check\` warns when the estimate misses \`playtime\` by more than ${TOLERANCE_PERCENT}%. Stay within these ranges:`
+  );
+}
+
+/** The size budget for one target length, as Markdown (stage prompts). */
+export function renderBudget(minutes: number, lang: PackLanguage | null): string {
+  if (lang !== null) {
+    return [budgetIntro(minutes), ...budgetForMinutes(minutes, lang).notes.map((n) => `- ${n}`)].join("\n");
+  }
+  const lines = PACK_LANGUAGES.map((l) => {
+    const b = budgetForMinutes(minutes, l);
+    return `- ${LANGUAGE_NAMES[l]} pack (\`${l}\`): ${range(b.walkthroughSteps)} walkthrough steps and ${range(b.words)} player-visible words in the whole pack.`;
+  });
+  return [
+    budgetIntro(minutes),
+    ...lines,
+    '- About a quarter of the steps are dialogue choices; about 60% of the words appear along the walkthrough, the rest in optional descriptions, dialogue branches and custom responses (see "Length budget" in the guide).',
+  ].join("\n");
+}
+
+/** The size budget table for 15/30/45/60 minutes (and the requested length), as Markdown (one-shot prompt). */
+export function renderBudgetTable(minutes: number, lang: PackLanguage | null): string {
+  const rows = [...new Set<number>([...BUDGET_TABLE_MINUTES, minutes])].sort((a, b) => a - b);
+  const langs = lang === null ? [...PACK_LANGUAGES] : [lang];
+  const budgets = (m: number): PlaytimeBudget[] => langs.map((l) => budgetForMinutes(m, l));
+  const head =
+    langs.length === 1
+      ? ["| Play time | Walkthrough steps | Words of text |", "|---|---|---|"]
+      : [
+          `| Play time | ${langs.map((l) => `\`${l}\`: walkthrough steps | \`${l}\`: words of text`).join(" | ")} |`,
+          `|---|${langs.map(() => "---|---|").join("")}`,
+        ];
+  const body = rows.map(
+    (m) =>
+      `| ${m} min | ${budgets(m)
+        .map((b) => `${range(b.walkthroughSteps)} | ${range(b.words)}`)
+        .join(" | ")} |`,
+  );
+  return [...head, ...body].join("\n");
+}
+
 function provenance(inputs: PromptInputs): { AUTHOR: string; LICENSE: string; GENERATOR: string } {
   const license = inputs.license ?? DEFAULT_LICENSE;
   const author =
@@ -136,6 +190,9 @@ export function promptVars(kit: PromptKit, inputs: PromptInputs): Record<string,
         ? "the language chosen in the concept (`de` or `en`)"
         : describeLanguage(inputs.lang),
     MINUTES: String(inputs.minutes),
+    // The shared system prompt is rendered with minutes 0 and uses neither.
+    BUDGET: inputs.minutes > 0 ? renderBudget(inputs.minutes, inputs.lang) : "",
+    BUDGET_TABLE: inputs.minutes > 0 ? renderBudgetTable(inputs.minutes, inputs.lang) : "",
     IDEA: renderIdea(inputs.idea),
     PACK_ID: inputs.packId
       ? `\`${inputs.packId}\``

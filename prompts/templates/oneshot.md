@@ -1,4 +1,4 @@
-<!-- template: one-shot prompt for chat LLMs. Rendered by `lexvm prompt --stage oneshot`; `npm run prompts` writes prompts/oneshot.md. Placeholders: SPEC GUIDE CHECKLIST EXAMPLE LANG MINUTES AUTHOR LICENSE GENERATOR IDEA. -->
+<!-- template: one-shot prompt for chat LLMs. Rendered by `lexvm prompt --stage oneshot`; `npm run prompts` writes prompts/oneshot.md. Placeholders: SPEC GUIDE CHECKLIST EXAMPLE LANG MINUTES BUDGET_TABLE AUTHOR LICENSE GENERATOR IDEA. -->
 # Write a LexVM text adventure
 
 You are an experienced adventure game designer in the tradition of the classic LucasArts and Infocom games, and a precise technical writer. Your task: turn the idea at the very end of this prompt into a complete, playable **LexVM content pack** — one `pack.yaml` file.
@@ -8,7 +8,11 @@ LexVM is an offline text-adventure player for phones and tablets. Players mostly
 ## Parameters
 
 - **Pack language:** {{LANG}}.
-- **Target play time:** about {{MINUTES}} minutes, unless the idea asks for a different length.
+- **Target play time:** the length the idea asks for; if it names none, about {{MINUTES}} minutes. Write it into `playtime`.
+- **Size budget:** LexVM estimates the play time from the walkthrough and the texts, and `lexvm check` warns when the estimate misses `playtime` by more than 25%. Pick the row that matches the requested length (no length requested: {{MINUTES}} minutes; between two rows: interpolate) and keep the walkthrough and the player-visible text of the whole pack within it. About a quarter of the walkthrough steps are dialogue choices, and about 60% of the words appear along the walkthrough.
+
+{{BUDGET_TABLE}}
+
 - **Policy:** `forgiving` — no deaths, no losing endings, no dead ends.
 
 Everything below up to "How to answer" is reference material: first the authoring guide (how to make the game good), then the normative format specification (what is valid), then a complete worked example.
@@ -41,7 +45,7 @@ Answer in exactly three parts, in this order.
 **Part 2 — The pack:** ONE complete `pack.yaml` in a single fenced code block that starts with ```` ```yaml ````. Everything goes into this one file. Write the top-level keys in this order: metadata, `start`, `verbs`, `flags`, `counters`, `rooms`, `objects`, `rules`, `dialogues`, `endings`, `hints`, and **`walkthrough` last** — write it after everything else, replaying the game step by step, so it only uses ids that exist. Never abbreviate: no "…", no "and so on", no comments standing in for content.
 
 Metadata:
-- `format: lexvm-pack/1`, a kebab-case `id` derived from the title, `version: 1.0.0`, `title`, optional `subtitle`, a one- or two-sentence `description`, `language`, `playtime` (minutes), `maxScore` (the walkthrough's total score), `policy: forgiving`;
+- `format: lexvm-pack/1`, a kebab-case `id` derived from the title, `version: 1.0.0`, `title`, optional `subtitle`, a one- or two-sentence `description`, `language`, `playtime` (the target play time in minutes), `maxScore` (the walkthrough's total score), `policy: forgiving`;
 - `author`: {{AUTHOR}};
 - `license`: {{LICENSE}};
 - `generator`: {{GENERATOR}}.

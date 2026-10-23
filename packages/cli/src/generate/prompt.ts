@@ -34,7 +34,7 @@ Options:
   --stage <stage>        ${PROMPT_STAGES.join("|")} (default oneshot)
   --lang <de|en>         Pack language (default: the language of the idea)
   --idea <text>          The story idea (or --idea-file <path>); omitted = generic prompt
-  --minutes <n>          Target play time in minutes (default ${DEFAULT_MINUTES})
+  --minutes <n>          Target play time in minutes (default ${DEFAULT_MINUTES}); sizes the budget in the prompt
   --pack <dir|file>      Existing pack directory or YAML file to include (later stages, repair)
   --diagnostics <file>   Diagnostics to include in a repair prompt (default: run the checks on --pack)
   --out <file>           Write to a file instead of stdout

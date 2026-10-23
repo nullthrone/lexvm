@@ -39,7 +39,8 @@ Required:
 
 Options:
   --lang <de|en>         Pack language (default: the language of the idea)
-  --minutes <n>          Target play time in minutes (default ${DEFAULT_MINUTES})
+  --minutes <n>          Target play time in minutes (default ${DEFAULT_MINUTES}); becomes the pack's playtime,
+                         sizes the prompts' budget and is checked by the play time estimate
   --model <id>           Claude model id (or set LEXVM_MODEL)
   --max-repairs <n>      Repair rounds after the first check (default ${DEFAULT_MAX_REPAIRS})
   --from-stage <stage>   Resume at concept|puzzles|world|logic|verify, reusing earlier artifacts

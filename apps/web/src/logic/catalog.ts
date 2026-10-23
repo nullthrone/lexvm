@@ -4,7 +4,10 @@
  * Format:
  *   { "format": "lexvm-catalog/1",
  *     "packs": [{ id, title, subtitle?, description, language, version, playtime?,
- *                 author, license, file, hash, size? }] }
+ *                 estimatedMinutes?, author, license, file, hash, size? }] }
+ *
+ * `playtime` is the author's target, `estimatedMinutes` the build's play time
+ * estimate (see the spec, "Play time estimate").
  *
  * `file` is a path relative to the catalog (e.g. "locked-study.lexpack.json").
  * The catalog is data from the network: every field is checked and invalid
@@ -21,6 +24,8 @@ export interface CatalogEntry {
   language: string;
   version: string;
   playtime?: number;
+  /** Rounded expected play time computed by `lexvm build`. */
+  estimatedMinutes?: number;
   author: string;
   license: string;
   /** Pack file path relative to the catalog. */
@@ -41,6 +46,16 @@ export function isSafeRelativePath(path: string): boolean {
     return false;
   }
   return path.split("/").every((segment) => /^[A-Za-z0-9._-]+$/.test(segment) && segment !== "." && segment !== "..");
+}
+
+/** A plausible whole number of minutes. */
+export function isMinutes(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 && value < 10_000;
+}
+
+/** Minutes shown on a library card: the pack's own playtime, else the estimate. */
+export function cardMinutes(entry: { playtime?: number; estimatedMinutes?: number }): number | undefined {
+  return entry.playtime ?? entry.estimatedMinutes;
 }
 
 function str(value: unknown, max = 2000): string | undefined {
@@ -68,9 +83,8 @@ function parseEntry(raw: unknown): CatalogEntry | null {
   };
   const subtitle = str(r.subtitle, 300);
   if (subtitle) entry.subtitle = subtitle;
-  if (typeof r.playtime === "number" && Number.isInteger(r.playtime) && r.playtime > 0 && r.playtime < 10_000) {
-    entry.playtime = r.playtime;
-  }
+  if (isMinutes(r.playtime)) entry.playtime = r.playtime;
+  if (isMinutes(r.estimatedMinutes)) entry.estimatedMinutes = r.estimatedMinutes;
   if (typeof r.size === "number" && Number.isFinite(r.size) && r.size >= 0) entry.size = r.size;
   return entry;
 }

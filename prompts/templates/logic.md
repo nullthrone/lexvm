@@ -1,7 +1,11 @@
-<!-- template: stage 4 (logic). Output files: rules.yaml, dialogues.yaml, solution.yaml (plus any earlier file that must change, complete). Placeholders: LANG MINUTES CONCEPT PUZZLES FILES. -->
+<!-- template: stage 4 (logic). Output files: rules.yaml, dialogues.yaml, solution.yaml (plus any earlier file that must change, complete). Placeholders: LANG MINUTES BUDGET CONCEPT PUZZLES FILES. -->
 # Stage 4 of 4: logic
 
 Write the **logic** of the adventure on top of the world files below: rules, dialogues, endings, hints and the walkthrough. Pack language: {{LANG}}; target play time: about {{MINUTES}} minutes.
+
+{{BUDGET}}
+
+The walkthrough length and the texts of rules, dialogues and endings decide whether the game hits this target: count the walkthrough steps before you answer.
 
 Return these files:
 

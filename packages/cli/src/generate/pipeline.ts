@@ -39,6 +39,15 @@ export type Stage = (typeof STAGES)[number];
 export const DESIGN_DIR = "design";
 export const RUN_LOG = "run.json";
 export const DEFAULT_MAX_REPAIRS = 6;
+/**
+ * Repair rounds spent on the length alone: when a pack passes every gate but
+ * its play time estimate misses the --minutes target by more than the
+ * tolerance (playtime.too-short / playtime.too-long), the pipeline asks for
+ * one more round (if --max-repairs allows). If that breaks the pack and the
+ * remaining rounds cannot fix it, the last passing files are restored.
+ */
+export const LENGTH_REPAIRS = 1;
+const LENGTH_CODES: ReadonlySet<string> = new Set(["playtime.too-short", "playtime.too-long"]);
 
 /** Files each file-producing stage is asked for. */
 export const STAGE_FILES = {
@@ -200,6 +209,42 @@ export function extractDocument(text: string, name: string): string {
   const wrapped = /^(`{3,}|~{3,})[ \t]*(?:markdown|md)?[^\n]*\n([\s\S]*?)\n\1[ \t]*$/.exec(trimmed);
   if (wrapped) return wrapped[2]!.trim();
   return trimmed;
+}
+
+/**
+ * Set the top-level `playtime` of a pack.yaml text to `minutes`, replacing an
+ * existing value or adding the key after `language` (or another metadata key).
+ */
+export function withPlaytime(yaml: string, minutes: number): string {
+  const line = `playtime: ${minutes}`;
+  const existing = /^playtime:[^\n]*$/m;
+  if (existing.test(yaml)) return yaml.replace(existing, line);
+  for (const key of ["language", "version", "id", "format"]) {
+    const m = new RegExp(`^${key}:[^\\n]*$`, "m").exec(yaml);
+    if (m) {
+      const end = m.index + m[0].length;
+      return `${yaml.slice(0, end)}\n${line}${yaml.slice(end)}`;
+    }
+  }
+  return `${line}\n${yaml}`;
+}
+
+/** Make pack.yaml carry the --minutes target as `playtime`. Returns true when the file changed. */
+export async function ensurePlaytime(outDir: string, minutes: number): Promise<boolean> {
+  const path = join(outDir, "pack.yaml");
+  const text = await readOptional(path);
+  if (text === null) return false;
+  const updated = withPlaytime(text, minutes);
+  if (updated === text) return false;
+  await writeFile(path, updated, "utf8");
+  return true;
+}
+
+/** Replace the pack's YAML files with an earlier set (restores the last passing version). */
+async function restorePackFiles(outDir: string, files: SourceFile[]): Promise<void> {
+  const keep = new Set(files.map((f) => f.name));
+  for (const f of await readPackFiles(outDir)) if (!keep.has(f.name)) await rm(join(outDir, f.name));
+  for (const f of files) await writeFile(join(outDir, f.name), f.text, "utf8");
 }
 
 // ---------------------------------------------------------------------------
@@ -401,6 +446,11 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
   const total = STAGES.length;
   const tag = (stage: Stage) => `[${STAGES.indexOf(stage) + 1}/${total}] ${stage}`;
   const runs = (stage: Stage) => STAGES.indexOf(stage) >= startIndex;
+  /** The --minutes target is the pack's playtime: written in the metadata (world) stage, kept through repairs. */
+  const syncPlaytime = async () => {
+    if (await ensurePlaytime(outDir, params.minutes))
+      log(`      set playtime: ${params.minutes} in pack.yaml (the --minutes target)`);
+  };
 
   try {
     if (runs("concept")) {
@@ -426,6 +476,7 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
         required: true,
         replaceAll: true,
       });
+      await syncPlaytime();
     }
     if (runs("logic")) {
       const concept = await requireDoc("concept.md", "logic");
@@ -451,10 +502,24 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
     const puzzles = await readDoc("puzzles.md");
     let round = 0;
     let lastCrash = "";
+    let lengthRounds = 0;
+    /** The last version that passed every gate, kept while a length round tries to improve it. */
+    let passing: {
+      files: SourceFile[];
+      diagnostics: Diagnostic[];
+      counts: { errors: number; warnings: number };
+    } | null = null;
+    const succeed = async (diagnostics: Diagnostic[], counts: { errors: number; warnings: number }) => {
+      run.finishedAt = now().toISOString();
+      run.result = { ok: true, repairs: round, ...pick(counts) };
+      await saveLog();
+      return { ok: true, repairs: round, diagnostics, ...pick(counts) };
+    };
     for (;;) {
+      await syncPlaytime();
       const files = await readPackFiles(outDir);
       const started = now();
-      const report = await deps.verify(files, { maxStates: params.maxStates });
+      const report = await deps.verify(files, { maxStates: params.maxStates, targetMinutes: params.minutes });
       const finished = now();
       const counts = countSeverities(report.diagnostics);
       runLog.events.push({
@@ -471,34 +536,52 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
       log(`      check ${round}: ${counts.errors} error(s), ${counts.warnings} warning(s) — ${gateSummary}`);
 
       if (report.ok) {
-        const result = { ok: true, repairs: round, diagnostics: report.diagnostics, ...pick(counts) };
-        run.finishedAt = now().toISOString();
-        run.result = { ok: true, repairs: round, ...pick(counts) };
-        await saveLog();
-        return result;
-      }
-      for (const d of report.diagnostics.filter((x) => x.severity === "error").slice(0, 5)) {
-        log(`        ${formatDiagnostic(d)}`);
-      }
-      // A verifier that crashes the same way twice will not be fixed by another repair round.
-      const crash = report.diagnostics
-        .filter((d) => /^verify\..*-crashed$/.test(d.code))
-        .map((d) => d.message)
-        .join("\n");
-      if (crash !== "" && crash === lastCrash) {
-        throw new PipelineError(`the verifier crashed twice with the same error; stopping. ${crash}`);
-      }
-      lastCrash = crash;
-      if (round >= params.maxRepairs) {
-        run.finishedAt = now().toISOString();
-        run.result = {
-          ok: false,
-          repairs: round,
-          ...pick(counts),
-          failure: "errors remain after the last repair round",
-        };
-        await saveLog();
-        return { ok: false, repairs: round, diagnostics: report.diagnostics, ...pick(counts) };
+        const length = report.diagnostics.find((d) => LENGTH_CODES.has(d.code));
+        if (!length || lengthRounds >= LENGTH_REPAIRS || round >= params.maxRepairs) {
+          return await succeed(report.diagnostics, counts);
+        }
+        // Passing, but the wrong length: one more round on the length, keeping this version as a fallback.
+        passing = { files, diagnostics: report.diagnostics, counts: pick(counts) };
+        lengthRounds++;
+        log(`        ${formatDiagnostic(length)}`);
+      } else {
+        for (const d of report.diagnostics.filter((x) => x.severity === "error").slice(0, 5)) {
+          log(`        ${formatDiagnostic(d)}`);
+        }
+        // A verifier that crashes the same way twice will not be fixed by another repair round.
+        const crash = report.diagnostics
+          .filter((d) => /^verify\..*-crashed$/.test(d.code))
+          .map((d) => d.message)
+          .join("\n");
+        if (crash !== "" && crash === lastCrash) {
+          throw new PipelineError(`the verifier crashed twice with the same error; stopping. ${crash}`);
+        }
+        lastCrash = crash;
+        if (round >= params.maxRepairs) {
+          if (passing) {
+            await restorePackFiles(outDir, passing.files);
+            log("      the length repair broke the pack; restored the last passing version");
+            runLog.events.push({
+              stage: "verify",
+              round,
+              startedAt: now().toISOString(),
+              finishedAt: now().toISOString(),
+              durationMs: 0,
+              diagnostics: countSeverities(passing.diagnostics),
+              notes: ["restored the last passing version after an unsuccessful length repair"],
+            });
+            return await succeed(passing.diagnostics, passing.counts);
+          }
+          run.finishedAt = now().toISOString();
+          run.result = {
+            ok: false,
+            repairs: round,
+            ...pick(counts),
+            failure: "errors remain after the last repair round",
+          };
+          await saveLog();
+          return { ok: false, repairs: round, diagnostics: report.diagnostics, ...pick(counts) };
+        }
       }
       round++;
       const prompt = buildStagePrompt(deps.kit, "repair", {

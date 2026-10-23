@@ -1,4 +1,4 @@
-<!-- template: stage 3 (world). Output files: pack.yaml, rooms.yaml, objects.yaml. Placeholders: LANG MINUTES PACK_ID AUTHOR LICENSE GENERATOR CONCEPT PUZZLES. -->
+<!-- template: stage 3 (world). Output files: pack.yaml, rooms.yaml, objects.yaml. Placeholders: LANG MINUTES PACK_ID AUTHOR LICENSE GENERATOR BUDGET CONCEPT PUZZLES. -->
 # Stage 3 of 4: world
 
 Build the **world** of the adventure from the concept and the puzzle design below: metadata, rooms, exits and objects. The next stage writes rules, dialogues, endings, hints and the walkthrough on top of it, so define every room, object and clue the puzzles need now.
@@ -6,7 +6,7 @@ Build the **world** of the adventure from the concept and the puzzle design belo
 Return exactly these three files:
 
 1. `pack.yaml` — metadata and global declarations:
-   - `format: lexvm-pack/1`, `version: 1.0.0`, `title`, optional `subtitle`, `description`, `playtime: {{MINUTES}}`, `policy: forgiving`, `maxScore` (the total from the puzzle design);
+   - `format: lexvm-pack/1`, `version: 1.0.0`, `title`, optional `subtitle`, `description`, `playtime: {{MINUTES}}` (the target play time; keep it), `policy: forgiving`, `maxScore` (the total from the puzzle design);
    - `id`: {{PACK_ID}};
    - `language`: {{LANG}};
    - `author`: {{AUTHOR}};
@@ -20,6 +20,9 @@ Requirements:
 - Every interactable object is referenced as `{id}` in its room's description or has a `roomText`.
 - Object descriptions carry the signposting described in the puzzle design.
 - Respect the text budgets and the language conventions of the guide.
+- Size the texts for the whole game: room and object texts are a large part of the word budget below; the next stage adds dialogue, responses and endings.
+
+{{BUDGET}}
 - Do not write rules, dialogues, endings, hints or the walkthrough yet.
 
 # Concept

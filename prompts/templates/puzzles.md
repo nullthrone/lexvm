@@ -1,7 +1,11 @@
-<!-- template: stage 2 (puzzle design). Output: the document design/puzzles.md. Placeholders: IDEA LANG MINUTES CONCEPT. -->
+<!-- template: stage 2 (puzzle design). Output: the document design/puzzles.md. Placeholders: IDEA LANG MINUTES BUDGET CONCEPT. -->
 # Stage 2 of 4: puzzles
 
 Design the puzzles for the adventure described in the concept below, as a **puzzle dependency chart** (Ron Gilbert). Target play time: about {{MINUTES}} minutes; pack language: {{LANG}}.
+
+{{BUDGET}}
+
+The puzzles and their solutions make up most of the walkthrough, so plan enough of them (with their wrong attempts and dialogue) to fill the step budget.
 
 Write a Markdown document with these sections:
 
