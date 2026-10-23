@@ -54,6 +54,9 @@ export const en: Messages = {
   rejectTooMany: "Too many objects for that command.",
   rejectSameObject: "You can't do that with itself.",
 
+  ruleRecursionLimit: "internal: rule recursion limit",
+  ruleWorkLimit: "internal: rule work limit",
+
   exitLabels: {
     north: "north",
     south: "south",

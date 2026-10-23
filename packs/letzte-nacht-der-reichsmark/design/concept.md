@@ -12,7 +12,7 @@ in [style.md](style.md).
 | `subtitle` | Ein Hamburger Kriminalfall, Juni 1948 |
 | `language` | `de` |
 | `policy` | `forgiving` |
-| `playtime` | 40 |
+| `playtime` | 45 (raised from 40 after playtests; estimate 47) |
 | `maxScore` | 25 |
 | `license` | Recommended `CC0-1.0`, like the demo pack, so the pack can also serve as a reference example for the prompt kit. Final call: product owner. |
 | `start.room` | `detektei` |
@@ -38,7 +38,7 @@ pocket that nobody wants any more, except one man who has debts.
 
 > Hamburg, Sonnabend, 19. Juni 1948. Es regnet seit Tagen. Seit gestern Abend weiß es die ganze Stadt aus dem Radio: Am Sonntag gibt es neues Geld. Vierzig Mark pro Kopf. Was du in Reichsmark besitzt, ist ab morgen kaum noch das Papier wert.
 >
-> In deinem Besucherstuhl sitzt eine Frau in einem umgefärbten Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr wegnehmen.
+> Auf deinem Besucherstuhl sitzt eine Frau in einem umgefärbten Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr wegnehmen.
 
 ## 2. The truth (solution)
 
@@ -101,7 +101,7 @@ the handwriting sample that convicts its author.
 |---|---|---|---|
 | I – Der Auftrag | `detektei` | Tutorial dialogue with Anni: the case, the locker key, the Reichsmark fee. About 3 minutes. | Taking the case (`auftrag_angenommen`) opens the city. |
 | II – Drei Spuren | `baumwall` hub, `kaischuppen`, `zollkanal`, `kneipe`, `hinterhof`, `nissenhuette` | The locker opens the case. Three strands run in parallel: **A** the paper trail (boat hook, tally sheet), **B** the frame-up (notebook deductions, Tadeusz), **C** St. Pauli (the Reichsmark, Lene, Anni's tin). Talking to Kröger for the first time records his four claims and triggers Asmussen's warning at the Baumwall. | Kröger's confession (`clue_gestaendnis`): every claim is refuted by one strand. |
-| III – Über das Wasser | `zollkanal` → `speicher_wasserseite`, `speicher_treppe`, `vierter_boden` | Tadeusz rows you across the customs border. You light the lantern, open the attic door, find Jakob and Asmussen's written order, and make the handwriting deduction. | Jakob's testimony (`clue_jakob_aussage`) opens the office stairs. |
+| III – Über das Wasser | `zollkanal` → `speicher_wasserseite`, `speicher_treppe`, `vierter_boden` | Tadeusz rows you across the customs border. You light the lantern, open the attic door, find Jakob and Asmussen's written order, and make the handwriting deduction. | Jakob's testimony (`clue_jakob_aussage`) and the handwriting deduction (`clue_dieselbe_hand`) open the office stairs. |
 | IV – Die Abrechnung | `kontor` | Evidence duel with Asmussen in three rungs, his bribe, your refusal, the final choice. | Ending. |
 
 Typical session: Act I about 3 minutes, Act II about 25 minutes, Act III
@@ -116,7 +116,7 @@ Both endings are `win: true`. Each has two text variants on the flag
 | Ending id | Title | Chosen with | Content |
 |---|---|---|---|
 | `ende_erster_morgen` | Der erste Morgen | `f_englaender` »Den Engländern. Es ist ihre Ware.« | British military police seize lot 4471. Asmussen goes before a British court, where none of his Persilscheine count. |
-| `ende_hamburger_regen` | Hamburger Regen | `f_kripo` »Der Kripo. Es ist unsere Stadt.« | The bittersweet ending. The same Kommissar who called Jakob a thief has to take the case. Asmussen's lawyer is already on the way, with three new Persilscheine. |
+| `ende_hamburger_regen` | Hamburger Regen | `f_kripo` »Der Kripo. Es ist unsere Stadt.« | The bittersweet ending. Kommissar Petersen, who watched Kröger open Jakob's locker on Friday, has to take the case. Asmussen's lawyer is already on the way, with three new Persilscheine. |
 
 **Kröger variant.**
 
@@ -132,9 +132,10 @@ Full ending drafts are in [puzzles.md](puzzles.md#endings).
 
 ## 5. Play time
 
-- **Estimated play time:** 35–45 minutes. The game is heavy on reading and
+- **Estimated play time:** 35–50 minutes (`playtime: 40`; `lexvm check`
+  estimates about 47, a speedrun about 24). The game is heavy on reading and
   dialogue.
-- **Critical path:** 80 canonical commands (see the walkthrough in
+- **Critical path:** 74 canonical commands (see the walkthrough in
   [puzzles.md](puzzles.md#walkthrough)). Typical sessions take 2–2.5 times
   as many taps, for looking around, wrong attempts and re-reading the
   notebook.

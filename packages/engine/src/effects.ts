@@ -78,16 +78,16 @@ export function endGame(ctx: Ctx, id: string): void {
 }
 
 /** Stop everything after too deep rule recursion (goto → enter rule → goto …) or too much work. */
-function overflow(ctx: Ctx, what = "rule recursion limit"): void {
+function overflow(ctx: Ctx, message = ctx.m.ruleRecursionLimit): void {
   if (ctx.halted) return;
-  ctx.out.push({ kind: "system", spans: [{ text: `internal: ${what}` }] });
+  ctx.out.push({ kind: "system", spans: [{ text: message }] });
   ctx.halted = true;
 }
 
 /** Count one unit of work; halts the call once MAX_WORK is used up. */
 function exhausted(ctx: Ctx): boolean {
   if (++ctx.work <= MAX_WORK) return false;
-  overflow(ctx, "rule work limit");
+  overflow(ctx, ctx.m.ruleWorkLimit);
   return true;
 }
 

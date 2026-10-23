@@ -2,6 +2,8 @@
 
 .screen--game {
   display: grid;
+  /* minmax(0, …): a long pack title in the top bar ellipsizes instead of widening the screen. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
 }
@@ -67,6 +69,7 @@
 
 .game__stage {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
 }

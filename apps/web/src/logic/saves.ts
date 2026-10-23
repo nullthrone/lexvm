@@ -12,6 +12,8 @@ export interface StoredSave {
   save: SaveGame;
   /** Revealed hint steps per hint id. */
   hints: Record<string, number>;
+  /** Id of the browser tab that wrote this autosave (see services/saves.ts). */
+  writer?: string;
 }
 
 export function createSave(
@@ -141,7 +143,9 @@ export function validateStoredSave(value: unknown): StoredSave | null {
   if (!isRecord(value)) return null;
   const result = validateSave(value.save);
   if (!result.ok) return null;
-  return { save: result.save, hints: sanitizeHints(value.hints) };
+  const stored: StoredSave = { save: result.save, hints: sanitizeHints(value.hints) };
+  if (typeof value.writer === "string" && value.writer.length <= 100) stored.writer = value.writer;
+  return stored;
 }
 
 function pad(n: number): string {

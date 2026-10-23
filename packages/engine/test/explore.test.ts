@@ -234,6 +234,19 @@ describe("explore", () => {
     expect(withDrop.shortestWin).toEqual(["drop coin"]);
   });
 
+  it("does not count the inventory command as a tap action (the bag button runs no command)", () => {
+    const pack = makePack({
+      start: { room: "hall" },
+      rooms: { hall: { name: "Hall", description: "A hall." } },
+      rules: [{ on: { verb: "inventory" }, do: { end: "won" } }],
+      walkthrough: ["inventory"],
+    });
+    const report = explore(pack);
+    expect(report.complete).toBe(true);
+    expect(report.winnable).toBe(false);
+    expect(report.diagnostics.find((d) => d.code === "explore.not-winnable")?.message).toContain('"inventory"');
+  });
+
   it("includeDrop keeps track of non-portable objects carried in a container", () => {
     // Dropping the letter (not portable, carried in the bag) leaves it behind for good.
     const pack = makePack({

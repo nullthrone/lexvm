@@ -18,7 +18,7 @@ policy: forgiving
 generator:
   pipeline: "LexVM staged design pipeline (three proposals, lead-designer synthesis, staged writing, automated verification, blind playtests)"
   notes: "Written with an LLM and reviewed by the maintainers. All persons, firms, ships and places in the plot are fictional."
-playtime: 40
+playtime: 45
 maxScore: 25
 
 start:
@@ -26,21 +26,37 @@ start:
   intro: |-
     Hamburg, Sonnabend, 19. Juni 1948. Es regnet seit Tagen. Seit gestern Abend weiß es die ganze Stadt aus dem Radio: Am Sonntag gibt es neues Geld. Vierzig Mark pro Kopf. Was du in Reichsmark besitzt, ist ab morgen kaum noch das Papier wert.
 
-    In deinem Besucherstuhl sitzt eine Frau in einem umgefärbten Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr wegnehmen.
+    Auf deinem Besucherstuhl sitzt eine Frau in einem umgefärbten Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr wegnehmen.
 
+# Documents are read with look: the parser maps »lies« to it, because the
+# pack has no verb of its own for reading (playtest round 1, CHANGES.md).
 verbs:
-  lesen:
-    label: Lesen
-    synonyms: [lies, lese, lesen]
-    default: Da gibt es nichts zu lesen.
   use:
     label: Benutzen
+    # »angle mit dem Bootshaken nach dem Klemmbrett«, »halte X gegen Y«
+    synonyms: [angle, angel, angeln, fische, fisch, halte, halt]
     default: Das bringt dich nicht weiter.
+  bezahlen:
+    label: Bezahlen
+    synonyms: [bezahle, bezahl, zahle, zahl, zahlen, kaufe, kauf, kaufen, bestich, besteche, bestechen, spendiere, spendier]
+    default: Hier will keiner dein Geld.
+  zaehlen:
+    label: Zählen
+    synonyms: [zähle, zähl, nachzählen]
+    default: Du zählst, wie Jakob. Die Zahl bleibt dieselbe.
+  horchen:
+    label: Horchen
+    synonyms: [horche, horch, lausche, lausch, lauschen]
+    default: Nur der Regen.
+  helfen:
+    label: Helfen
+    synonyms: [hilf, helfe, trage, trag, tragen, stütze, stütz, stützen]
+    default: Allein schaffst du das nicht.
 
 # Every flag and counter of the pack, including those only dialogues set or read.
 flags:
   auftrag_angenommen: false # node an_bezahlung (dialogue anni_auftrag)
-  hintertuer_frei: false # rule give_reichsmark_wirt
+  hintertuer_frei: false # rules give_reichsmark_wirt, bezahlen_*
   asmussen_getroffen: false # rule asmussen_hinterhalt
   tadeusz_rudert: false # option t_ueberfahrt (dialogue tadeusz_gespraech)
   laterne_an: false # rule laterne_anzuenden
@@ -58,13 +74,13 @@ endings:
         text: |-
           Um halb sechs stehen zwei Jeeps der Militärpolizei am Kehrwieder. Ein Captain zählt die Kisten nach und schreibt ›Lot 4471 – complete‹. Asmussen steigt ohne Mantel in den Wagen. Vor einem britischen Gericht zählen seine Persilscheine nicht.
 
-          Kröger sagt aus, drei Stunden lang, ohne Köm. Er bekommt zwei Jahre. Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt.
+          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Kröger redet drei Stunden lang, ohne Köm. Er bekommt zwei Jahre.
 
           Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
       - text: |-
           Um halb sechs stehen zwei Jeeps der Militärpolizei am Kehrwieder. Ein Captain zählt die Kisten nach und schreibt ›Lot 4471 – complete‹. Asmussen steigt ohne Mantel in den Wagen. Vor einem britischen Gericht zählen seine Persilscheine nicht.
 
-          Kröger ist am Morgen fort, nach Harburg, heißt es. Von da an kommt jeden Monat ein Kuvert ohne Absender in die Siedlung, Hütte 14. Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt.
+          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Kröger ist am Morgen fort, nach Harburg, heißt es. Von da an kommt jeden Monat ein Kuvert ohne Absender nach Hütte 14.
 
           Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
   ende_hamburger_regen:
@@ -73,26 +89,28 @@ endings:
     text:
       - when: { flag: kroeger_zeuge }
         text: |-
-          Kommissar Petersen kommt selbst, unrasiert, im nassen Mantel. Derselbe Mann, der Jakob am Freitag einen Dieb genannt hat. Er sieht die Kisten an, dann dich, und schreibt lange. Asmussen bittet um ein Telefon. Sein Anwalt ist schon unterwegs, und mit ihm drei neue Persilscheine.
+          Kommissar Petersen kommt selbst, im nassen Mantel. Am Freitag hat er zugesehen, wie Kröger Jakobs Spind aufschloss. Jetzt sieht er die Kisten an, dann dich, und schreibt lange. Asmussen will telefonieren; sein Anwalt bringt drei neue Persilscheine.
 
-          Aber Kröger hat unterschrieben, und diesmal zählt seine Unterschrift. Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt.
+          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Und Kröger hat unterschrieben; diesmal zählt seine Unterschrift.
 
           Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
       - text: |-
-          Kommissar Petersen kommt selbst, unrasiert, im nassen Mantel. Derselbe Mann, der Jakob am Freitag einen Dieb genannt hat. Er sieht die Kisten an, dann dich, und schreibt lange. Asmussen bittet um ein Telefon. Sein Anwalt ist schon unterwegs, und mit ihm drei neue Persilscheine.
+          Kommissar Petersen kommt selbst, im nassen Mantel. Am Freitag hat er zugesehen, wie Kröger Jakobs Spind aufschloss. Jetzt sieht er die Kisten an, dann dich, und schreibt lange. Asmussen will telefonieren; sein Anwalt bringt drei neue Persilscheine.
 
-          Kröger ist am Morgen fort, und mit ihm der beste Zeuge. Von da an kommt jeden Monat ein Kuvert ohne Absender in die Siedlung, Hütte 14. Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt.
+          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Kröger ist am Morgen fort und mit ihm der beste Zeuge. Von da an kommt jeden Monat ein Kuvert ohne Absender nach Hütte 14.
 
           Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
 
 # In solving order: the first hint whose `until` does not hold is shown.
+# Combining notebook entries is »Kombinieren mit …« in the action sheet and
+# »kombiniere/vergleiche X mit Y« for the parser; the hints say »Kombiniere«.
 hints:
   - id: h_auftrag
     until: { flag: auftrag_angenommen }
     steps:
-      - Die Frau in deinem Besucherstuhl ist deine Klientin.
+      - Die Frau auf deinem Besucherstuhl ist deine Klientin.
       - Sprich mit Anni Brodersen.
-      - Tippe Anni an, wähle »Sprechen« und hör ihr bis zum Ende zu.
+      - Sprich mit Anni und hör ihr bis zum Ende zu.
   - id: h_aushang
     until: { has: clue_loeschliste }
     steps:
@@ -111,24 +129,24 @@ hints:
       - Die Polizei hat zwei Stangen gefunden. Hat sie alles gefunden?
       - Sieh dir den offenen Spind genau an.
       - Nimm das Zigarettenpäckchen aus Spind 23.
-  - id: h_frisch
-    until: { has: clue_frisch_an_land }
-    steps:
-      - Losnummern verraten das Schiff. Wann kam dieses Los an Land?
-      - Vergleiche das Päckchen mit der Löschliste.
-      - "Benutze im Notizbuch »Los 4471« mit »Löschliste: 200 Kisten«."
   - id: h_nur_kroeger
     until: { has: clue_nur_kroeger }
     steps:
       - Wer konnte Spind 23 seit Donnerstag öffnen?
-      - Jakobs Schlüssel hing zu Hause. Und der zweite?
-      - Benutze im Notizbuch »Der vergessene Schlüssel« mit »Zweitschlüssel«.
+      - Jakobs Schlüssel hing zu Hause. Und der zweite? Zwei Einträge im Notizbuch gehören zusammen.
+      - "Im Notizbuch: Kombiniere »Der vergessene Schlüssel« mit »Zweitschlüssel«."
+  - id: h_frisch
+    until: { has: clue_frisch_an_land }
+    steps:
+      - Losnummern verraten das Schiff. Wann kam dieses Los an Land?
+      - Vergleiche das Los mit der Löschliste.
+      - "Im Notizbuch: Kombiniere »Los 4471« mit »Löschliste (200 Kisten)«."
   - id: h_untergeschoben
     until: { has: clue_untergeschoben }
     steps:
       - Du weißt jetzt, wann die Ware an Land kam und wer seitdem an den Spind konnte.
       - Zusammen beweisen die beiden Schlüsse etwas über Jakob.
-      - Benutze im Notizbuch »Frisch an Land« mit »Nur Krögers Schlüssel«.
+      - "Im Notizbuch: Kombiniere »Frisch an Land« mit »Nur Krögers Schlüssel«."
   - id: h_kroeger_version
     until: { has: clue_kroeger_version }
     steps:
@@ -151,14 +169,14 @@ hints:
     until: { has: clue_zwanzig_kisten }
     steps:
       - Zweihundert laut Löschliste. Und laut Kröger?
-      - Leg die beiden Zahlen nebeneinander.
-      - "Benutze im Notizbuch »Tallyzettel: 180 Kisten« mit »Löschliste: 200 Kisten«."
+      - Leg die beiden Zahlen nebeneinander. Beide stehen in deinem Notizbuch.
+      - "Im Notizbuch: Kombiniere »Tallyzettel (180 Kisten)« mit »Löschliste (200 Kisten)«."
   - id: h_hintertuer
     until: { flag: hintertuer_frei }
     steps:
       - Hinter der Kneipe wird gehandelt. Der Wirt lässt nur zahlende Kundschaft durch.
       - Lies die Kreidetafel. Wer will heute noch Reichsmark?
-      - Gib dem Wirt die Reichsmark.
+      - Bezahl den Wirt.
   - id: h_lene
     until: { has: clue_lene }
     steps:
@@ -169,14 +187,14 @@ hints:
     until: { has: clue_kein_schwund }
     steps:
       - "Kröger sagt: Was fehlt, ist Schwund."
-      - Zwanzig Kisten fehlen – und Lene kauft genau dieses Los von Kröger.
-      - Benutze im Notizbuch »Zwanzig Kisten fehlen« mit »Lenes Aussage«.
+      - Zwanzig Kisten fehlen – und Lene hat genau dieses Los bei Kröger gekauft.
+      - "Im Notizbuch: Kombiniere »Zwanzig Kisten fehlen« mit »Lenes Aussage«."
   - id: h_anni
     until: { has: clue_schweigegeld }
     steps:
       - Lene hat Kröger mit einem Kuvert bei den Brodersens gesehen.
       - Davon hat Anni dir nichts erzählt. Frag sie in ihrer Hütte.
-      - Fahr mit der Straßenbahn zur Siedlung, sprich mit Anni und sprich sie auf Krögers Kuvert an.
+      - Fahr mit der Straßenbahn zur Siedlung und frag Anni nach Krögers Kuvert.
   - id: h_verhoer
     until: { has: clue_gestaendnis }
     steps:
@@ -194,7 +212,7 @@ hints:
     steps:
       - Im Treppenhaus ist es fast dunkel.
       - Auf dem Absatz steht eine Sturmlaterne. Du hast Streichhölzer.
-      - Benutze die Streichhölzer mit der Sturmlaterne.
+      - Zünde die Sturmlaterne mit den Streichhölzern an.
   - id: h_bodentuer
     until: { isOpen: bodentuer }
     steps:
@@ -218,7 +236,7 @@ hints:
     steps:
       - Grüne Tinte. Wo hast du die schon einmal gesehen?
       - Vergleiche die Anweisung mit Krögers Persilschein.
-      - Benutze im Notizbuch »Die Anweisung« mit »Krögers Persilschein«.
+      - "Im Notizbuch: Kombiniere »Die Anweisung« mit »Krögers Persilschein«."
   - id: h_finale
     # Asmussen never returns to nowhere after the ambush, so this hint stays until the end.
     until: { in: { object: asmussen, location: nowhere } }
@@ -231,18 +249,16 @@ walkthrough:
   # Act I: Der Auftrag
   - talk anni
   - choose an_frag_jakob
-  - choose an_frag_polizei
   - choose an_frag_schluessel
   - choose an_annehmen
-  - choose an_abschied
   # Act II: Drei Spuren
   - go down
   - go south
-  - lesen aushang
+  - look aushang
   - open spind_jakob
   - take zigarettenpaeckchen
-  - use clue_los4471 clue_loeschliste
   - use clue_schluessel clue_zweitschluessel
+  - use clue_los4471 clue_loeschliste
   - use clue_frisch_an_land clue_nur_kroeger
   - go north
   - go west
@@ -257,14 +273,13 @@ walkthrough:
   - choose t_kein_dieb
   - choose t_wohin
   - choose t_angst
-  - choose t_danke
   - go west
   - go south
   - use bootshaken klemmbrett
   - use clue_tally clue_loeschliste
   - go north
   - go west
-  - give reichsmark wirt
+  - bezahlen wirt
   - go hintertuer
   - show zigarettenpaeckchen lene
   - use clue_zwanzig_kisten clue_lene
@@ -274,7 +289,6 @@ walkthrough:
   - talk anni
   - choose ah_kuvert
   - choose ah_warum
-  - choose ah_gehen
   - go stadt
   - go west
   - talk kroeger
@@ -284,7 +298,6 @@ walkthrough:
   - choose k_s3_untergeschoben
   - choose k_s4_kuvert
   - choose k_g_wo
-  - choose k_g_weiter
   - choose k_g_zeuge
   # Act III: Über das Wasser
   - go east
@@ -296,7 +309,7 @@ walkthrough:
   - use streichhoelzer sturmlaterne
   - open bodentuer
   - go up
-  - lesen zettel
+  - look zettel
   - talk jakob
   - choose j_was
   - choose j_durchhalten

@@ -139,9 +139,15 @@ export class Transcript {
     while (this.column.childElementCount > MAX_TURNS) this.column.firstElementChild?.remove();
   }
 
-  /** Scroll so the start of `turn` is at the top (or as far as possible). */
+  /**
+   * Scroll to a new turn: all of it when it fits (a little space above if there is room), otherwise
+   * its start at the top. As far as possible when the transcript ends sooner.
+   */
   scrollToTurn(turn: HTMLElement, instant = false): void {
-    const top = Math.max(0, turn.offsetTop - 12);
+    const start = turn.getBoundingClientRect().top - this.el.getBoundingClientRect().top + this.el.scrollTop;
+    const height = turn.getBoundingClientRect().height;
+    const view = this.el.clientHeight;
+    const top = Math.max(0, height <= view ? Math.max(start - 12, start + height - view) : start - 12);
     const behavior: ScrollBehavior = instant || prefersReducedMotion() ? "auto" : "smooth";
     try {
       this.el.scrollTo({ top, behavior });

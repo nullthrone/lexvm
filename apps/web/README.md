@@ -13,7 +13,7 @@ Run from the repository root (`-w @lexvm/web`) or from this directory.
 | `npm run dev` | Vite dev server. Run `npm run packs` at the root first to get the built-in packs. |
 | `npm run build` | Type check, single-file build, main build (in that order, see below). |
 | `npm run preview` | Serve `dist/` on <http://localhost:4173/>. |
-| `npm run e2e` | Playwright tests against the preview server (build first). |
+| `npm run e2e` | Playwright tests against the preview server (build first), on iPhone and Pixel viewports. `e2e/walkthroughs.spec.ts` wins every built-in pack by tapping alone. |
 | `npm run icons` | Re-render `public/icons/*` from `scripts/icon-art.ts` with Playwright's Chromium. |
 
 Unit tests live in `test/` and run with the root `npm test` (Vitest, no DOM).
@@ -55,7 +55,7 @@ src/
   logic/             pure, unit-tested helpers (catalog, saves, action sheet rules, routes)
   services/          engine, packs, saves, storage (IndexedDB → localStorage → memory), PWA, settings
   sw.ts              service worker source (transpiled by build/plugins.ts)
-build/               Vite plugins: built-in packs module, single-file HTML, service worker
+build/               Vite plugins: built-in packs module, single-file HTML, service worker, CSP meta tag
 ```
 
 Rules that keep the player safe and robust:

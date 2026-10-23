@@ -4,11 +4,14 @@
 # (dialogue plans), design/puzzles.md (walkthrough, score), design/style.md
 # (voices). Option ids are unique across the whole pack. No option uses
 # `once`: options that must disappear are gated on the clue they teach.
+# A side question whose answer closes the topic ends the conversation
+# instead of asking for a »Verstehe.« tap; talking again reopens the hub.
 
 dialogues:
   # -------------------------------------------------------------------------
   # Act I: the intro. Linear, cannot be left half-way.
   # Started by rule talk_anni_auftrag while auftrag_angenommen is false.
+  # It also teaches the notebook: combining two entries draws a conclusion.
   # -------------------------------------------------------------------------
   anni_auftrag:
     with: anni
@@ -22,13 +25,8 @@ dialogues:
             goto: an_jakob
       an_jakob:
         say: "»Er ist in Krögers Kolonne, Kaischuppen 17. Jakob klaut nicht. Jakob zählt. Seit Russland zählt er jeden Löffel Suppe – und jede Hieve. Alles in ein Heft.«"
-        options:
-          - id: an_frag_polizei
-            text: "»Und die Polizei?«"
-            goto: an_polizei
-      an_polizei:
-        say: "»Freitag früh haben sie seinen Spind aufgemacht, Nummer 23. Kröger hat aufgeschlossen. Zwei Stangen englische Zigaretten. Jetzt ist Jakob ein Dieb, der abgehauen ist.«"
         do:
+          - say: "Sie holt Luft. »Freitag früh haben sie seinen Spind aufgemacht, Nummer 23. Kröger hat aufgeschlossen, Kommissar Petersen hat zugesehen. Zwei Stangen englische Zigaretten. Jetzt ist Jakob ein Dieb, der abgehauen ist.«"
           - learn: clue_auftrag
         options:
           - id: an_frag_schluessel
@@ -37,23 +35,21 @@ dialogues:
       an_schluessel:
         say: "Sie legt einen kleinen Schlüssel auf den Schreibtisch. »Jakob. Und der hängt seit Donnerstagmittag bei uns am Haken. Er hatte ihn vergessen.«"
         do:
+          - say: Du schreibst mit, wie früher bei der Versicherung. Ein einzelner Eintrag im Notizbuch beweist nichts. Erst wenn du zwei kombinierst, die zusammenpassen, wird ein Schluss daraus.
           - learn: clue_schluessel
           - move: { object: spindschluessel, to: inventory }
         options:
           - id: an_annehmen
-            text: "»Ich übernehme den Fall.«"
+            text: "»Ich übernehme den Fall. Ich finde ihn.«"
             goto: an_bezahlung
       an_bezahlung:
         say: "Sie schiebt dir ein Bündel Scheine hin. »Zweihundert Reichsmark. Ab morgen ist es Papier, also nehmen Sie es heute. Den Rest brauch ich Sonntag an der Kartenstelle: vierzig für mich, vierzig für Lotte, vierzig für Jakob.«"
         do:
+          - say: "»Fragen Sie Tadeusz am Zollkanal. Jakobs Freund. Ich bin in der Siedlung, Hütte 14.« Dann ist sie fort. Auf dem Besucherstuhl bleibt ein nasser Fleck."
           - move: { object: reichsmark, to: inventory }
           - set: auftrag_angenommen
           - move: { object: anni, to: nissenhuette }
-        options:
-          - id: an_abschied
-            text: "»Ich finde ihn, Frau Brodersen.«"
-            do:
-              - say: "»Fragen Sie Tadeusz am Zollkanal. Jakobs Freund. Ich bin in der Siedlung, Hütte 14.« Dann ist sie fort. Auf dem Besucherstuhl bleibt ein nasser Fleck."
+        # No options: the scene ends with her leaving.
 
   # -------------------------------------------------------------------------
   # P6: Annis Blechdose. Default dialogue of anni (in nissenhuette).
@@ -98,9 +94,7 @@ dialogues:
           - when: { has: reichsmark }
             text: "»In Ihrer Tasche, Voss. Ich hab Sie davon bezahlt. Wenn es schon Schweigegeld ist, soll es wenigstens für Jakob reden.«"
           - text: "»Ich hab Sie davon bezahlt, Voss. Wo es jetzt ist, will ich nicht wissen. Wenn es schon Schweigegeld ist, soll es wenigstens für Jakob reden.«"
-        options:
-          - id: ah_gehen
-            text: "»Das wird es.«"
+        # No options: her line closes the scene.
       ah_lebt:
         say:
           - when: { has: clue_jakob_aussage }
@@ -109,15 +103,15 @@ dialogues:
         # No options: the scene ends on Anni's gesture.
       ah_lotte:
         say: "»Sie schläft. Wer schläft, hat keinen Hunger.«"
-        options:
-          - id: ah_zurueck
-            text: "»Verstehe.«"
-            goto: ah_hub
 
   # -------------------------------------------------------------------------
   # P7: Das Verhör. Default dialogue of kroeger (in kneipe).
   # Progress: counter kroeger_stufe 0..4, set only here. A wrong piece of
-  # evidence gets a rebuttal and returns to the same stage node.
+  # evidence gets a rebuttal and returns to the same stage node. While the
+  # deduction a stage needs is missing, the rebuttal is followed by a nudge
+  # that points to the notebook (stage 1) or to the missing witness (2, 4).
+  # Stage 3 needs none: stage 2 is only passed with Jakob's Heft, which
+  # Tadeusz hands over only for »Untergeschoben«.
   # -------------------------------------------------------------------------
   kroeger_verhoer:
     with: kroeger
@@ -130,7 +124,7 @@ dialogues:
           - when: { counter: { name: kroeger_stufe, gte: 1 } }
             text: "Kröger sieht dich kommen und dreht das Glas weg. »Se geben wohl nie auf, Voss.«"
           - when: { has: clue_kroeger_version }
-            text: "»Na, Voss. Noch 'ne Runde?« Kröger schiebt dir keinen Stuhl hin."
+            text: "»Na, Voss. Noch ’ne Runde?« Kröger schiebt dir keinen Stuhl hin."
           - text: "Kröger mustert dich über seinen Köm hinweg. »Die Spürnase von der Brodersen. Hundertachtzig Kisten, sauber gezählt, der Rest is Schwund. Brodersen hat um Mitternacht Schluss gemacht. Im Spind lag die Ware. Mit seiner Frau hab ich nix zu schaffen.«"
         do:
           - learn: clue_kroeger_version
@@ -161,18 +155,43 @@ dialogues:
       # Stage 1: Schwund. Valid: clue_kein_schwund (D5).
       k_s1:
         say: "»Was fehlt, is Schwund. Im Hafen schwindet immer was. Kisten, Kaffee – Leute.«"
+        do:
+          - if:
+              when:
+                not:
+                  any:
+                    - { has: clue_zwanzig_kisten }
+                    - { has: clue_lene }
+                    - { has: clue_zaehlheft }
+                    - { has: clue_kein_schwund }
+              then:
+                - say: Du hast nichts in der Hand, was dagegen hält. Noch nicht.
         options:
           - id: k_s1_zwanzig
             text: "»Zwanzig Kisten fehlen. Und Sie haben gezählt.«"
             when: { has: clue_zwanzig_kisten }
             do:
               - say: "Kröger grinst. »Und wo solln die hin sein? Ins Hafenbecken?«"
+              - if:
+                  when: { not: { has: clue_kein_schwund } }
+                  then:
+                    - say:
+                        - when: { has: clue_lene }
+                          text: Gute Frage. Die Antwort steht schon in deinem Notizbuch, verteilt auf zwei Einträge. Erst kombiniert nagelt sie ihn fest.
+                        - text: Gute Frage. Eine fehlende Zahl ist noch kein Beweis. Wer verdient an den zwanzig Kisten?
             goto: k_s1
           - id: k_s1_lene
             text: "»Sie haben Lene Zigaretten verkauft.«"
             when: { has: clue_lene }
             do:
-              - say: "»'n paar Stangen. Was hat das mit meiner Zählung zu tun?«"
+              - say: "»’n paar Stangen. Was hat das mit meiner Zählung zu tun?«"
+              - if:
+                  when: { not: { has: clue_kein_schwund } }
+                  then:
+                    - say:
+                        - when: { has: clue_zwanzig_kisten }
+                          text: Mehr, als er glaubt. Die Antwort steht schon in deinem Notizbuch, verteilt auf zwei Einträge. Erst kombiniert nagelt sie ihn fest.
+                        - text: Mehr, als er glaubt. Hast du nachgeprüft, was er gezählt hat?
             goto: k_s1
           - id: k_s1_kein_schwund
             text: "»Kein Schwund. Lene verkauft Ihr Los 4471.«"
@@ -186,7 +205,11 @@ dialogues:
             text: "»Jakobs Heft sagt: zwanzig Kisten in die ›Elise 7‹.«"
             when: { has: clue_zaehlheft }
             do:
-              - say: "»Da steht K. Und geschrieben hat's 'n Dieb.«"
+              - say: "»Da steht K. Und geschrieben hat das ’n Dieb.«"
+              - if:
+                  when: { not: { has: clue_kein_schwund } }
+                  then:
+                    - say: Ein Heft gegen sein Wort. Gegen den Schwund brauchst du einen Schluss aus deinem Notizbuch, keinen einzelnen Eintrag.
             goto: k_s1
           - id: k_s1_raus
             text: "»Ein andermal.«"
@@ -200,6 +223,10 @@ dialogues:
             when: { has: clue_tally }
             do:
               - say: "»Eben. Steht da was von Brodersen?«"
+              - if:
+                  when: { not: { has: clue_zaehlheft } }
+                  then:
+                    - say: Nichts. Wer hat Jakob nach Mitternacht noch gesehen? Und wo ist sein Heft?
             goto: k_s2
           - id: k_s2_heft
             text: "»Sein Zählheft sagt: letzte Hieve um 01:20.«"
@@ -224,7 +251,7 @@ dialogues:
               - say: "»Na und? Er war ja Donnerstagnacht an Bord.«"
             goto: k_s3
           - id: k_s3_nur
-            text: "»Seit Donnerstagmittag passte nur noch Ihr Schlüssel.«"
+            text: "»Seit Donnerstagmittag kam nur Ihr Schlüssel an den Spind.«"
             when: { has: clue_nur_kroeger }
             do:
               - say: "»Und vorher hatte er seinen. Kann das Zeug schon Mittwoch reingelegt haben.«"
@@ -248,13 +275,21 @@ dialogues:
             text: "»Lene hat Sie Freitag bei den Brodersens gesehen.«"
             when: { has: clue_lene }
             do:
-              - say: "»Kondoliert hab ich. Als Vorarbeiter. Is das verboten?«"
+              - say: "»Beigestanden hab ich. Als Vorarbeiter. Is das verboten?«"
+              - if:
+                  when: { not: { has: clue_schweigegeld } }
+                  then:
+                    - say: Was in dem Kuvert war, weiß nur eine. Und die hat es dir nicht erzählt.
             goto: k_s4
           - id: k_s4_heft
             text: "»Im Heft steht ›K.‹ – K wie Kröger.«"
             when: { has: clue_zaehlheft }
             do:
               - say: "»K wie Kran. K wie Kai. Lesen Se mal ein Hafenheft.«"
+              - if:
+                  when: { not: { has: clue_schweigegeld } }
+                  then:
+                    - say: Ein Buchstabe reicht nicht. Was hat Kröger bei den Brodersens gewollt? Das weiß nur eine.
             goto: k_s4
           - id: k_s4_kuvert
             text: "»Sie haben Anni zweihundert Reichsmark gebracht.«"
@@ -267,7 +302,7 @@ dialogues:
 
       # Confession: linear, ends with the only optional toggle (kroeger_zeuge).
       k_gestaendnis:
-        say: "Kröger starrt in sein Glas. Lange. »Ich wollt ihn nicht schubsen. Er is auf der Lukentreppe ausgerutscht, das Bein war ab. Ich wollt 'n Arzt holen.« Er schluckt. »Seitdem bring ich ihm jeden Abend Wasser. Jeden Abend.«"
+        say: "Kröger starrt in sein Glas. Lange. »Ich hab ihn nicht geschubst, ehrlich. Er is auf der Lukentreppe ausgerutscht, das Bein war hin. Ich wollt ’n Arzt holen.« Er schluckt. »Seitdem bring ich ihm jeden Abend Wasser. Jeden Abend.«"
         do:
           - learn: clue_gestaendnis
           - score: 2
@@ -275,17 +310,13 @@ dialogues:
           - id: k_g_wo
             text: "»Wo ist er, Kröger?«"
             goto: k_wo
+      # Location, key, Persilschein and the way across in one beat.
       k_wo:
         say: "»Speicher K. Vierter Boden.« Er legt einen Schlüssel auf den Tisch, dann ein gefaltetes Papier. »Das hat Asmussen mir geschrieben. Persilschein. Ohne den Wisch bin ich wieder der Kröger von dreiunddreißig.«"
         do:
+          - say: "»Über die Brücke kommen Se nachts nicht. Ich nehm jeden Abend das Boot vom Wächter am Zollkanal. Der sieht weg. Der sieht immer weg.« Kröger hebt den Kopf. »Was wird jetzt aus mir?«"
           - move: { object: bodenschluessel, to: inventory }
           - learn: clue_persilschein
-        options:
-          - id: k_g_weiter
-            text: "»Und die Brücke? Nachts ist sie zu.«"
-            goto: k_boot
-      k_boot:
-        say: "»Ich nehm jeden Abend das Boot vom Wächter am Zollkanal. Der sieht weg. Der sieht immer weg.« Kröger hebt den Kopf. »Was wird jetzt aus mir?«"
         options:
           - id: k_g_zeuge
             text: "»Sagen Sie gegen Asmussen aus. Dann sag ich für Sie aus.«"
@@ -297,7 +328,7 @@ dialogues:
             do:
               - say: "Kröger nickt. Er hat nichts anderes erwartet."
       k_weg:
-        say: "»Übers Wasser. Fragen Se den Wächter am Zollkanal.« Er sieht auf seine Hände. »Und sagen Se Brodersen …« Er bricht ab. »Ach, lassen Se's.«"
+        say: "»Übers Wasser. Fragen Se den Wächter am Zollkanal.« Er sieht auf seine Hände. »Und sagen Se Brodersen …« Er bricht ab. »Ach, lassen Se’s.«"
 
   # -------------------------------------------------------------------------
   # Forced scene at the Baumwall. Started by enter rule asmussen_hinterhalt.
@@ -319,7 +350,7 @@ dialogues:
         say: "»Ich kenne keinen Brodersen. Und Speicher K ist seit dreiundvierzig eine Ruine, da lagert niemand etwas.« Er zählt Scheine ab. »Fünfhundert Reichsmark. Für Ihre Mühe. Gehen Sie nach Hause, Voss.«"
         options:
           - id: a_w_ablehnen
-            text: "»Behalten Sie's. Ab morgen ist es Altpapier.«"
+            text: "»Behalten Sie’s. Ab morgen ist es Altpapier.«"
             do:
               - move: { object: asmussen, to: kontor }
               - say: "Er lächelt, als kenne er den Witz schon. »Wie Sie meinen.« Der Mantel verschwindet Richtung Speicherstadt."
@@ -327,6 +358,7 @@ dialogues:
   # -------------------------------------------------------------------------
   # P4b: the backyard. Default dialogue of lene (in hinterhof).
   # Same result as the rules show_paeckchen_lene / show_los_lene.
+  # Lene says »du« to Voss on purpose: she does it to anyone who isn't buying.
   # -------------------------------------------------------------------------
   lene_gespraech:
     with: lene
@@ -335,8 +367,8 @@ dialogues:
       l_hub:
         say:
           - when: { has: clue_lene }
-            text: "»Ich hab dir alles gesagt. Und ein bisschen mehr.« Lene zählt Feuersteine ab, als wärst du schon weg."
-          - text: "»Feuersteine, Nähnadeln, gute Ratschläge. Die Ratschläge kosten extra.«"
+            text: "»Ich hab dir alles gesagt. Und ’n bisschen mehr.« Lene zählt Feuersteine ab, als wärst du schon weg."
+          - text: "»Feuersteine, Nähnadeln, gute Ratschläge, Schätzchen. Die Ratschläge kosten extra.«"
         options:
           - id: l_zigaretten
             text: "»Haben Sie auch Zigaretten?«"
@@ -362,28 +394,16 @@ dialogues:
       l_redet:
         say: "Lene sieht das Päckchen an, dann dich. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer. ›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt.«"
         do:
+          - say: "»Am Abend is er bei den Brodersens rein. Mit ’nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.« Sie tippt an ihre Schaffnermütze. »Der Ratschlag war umsonst. Wegen Jakob.«"
           - learn: clue_lene
           - score: 1
-        options:
-          - id: l_und
-            text: "»Und weiter?«"
-            goto: l_kuvert
-      l_kuvert:
-        say: "»Am Abend is er bei den Brodersens rein. Mit 'nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.«"
-        options:
-          - id: l_zurueck2
-            text: "»Danke, Lene.«"
-            goto: l_hub
+        # No options: she has said what she will say.
       l_montag:
-        say: "»Wart's ab: Am Montag sind die Schaufenster voll. Und keiner fragt, wo das Zeug bis Sonntag war.«"
-        options:
-          - id: l_zurueck3
-            text: "»Wahrscheinlich nicht.«"
-            goto: l_hub
+        say: "»Wart’s ab: Am Montag sind die Schaufenster voll. Und keiner fragt, wo das Zeug bis Sonntag war.«"
 
   # -------------------------------------------------------------------------
   # P5 and the Act III crossing. Default dialogue of tadeusz (in zollkanal).
-  # Also started by rule show_untergeschoben_tadeusz.
+  # Also started by the show_* redirects in rules.yaml.
   # -------------------------------------------------------------------------
   tadeusz_gespraech:
     with: tadeusz
@@ -397,7 +417,7 @@ dialogues:
             text: "Tadeusz hält das Boot an der Kaimauer fest. »Wann immer Sie so weit sind, Voss.«"
           - when: { has: clue_zaehlheft }
             text: "Die Thermoskanne steht offen. Tadeusz hat dir einen Becher eingeschenkt."
-          - text: "Tadeusz hält die zugeschraubte Thermoskanne auf den Knien, als wäre das Gespräch damit beendet."
+          - text: "Tadeusz schraubt die Thermoskanne fester zu, als wäre das Gespräch damit beendet."
         options:
           - id: t_jakob
             text: "»Sie sind Jakobs Freund.«"
@@ -424,12 +444,9 @@ dialogues:
             text: "»Gute Nacht, Tadeusz.«"
       t_jakob:
         say: "»Wir trinken jede Nacht zusammen Muckefuck, seit einem Jahr. Seit Donnerstag trinke ich allein.« Er sieht aufs Wasser. »Wenn Jakob ein Dieb ist, bin ich der Freund eines Diebes. Wenn nicht … dann ist das etwas anderes.«"
-        options:
-          - id: t_zurueck1
-            text: "»Verstehe.«"
-            goto: t_hub
+        # No options: he has set his condition.
       t_heft:
-        say: "Er hört zu, ohne zu nicken. Dann holt er ein Heft aus der Wachbude. »Von Jakob. Um halb zwei. ›Wenn ich bis morgen nicht zurück bin, gib es Anni.‹ Ich habe es nicht gegeben.«"
+        say: "Er hört zu, ohne zu nicken. Dann holt er ein Heft aus der Wachbude. »Von Jakob. Um halb zwei. ›Wenn ich bis morgen nicht zurück bin, gib es Anni.‹ Ich habe es ihr nicht gegeben.«"
         do:
           - learn: clue_zaehlheft
           - score: 1
@@ -445,9 +462,7 @@ dialogues:
             goto: t_dp
       t_dp:
         say: "»Am Freitag hat die Polizei ›die Polen‹ befragt. Für Ihre Polizei bin ich ein DP, ein Mensch am falschen Ort. Und wer am falschen Ort ist, hat immer etwas gestohlen.«"
-        options:
-          - id: t_danke
-            text: "»Danke, Tadeusz.«"
+        # No options: the answer ends the scene.
       t_rudern:
         say: "Tadeusz steht auf. »Kröger nimmt jeden Abend mein Boot. Ich habe weggesehen. Ich habe fünf Jahre gelernt, nichts zu sehen.« Er macht das Boot los. »Die Brücke ist zu. Das Wasser nicht.«"
       t_halina:
@@ -455,7 +470,6 @@ dialogues:
         options:
           - id: t_zurueck2
             text: "»Ich hoffe, Sie finden sie.«"
-            goto: t_hub
 
   # -------------------------------------------------------------------------
   # P8: the rescue. Default dialogue of jakob (in vierter_boden).
@@ -468,7 +482,7 @@ dialogues:
       j_start:
         say:
           - when: { has: clue_jakob_aussage }
-            text: "»Bringen Sie's zu Ende, Voss. Ich zähl solange die Tropfen vom Dach.«"
+            text: "»Bringen Sie’s zu Ende, Voss. Ich zähl solange die Tropfen vom Dach.«"
           - text: "Der Mann am Pfeiler hebt die Hand gegen das Licht. »Zweihundert«, sagt er. »Ich hab zweihundert gezählt. Ich zähl immer.«"
         options:
           - id: j_was
@@ -479,7 +493,7 @@ dialogues:
             text: "»Ich hole Sie hier raus.«"
             when: { has: clue_jakob_aussage }
       j_was:
-        say: "»Kröger hat mich oben an der Luke erwischt. Ich bin die Treppe runter. Dann kam einer im Kamelhaarmantel. Kröger wollte 'n Arzt holen. Der Mantel hat gesagt: ›Kein Arzt. Ärzte reden.‹«"
+        say: "»Kröger hat mich oben an der Luke erwischt. Ich bin die Treppe runter. Dann kam einer im Kamelhaarmantel. Kröger wollte ’n Arzt holen. Der Mantel hat gesagt: ›Kein Arzt. Ärzte reden.‹«"
         do:
           - learn: clue_jakob_aussage
           - score: 1
@@ -493,7 +507,8 @@ dialogues:
   # -------------------------------------------------------------------------
   # Finale: Die Abrechnung. Default dialogue of asmussen (in kontor).
   # Stateless ladder: three rungs, one valid proof each. Leaving restarts at
-  # rung 1. Points only in the final choice.
+  # rung 1; the Kontor opens only with all three proofs in the notebook
+  # (exit speicher_treppe.down). Points only in the final choice.
   # -------------------------------------------------------------------------
   asmussen_finale:
     with: asmussen
@@ -504,19 +519,21 @@ dialogues:
         options:
           - id: f_anklage
             text: "»Ich war oben, Asmussen. Vierter Boden.«"
+            do:
+              - say: "»Oben? Da lagert nichts. Und wenn doch, fragen Sie Kröger.«"
             goto: f_s1
           - id: f_gehen
             text: "»Ein andermal.«"
 
       # Rung 1: »Ich kenne den Mann kaum.« Valid: clue_persilschein.
       f_s1:
-        say: "»Kröger? Ein Vorarbeiter unter Hunderten. Ich kenne den Mann kaum.«"
+        say: "»Ein Vorarbeiter unter Hunderten. Ich kenne den Mann kaum.«"
         options:
           - id: f_s1_kuvert
             text: "»Ihr Kuvert lag bei Anni Brodersen.«"
             when: { has: clue_schweigegeld }
             do:
-              - say: "»Kuverts mit meinem Stempel liegen im Hafen zu Hunderten herum.«"
+              - say: "»Kuverts mit meinem Stempel liegen im ganzen Hafen herum.«"
             goto: f_s1
           - id: f_s1_persil
             text: "»›Ich kenne Herrn Kröger seit 1934.‹ Ihr Persilschein.«"
@@ -566,7 +583,7 @@ dialogues:
             text: "»Sie haben Jakob zum Dieb gemacht.«"
             when: { has: clue_untergeschoben }
             do:
-              - say: "»Kröger hat ihm die Stangen untergeschoben, nicht ich. Lesen Sie Ihre eigenen Notizen.«"
+              - say: "»Kröger hat ihm die Stangen untergeschoben, nicht ich. Fragen Sie, wer den zweiten Schlüssel hat.«"
             goto: f_s3
           - id: f_s3_kisten
             text: "»Zwanzig Kisten NAAFI-Ware hält man nicht zurück.«"

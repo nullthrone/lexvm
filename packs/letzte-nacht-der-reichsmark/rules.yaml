@@ -36,48 +36,25 @@ rules:
       - dialogue: asmussen_warnung
 
   # -------------------------------------------------------------------------
-  # Documents (pack verb lesen)
+  # Documents. Looking at them reads them; the parser maps »lies« to look.
+  # Bekanntmachung, Kreidetafel and Wachbude show their text as description.
   # -------------------------------------------------------------------------
-  - id: lesen_bekanntmachung
-    on: { verb: lesen, object: bekanntmachung }
-    do:
-      - say: "Das Plakat der Militärregierung: ›Am Sonntag, dem 20. Juni 1948, erhält jeder Einwohner bei seiner Kartenstelle 40 Deutsche Mark gegen 40 Reichsmark. Ab Montag gilt das neue Geld.‹"
-
-  - id: lesen_aushang
-    on: { verb: lesen, object: aushang }
+  - id: look_aushang
+    on: { verb: look, object: aushang }
     do:
       - say: |-
-          Mit Schreibmaschine, schon etwas aufgeweicht:
+          Ein Aushang am Tor, mit Reißzwecken gegen den Wind gehalten. Mit Schreibmaschine getippt, schon etwas aufgeweicht:
           LÖSCHLISTE · Kaischuppen 17
           Do. 17.6.48, Nachtschicht
           D. Elspeth Gray, NAAFI-Ware, Los 4471: 200 Kisten Zigaretten
           Abtransport NAAFI-Depot Fr. 5 Uhr unter Bewachung
       - learn: clue_loeschliste
 
-  - id: lesen_kreidetafel
-    on: { verb: lesen, object: kreidetafel }
-    do:
-      - say: "In großen Buchstaben: ›Reichsmark nur noch bis Sonntag!‹ Darunter, kleiner: ›Ab Montag nur gegen DM. Anschreiben zwecklos.‹"
-
-  - id: lesen_wachbude_heft
-    on: { verb: lesen, object: wachbude }
-    when: { has: clue_zaehlheft }
-    do:
-      - say:
-          - when: { flag: tadeusz_rudert }
-            text: "Das Register liegt offen auf dem Tisch. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
-          - text: "Tadeusz schiebt dir das Register hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
-
-  - id: lesen_wachbude
-    on: { verb: lesen, object: wachbude }
-    do:
-      - say: Tadeusz legt die Hand auf das Register. »Das ist nicht für Fremde.«
-
-  - id: lesen_zettel
-    on: { verb: lesen, object: zettel }
+  - id: look_zettel
+    on: { verb: look, object: zettel }
     do:
       - say: |-
-          Grüne Tinte, steile Schrift: ›W. – Der Mann bleibt oben. Wasser ja, Licht nein. Montag sechs Uhr geht die Ware raus, dann lass ihn laufen. Wer glaubt schon einem Dieb.‹
+          Ein Zettel, unter die Wasserkanne geklemmt, damit er nicht wegweht. Grüne Tinte, steile Schrift: ›W. – Der Mann bleibt oben. Wasser ja, Licht nein. Montag sechs Uhr geht die Ware raus, dann lass ihn laufen. Wer glaubt schon einem Dieb?‹
 
           Keine Unterschrift. Jedes »g« hat eine Schleife nach rechts.
       - learn: clue_anweisung
@@ -89,7 +66,8 @@ rules:
       - learn: clue_anweisung
 
   # -------------------------------------------------------------------------
-  # P1: Spind 23
+  # P1: Spind 23. The second paragraph is the first deduction the game
+  # points at: two notebook entries that belong together (taught by Anni).
   # -------------------------------------------------------------------------
   - id: open_spind
     on: { verb: open, object: spind_jakob }
@@ -100,8 +78,9 @@ rules:
       - unlock: spind_jakob
       - open: spind_jakob
       - move: { object: spindschluessel, to: nowhere }
-      - say: "Der Schlüssel dreht sich schwer, dann gibt das Bartschloss nach und bleibt stecken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Der Spind ist leer. Fast: Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
+      - say: "Der Schlüssel dreht sich schwer, dann gibt das Bartschloss nach. Du lässt den Schlüssel stecken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Der Spind ist leer. Fast: Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
       - learn: clue_zweitschluessel
+      - say: Ein zweiter Schlüssel, beim Vorarbeiter. Und Jakobs eigener hing zu Hause am Haken. Zwei Einträge in deinem Notizbuch, die zusammengehören.
       - score: 1
 
   - id: use_schluessel_spind
@@ -113,8 +92,9 @@ rules:
       - unlock: spind_jakob
       - open: spind_jakob
       - move: { object: spindschluessel, to: nowhere }
-      - say: "Der Schlüssel dreht sich schwer, dann gibt das Bartschloss nach und bleibt stecken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Der Spind ist leer. Fast: Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
+      - say: "Der Schlüssel dreht sich schwer, dann gibt das Bartschloss nach. Du lässt den Schlüssel stecken. Innen an der Tür, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Der Spind ist leer. Fast: Hinter der Rückwand klemmt ein {zigarettenpaeckchen}."
       - learn: clue_zweitschluessel
+      - say: Ein zweiter Schlüssel, beim Vorarbeiter. Und Jakobs eigener hing zu Hause am Haken. Zwei Einträge in deinem Notizbuch, die zusammengehören.
       - score: 1
 
   - id: use_schluessel_glaskabine
@@ -142,11 +122,15 @@ rules:
     when: { not: { has: zigarettenpaeckchen } }
     do:
       - move: { object: zigarettenpaeckchen, to: inventory }
-      - say: "Du ziehst das Päckchen hinter der Rückwand hervor. Auf der Banderole: ›NAAFI – LOT 4471‹. Ein Los, ein Schiff – das weißt du noch aus der Versicherung."
+      - say:
+          - when: { has: clue_loeschliste }
+            text: "Du ziehst das Päckchen hinter der Rückwand hervor. Auf der Banderole: ›NAAFI – LOT 4471‹. Ein Los, ein Schiff – das weißt du noch aus der Versicherung. Welches Schiff, steht auf der Löschliste."
+          - text: "Du ziehst das Päckchen hinter der Rückwand hervor. Auf der Banderole: ›NAAFI – LOT 4471‹. Ein Los, ein Schiff – das weißt du noch aus der Versicherung."
       - learn: clue_los4471
 
   # -------------------------------------------------------------------------
-  # P2: Der Tallyzettel
+  # P2: Der Tallyzettel. Taking the clipboard while holding the hook fishes
+  # for it as well (»hol das Klemmbrett«).
   # -------------------------------------------------------------------------
   - id: take_bootshaken
     on: { verb: take, object: bootshaken }
@@ -162,7 +146,7 @@ rules:
       - say: |-
           Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
 
-          Du hängst es zurück. Den Haken lässt du an der Schuppenwand lehnen.
+          Du hängst es zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
@@ -174,10 +158,39 @@ rules:
       - say: |-
           Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
 
-          Du hängst es zurück. Den Haken lässt du an der Schuppenwand lehnen.
+          Du hängst es zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
+
+  - id: take_klemmbrett_fertig
+    on: { verb: take, object: klemmbrett }
+    when: { has: clue_tally }
+    do:
+      - say: Was draufsteht, hast du im Notizbuch. Das Brett soll hängen, wo Kröger es sucht.
+
+  - id: take_klemmbrett_haken
+    on: { verb: take, object: klemmbrett }
+    when: { has: bootshaken }
+    do:
+      - say: |-
+          Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Beim dritten Mal kommt das Klemmbrett mit: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Tallymann.‹
+
+          Du hängst es zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+      - move: { object: bootshaken, to: nowhere }
+      - learn: clue_tally
+      - score: 1
+
+  - id: take_klemmbrett
+    on: { verb: take, object: klemmbrett }
+    do:
+      - say: Dein Arm reicht nicht bis an den Nagel. Du bräuchtest etwas Langes mit einem Haken.
+
+  - id: take_glaskabine_haken
+    on: { verb: take, object: glaskabine }
+    when: { has: clue_tally }
+    do:
+      - say: Der Bootshaken liegt hinter Glas und Vorhängeschloss. Dort bleibt er bis Montag.
 
   - id: open_glaskabine
     on: { verb: open, object: glaskabine }
@@ -189,30 +202,22 @@ rules:
     do:
       - say: Glas einschlagen, im Hafen, am Sonnabend? Dann steht morgen dein Name in der Zeitung, nicht Krögers.
 
-  - id: take_klemmbrett_fertig
-    on: { verb: take, object: klemmbrett }
-    when: { has: clue_tally }
-    do:
-      - say: Was draufsteht, hast du im Notizbuch. Das Brett soll hängen, wo Kröger es sucht.
-
-  - id: take_klemmbrett
-    on: { verb: take, object: klemmbrett }
-    do:
-      - say: Zu weit für deinen Arm. Du bräuchtest etwas Langes mit einem Haken.
-
   - id: use_streichhoelzer_klemmbrett
     on: { verb: use, object: streichhoelzer, with: klemmbrett }
     do:
       - say: Beweise verbrennt man nicht. Das machen andere.
 
   # -------------------------------------------------------------------------
-  # Deductions D1–D6 (use clue clue; the engine also tries the swapped order)
+  # Deductions D1–D6 (use clue clue; the engine also tries the swapped order).
+  # Equivalent pairs that carry the same facts are accepted too: Jakob's
+  # count for the Löschliste (D1), the pack itself for its lot number (D2),
+  # the note on the floor for its copy (D6).
   # -------------------------------------------------------------------------
   - id: d1_zwanzig_kisten
     on: { verb: use, object: clue_tally, with: clue_loeschliste }
     when: { not: { has: clue_zwanzig_kisten } }
     do:
-      - say: Zweihundert gelöscht, hundertachtzig gezählt. Zwanzig Kisten haben sich zwischen Schiff und Schuppen in Luft aufgelöst. Und gezählt hat Kröger.
+      - say: Laut Löschliste sollten zweihundert Kisten an Land, Kröger hat hundertachtzig gezählt. Zwanzig Kisten haben sich zwischen Schiff und Schuppen in Luft aufgelöst.
       - learn: clue_zwanzig_kisten
       - score: 1
 
@@ -221,16 +226,42 @@ rules:
     do:
       - say: "Schon notiert: {clue_zwanzig_kisten}."
 
+  - id: d1_zwanzig_kisten_heft
+    on: { verb: use, object: clue_tally, with: clue_zaehlheft }
+    when: { not: { has: clue_zwanzig_kisten } }
+    do:
+      - say: Jakob hat zweihundert Hieven gezählt, Kröger hundertachtzig Kisten. Zwanzig Kisten haben sich zwischen Schiff und Schuppen in Luft aufgelöst.
+      - learn: clue_zwanzig_kisten
+      - score: 1
+
+  - id: d1_heft_schon
+    on: { verb: use, object: clue_tally, with: clue_zaehlheft }
+    do:
+      - say: "Schon notiert: {clue_zwanzig_kisten}."
+
   - id: d2_frisch_an_land
     on: { verb: use, object: clue_los4471, with: clue_loeschliste }
     when: { not: { has: clue_frisch_an_land } }
     do:
-      - say: "Los 4471: die »Elspeth Gray«, Donnerstagnacht. Was in Jakobs Spind lag, war vorher noch auf See."
+      - say: "Los 4471: die »Elspeth Gray«, Donnerstagnacht. Was in Jakobs Spind lag, war am Donnerstagmittag noch auf See."
       - learn: clue_frisch_an_land
       - score: 1
 
   - id: d2_schon
     on: { verb: use, object: clue_los4471, with: clue_loeschliste }
+    do:
+      - say: "Schon notiert: {clue_frisch_an_land}."
+
+  - id: d2_frisch_an_land_paeckchen
+    on: { verb: use, object: zigarettenpaeckchen, with: clue_loeschliste }
+    when: { not: { has: clue_frisch_an_land } }
+    do:
+      - say: "Los 4471: die »Elspeth Gray«, Donnerstagnacht. Was in Jakobs Spind lag, war am Donnerstagmittag noch auf See."
+      - learn: clue_frisch_an_land
+      - score: 1
+
+  - id: d2_paeckchen_schon
+    on: { verb: use, object: zigarettenpaeckchen, with: clue_loeschliste }
     do:
       - say: "Schon notiert: {clue_frisch_an_land}."
 
@@ -286,6 +317,20 @@ rules:
     do:
       - say: "Schon notiert: {clue_dieselbe_hand}."
 
+  - id: d6_dieselbe_hand_zettel
+    on: { verb: use, object: zettel, with: clue_persilschein }
+    when: { not: { has: clue_dieselbe_hand } }
+    do:
+      - say: Du legst den Persilschein neben den Zettel. Grüne Tinte, steile Schrift, das »g« mit der Schleife. Der Mann, der Kröger reingewaschen hat, hat auch Jakobs Gefängnis bestellt.
+      - learn: clue_anweisung
+      - learn: clue_dieselbe_hand
+      - score: 2
+
+  - id: d6_zettel_schon
+    on: { verb: use, object: zettel, with: clue_persilschein }
+    do:
+      - say: "Schon notiert: {clue_dieselbe_hand}."
+
   # Near misses: plausible wrong pairs point to the missing piece.
   - id: nm_tally_los
     on: { verb: use, object: clue_tally, with: clue_los4471 }
@@ -301,6 +346,11 @@ rules:
     on: { verb: use, object: clue_frisch_an_land, with: clue_zweitschluessel }
     do:
       - say: Die Ware kam Donnerstagnacht, und der Vorarbeiter hat einen Zweitschlüssel. Aber Jakob hatte auch einen. Wo war der?
+
+  - id: nm_frisch_schluessel
+    on: { verb: use, object: clue_frisch_an_land, with: clue_schluessel }
+    do:
+      - say: Die Ware kam, als Jakobs Schlüssel längst zu Hause hing. Aber es gab noch einen zweiten.
 
   - id: nm_nur_kroeger_auftrag
     on: { verb: use, object: clue_nur_kroeger, with: clue_auftrag }
@@ -320,39 +370,153 @@ rules:
   - id: nm_lene_tally
     on: { verb: use, object: clue_lene, with: clue_tally }
     do:
-      - say: Kröger verkauft Los 4471. Aber fehlt überhaupt etwas? Leg erst den Tallyzettel neben die Löschliste.
+      - say: Kröger verkauft Los 4471. Aber fehlt überhaupt etwas? Erst gehört der Tallyzettel neben die Löschliste.
 
   - id: nm_zwanzig_zaehlheft
     on: { verb: use, object: clue_zwanzig_kisten, with: clue_zaehlheft }
     do:
-      - say: Jakob hat dasselbe gezählt wie du. Aber dem Heft eines Verschwundenen glaubt keiner. Wer verdient an den zwanzig Kisten?
-
-  - id: nm_schweigegeld_asmussen
-    on: { verb: use, object: clue_schweigegeld, with: clue_asmussen }
-    do:
-      - say: Asmussens Stempel auf Krögers Kuvert. Das Geld kam von oben. Beweisen musst du es zuerst Kröger.
-
-  - id: nm_anweisung_asmussen
-    on: { verb: use, object: clue_anweisung, with: clue_asmussen }
-    do:
-      - say: Asmussens Karte ist gedruckt. Du brauchst etwas, das er mit der Hand geschrieben hat.
+      - say: Jakob kam auf dieselbe Rechnung wie du, zwanzig zu wenig. Aber dem Heft eines Verschwundenen glaubt keiner. Wer verdient an den zwanzig Kisten?
 
   - id: nm_anweisung_gestaendnis
     on: { verb: use, object: clue_anweisung, with: clue_gestaendnis }
     do:
       - say: Kröger hat gestanden, aber diese Anweisung ist an ihn gerichtet, nicht von ihm. Wessen grüne Tinte hast du heute noch gesehen?
 
+  # Asmussen's card. The specific pairs name clue_asmussen as `object`, so
+  # they are tried before the general reply in both orders.
+  - id: nm_asmussen_schweigegeld
+    on: { verb: use, object: clue_asmussen, with: clue_schweigegeld }
+    do:
+      - say:
+          - when: { has: clue_gestaendnis }
+            text: Asmussens Stempel auf Krögers Kuvert. Das Geld kam von oben. Aber ein Stempel beweist nicht, wer das Kuvert gefüllt hat.
+          - text: Asmussens Stempel auf Krögers Kuvert. Das Geld kam von oben. Aber zuerst musst du Kröger damit festnageln.
+
+  - id: nm_asmussen_anweisung
+    on: { verb: use, object: clue_asmussen, with: clue_anweisung }
+    do:
+      - say: Asmussens Karte ist gedruckt. Du brauchst etwas, das er mit der Hand geschrieben hat.
+
+  - id: nm_asmussen_lene
+    on: { verb: use, object: clue_asmussen, with: clue_lene }
+    do:
+      - say: Ein Kaffeemann aus der Speicherstadt, ein Kaffee-Import in Speicher K. Das passt. Aber es ist Gerede aus zweiter Hand.
+
+  - id: nm_asmussen_jakob
+    on: { verb: use, object: clue_asmussen, with: clue_jakob_aussage }
+    do:
+      - say: Ein Kamelhaarmantel. Asmussen trug einen am Baumwall. Das wirst du ihm ins Gesicht sagen.
+
+  - id: use_asmussen
+    on: { verb: use, object: clue_asmussen }
+    do:
+      - say:
+          - when: { has: clue_dieselbe_hand }
+            text: Gegen Asmussen hast du genug. Den Rest sagst du ihm ins Gesicht.
+          - when: { has: clue_gestaendnis }
+            text: Asmussen steckt in allem drin. Gegen ihn brauchst du etwas, das er selbst geschrieben hat.
+          - text: Asmussen steckt irgendwo mit drin. Aber zuerst musst du Kröger festnageln.
+
+  # Kröger's claims are answered to his face, not in the notebook.
+  - id: use_kroeger_version
+    on: { verb: use, object: clue_kroeger_version }
+    do:
+      - say:
+          - when: { has: clue_gestaendnis }
+            text: Kröger hat gestanden. Seine Behauptungen sind erledigt.
+          - text: Krögers Behauptungen widerlegst du nicht im Notizbuch, sondern ihm ins Gesicht. Mit dem passenden Beweis für jede.
+
+  # The notice on the wall is worked with as its notebook entry.
+  - id: use_mit_aushang
+    on: { verb: use, with: aushang }
+    do:
+      - say:
+          - when: { has: clue_loeschliste }
+            text: Was auf dem Aushang steht, hast du als »Löschliste (200 Kisten)« im Notizbuch. Damit lässt sich arbeiten.
+          - text: Erst müsstest du lesen, was auf dem Aushang steht.
+
+  - id: use_aushang
+    on: { verb: use, object: aushang }
+    do:
+      - say:
+          - when: { has: clue_loeschliste }
+            text: Was auf dem Aushang steht, hast du als »Löschliste (200 Kisten)« im Notizbuch. Damit lässt sich arbeiten.
+          - text: Erst müsstest du lesen, was auf dem Aushang steht.
+
   # -------------------------------------------------------------------------
-  # P4: St. Pauli – Hintertür und Bauchladen
+  # P4: St. Pauli – Hintertür und Bauchladen. Paying works with »gib dem
+  # Wirt die Reichsmark« and with the pack verb bezahlen (»bezahl den Wirt«,
+  # »kauf ein Bier«, »zahl mit den Reichsmark«).
   # -------------------------------------------------------------------------
   - id: give_reichsmark_wirt
     on: { verb: give, object: reichsmark, with: wirt }
     when: { not: { flag: hintertuer_frei } }
     do:
-      - say: Der Wirt zählt nicht nach. »Zweihundert. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen's nehmen.« Er nickt zur Hintertür. »Geh'n Se ruhig durch.«
+      - say: Der Wirt wiegt das Bündel in der Hand, statt zu zählen. »Zweihundert, schätz ich. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen’s nehmen.« Er nickt zur Hintertür. »Geh’n Se ruhig durch.«
       - move: { object: reichsmark, to: nowhere }
       - set: hintertuer_frei
       - score: 1
+
+  - id: bezahlen_kroeger
+    on: { verb: bezahlen, object: kroeger }
+    do:
+      - say: "»Mein Köm is bezahlt.« Kröger schiebt das Glas ein Stück von dir weg."
+
+  - id: bezahlen_wirt
+    on: { verb: bezahlen, object: wirt }
+    when: { not: { flag: hintertuer_frei } }
+    do:
+      - say: Der Wirt wiegt das Bündel in der Hand, statt zu zählen. »Zweihundert, schätz ich. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen’s nehmen.« Er nickt zur Hintertür. »Geh’n Se ruhig durch.«
+      - move: { object: reichsmark, to: nowhere }
+      - set: hintertuer_frei
+      - score: 1
+
+  - id: bezahlen_tresen
+    on: { verb: bezahlen, object: tresen }
+    when: { not: { flag: hintertuer_frei } }
+    do:
+      - say: Der Wirt wiegt das Bündel in der Hand, statt zu zählen. »Zweihundert, schätz ich. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen’s nehmen.« Er nickt zur Hintertür. »Geh’n Se ruhig durch.«
+      - move: { object: reichsmark, to: nowhere }
+      - set: hintertuer_frei
+      - score: 1
+
+  - id: bezahlen_hoftuer
+    on: { verb: bezahlen, object: hoftuer }
+    when: { not: { flag: hintertuer_frei } }
+    do:
+      - say: Der Wirt wiegt das Bündel in der Hand, statt zu zählen. »Zweihundert, schätz ich. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen’s nehmen.« Er nickt zur Hintertür. »Geh’n Se ruhig durch.«
+      - move: { object: reichsmark, to: nowhere }
+      - set: hintertuer_frei
+      - score: 1
+
+  - id: bezahlen_reichsmark
+    on: { verb: bezahlen, object: reichsmark }
+    when:
+      - { at: kneipe }
+      - { not: { flag: hintertuer_frei } }
+    do:
+      - say: Der Wirt wiegt das Bündel in der Hand, statt zu zählen. »Zweihundert, schätz ich. Damit zahl ich der Brauerei meine Schulden, in Altpapier, und die müssen’s nehmen.« Er nickt zur Hintertür. »Geh’n Se ruhig durch.«
+      - move: { object: reichsmark, to: nowhere }
+      - set: hintertuer_frei
+      - score: 1
+
+  - id: bezahlen_kneipe_frei
+    on: { verb: bezahlen }
+    when:
+      - { at: kneipe }
+      - { flag: hintertuer_frei }
+    do:
+      - say: Bezahlt ist bezahlt. Der Wirt nickt zur Hintertür.
+
+  # »kauf Zigaretten«, »bezahl Lene«: anything bought in the backyard.
+  - id: bezahlen_hinterhof
+    on: { verb: bezahlen }
+    when: { at: hinterhof }
+    do:
+      - say:
+          - when: { has: clue_lene }
+            text: "»Ich verkauf dir nix, Schätzchen. Dein Geld hat der Wirt.«"
+          - text: "»Womit denn? Deine Reichsmark hat der Wirt.« Lene mustert dich. »Zeig mir lieber, was du in der Tasche hast.«"
 
   - id: show_reichsmark_wirt
     on: { verb: show, object: reichsmark, with: wirt }
@@ -375,6 +539,26 @@ rules:
     do:
       - say: "»Dünnbier oder Dünnbier?« Der Wirt nickt zur Hintertür. »Da hinten nur Kundschaft, die zahlt. Heut nehm ich sogar noch Reichsmark. Die Brauerei will bis Sonntag ihr Geld.«"
 
+  - id: open_hoftuer_frei
+    on: { verb: open, object: hoftuer }
+    when: { flag: hintertuer_frei }
+    do:
+      - say: Die Tür ist nur angelehnt. Der Wirt sieht weg.
+      - goto: hinterhof
+
+  - id: open_hoftuer
+    on: { verb: open, object: hoftuer }
+    do:
+      - say: Der Wirt stellt sich vor die Tür. »Da hinten nur Kundschaft, die zahlt.«
+
+  - id: talk_kolonne
+    on: { verb: talk, object: kolonne }
+    do:
+      - say:
+          - when: { has: clue_gestaendnis }
+            text: Da sitzt keiner mehr.
+          - text: Keiner sieht auf. Hier redet der Vorarbeiter.
+
   - id: give_reichsmark_kroeger
     on: { verb: give, object: reichsmark, with: kroeger }
     do:
@@ -390,7 +574,7 @@ rules:
     when: { not: { has: clue_lene } }
     do:
       - say: Lene sieht das Päckchen an, dann dich. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer. ›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt.«
-      - say: "»Am Abend is er bei den Brodersens rein. Mit 'nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.«"
+      - say: "»Am Abend is er bei den Brodersens rein. Mit ’nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.« Sie tippt an ihre Schaffnermütze. »Der Ratschlag war umsonst. Wegen Jakob.«"
       - learn: clue_lene
       - score: 1
 
@@ -399,7 +583,7 @@ rules:
     when: { not: { has: clue_lene } }
     do:
       - say: Lene liest die Nummer in deinem Notizbuch, dann sieht sie dich an. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer. ›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt.«
-      - say: "»Am Abend is er bei den Brodersens rein. Mit 'nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.«"
+      - say: "»Am Abend is er bei den Brodersens rein. Mit ’nem Kuvert. Ich wohn drei Hütten weiter, ich seh so was.« Sie tippt an ihre Schaffnermütze. »Der Ratschlag war umsonst. Wegen Jakob.«"
       - learn: clue_lene
       - score: 1
 
@@ -414,7 +598,8 @@ rules:
       - say: Lene legt die Hand darauf. »Gucken kostet nix. Anfassen schon.«
 
   # -------------------------------------------------------------------------
-  # P5: Tadeusz' Schweigen (tap-first redirects into the dialogue)
+  # P5: Tadeusz' Schweigen (tap-first redirects into the dialogue). Half of
+  # the frame-up proof gets a pointer to the other half.
   # -------------------------------------------------------------------------
   - id: show_untergeschoben_tadeusz
     on: { verb: show, object: clue_untergeschoben, with: tadeusz }
@@ -422,6 +607,30 @@ rules:
     do:
       - say: Tadeusz liest lange in deinem Notizbuch.
       - dialogue: tadeusz_gespraech
+
+  - id: show_frisch_tadeusz
+    on: { verb: show, object: clue_frisch_an_land, with: tadeusz }
+    when: { not: { has: clue_zaehlheft } }
+    do:
+      - if:
+          when: { has: clue_untergeschoben }
+          then:
+            - say: Tadeusz liest lange in deinem Notizbuch.
+            - dialogue: tadeusz_gespraech
+          else:
+            - say: Tadeusz liest, dann schüttelt er den Kopf. »Ein halber Beweis, Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
+
+  - id: show_nur_kroeger_tadeusz
+    on: { verb: show, object: clue_nur_kroeger, with: tadeusz }
+    when: { not: { has: clue_zaehlheft } }
+    do:
+      - if:
+          when: { has: clue_untergeschoben }
+          then:
+            - say: Tadeusz liest lange in deinem Notizbuch.
+            - dialogue: tadeusz_gespraech
+          else:
+            - say: Tadeusz liest, dann schüttelt er den Kopf. »Ein halber Beweis, Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
 
   - id: show_gestaendnis_tadeusz
     on: { verb: show, object: clue_gestaendnis, with: tadeusz }
@@ -484,6 +693,7 @@ rules:
     do:
       - say: Anni stellt sich vor das Bord. »Das ist meins, Voss.«
 
+  # Lotte sleeps; nothing wakes her (design/style.md, sensitive topics 6).
   - id: talk_lotte
     on: { verb: talk, object: lotte }
     do:
@@ -491,6 +701,16 @@ rules:
 
   - id: use_lotte
     on: { verb: use, object: lotte }
+    do:
+      - say: Du lässt sie schlafen.
+
+  - id: show_lotte
+    on: { verb: show, with: lotte }
+    do:
+      - say: Du lässt sie schlafen.
+
+  - id: give_lotte
+    on: { verb: give, with: lotte }
     do:
       - say: Du lässt sie schlafen.
 
@@ -517,6 +737,24 @@ rules:
 
   - id: laterne_brennt
     on: { verb: use, object: streichhoelzer, with: sturmlaterne }
+    do:
+      - say: Sie brennt schon.
+
+  # »zünde die Laterne an«, or »Benutzen« on the lantern: the matches are in
+  # your pocket anyway (they can't be dropped).
+  - id: laterne_anzuenden_kurz
+    on: { verb: use, object: sturmlaterne }
+    when:
+      - { not: { flag: laterne_an } }
+      - { has: streichhoelzer }
+    do:
+      - say: Der Docht fängt beim zweiten Streichholz. Du hebst die Laterne an. Gelbes Licht auf schwarzen Stufen.
+      - set: laterne_an
+      - move: { object: sturmlaterne, to: inventory }
+
+  - id: laterne_brennt_kurz
+    on: { verb: use, object: sturmlaterne }
+    when: { flag: laterne_an }
     do:
       - say: Sie brennt schon.
 
@@ -547,7 +785,7 @@ rules:
     do:
       - unlock: bodentuer
       - open: bodentuer
-      - say: "Der Schlüssel passt. Kein Wunder: Das Schloss ist das einzig Neue in diesem Haus. Die Tür schwingt nach innen auf."
+      - say: Der Schlüssel passt, natürlich. Das Schloss ist geölt, die Tür schwingt lautlos nach innen auf.
       - score: 1
 
   - id: bodentuer_auf_use
@@ -558,7 +796,7 @@ rules:
     do:
       - unlock: bodentuer
       - open: bodentuer
-      - say: "Der Schlüssel passt. Kein Wunder: Das Schloss ist das einzig Neue in diesem Haus. Die Tür schwingt nach innen auf."
+      - say: Der Schlüssel passt, natürlich. Das Schloss ist geölt, die Tür schwingt lautlos nach innen auf.
       - score: 1
 
   - id: close_bodentuer
@@ -566,16 +804,42 @@ rules:
     do:
       - say: Du lässt sie offen. Hinter dieser Tür war lange genug zu.
 
+  - id: horchen_bodentuer
+    on: { verb: horchen, object: bodentuer }
+    do:
+      - say:
+          - when: { isOpen: bodentuer }
+            text: Von oben hörst du Jakob zählen. Leise, aber ohne Fehler.
+          - text: Oben ist es still. Dann ein Husten, sehr leise.
+
+  # The Kontor opens with every proof in hand, like exit speicher_treppe.down.
   - id: open_kontortuer_frei
+    on: { verb: open, object: kontortuer }
+    when:
+      - { has: clue_jakob_aussage }
+      - { has: clue_dieselbe_hand }
+    do:
+      - say: Sie ist nur angelehnt. Drei Stufen tiefer brennt Licht, und es riecht nach Bohnenkaffee.
+      - goto: kontor
+
+  - id: open_kontortuer_beweis
     on: { verb: open, object: kontortuer }
     when: { has: clue_jakob_aussage }
     do:
-      - say: Sie ist nur angelehnt. Geh hinunter.
+      - say:
+          - when: { not: { has: clue_anweisung } }
+            text: Du legst die Hand auf die Klinke und zögerst. Asmussen wird alles abstreiten. Hast du oben wirklich alles gesehen?
+          - text: Du legst die Hand auf die Klinke und zögerst. Asmussen wird alles abstreiten. Wer hat die Anweisung geschrieben? Die Antwort steckt schon in deinem Notizbuch.
 
   - id: open_kontortuer
     on: { verb: open, object: kontortuer }
     do:
       - say: Asmussen kann warten. Erst Jakob.
+
+  - id: horchen_kontortuer
+    on: { verb: horchen, object: kontortuer }
+    do:
+      - say: Eine Tasse klirrt. Papier raschelt. Wer da unten sitzt, hat keine Eile.
 
   - id: use_streichhoelzer_kisten
     on: { verb: use, object: streichhoelzer, with: kisten }
@@ -597,10 +861,25 @@ rules:
     do:
       - say: Zwanzig Kisten. Du hast zwei Hände.
 
+  - id: zaehlen_kisten
+    on: { verb: zaehlen, object: kisten }
+    do:
+      - say: Zwanzig. Genau die zwanzig, die auf Krögers Tallyzettel fehlen.
+
+  - id: zaehlen_reichsmark
+    on: { verb: zaehlen, object: reichsmark }
+    do:
+      - say: Zweihundert. Du zählst ein zweites Mal. Ab Montag ist es egal, wie oft man zählt.
+
   - id: take_jakob
     on: { verb: take, object: jakob }
     do:
       - say: Mit dem Bein? Nicht ohne Trage. Und nicht ohne Arzt.
+
+  - id: helfen_jakob
+    on: { verb: helfen, object: jakob }
+    do:
+      - say: Allein kriegst du ihn nicht die Treppe hinunter, nicht mit dem Bein. Erst Asmussen, dann ein Arzt.
 
   # -------------------------------------------------------------------------
   # Finale: Kontor Asmussen
@@ -626,7 +905,7 @@ rules:
   - id: give_anni
     on: { verb: give, with: anni }
     do:
-      - say: "»Behalten Sie es.«"
+      - say: "»Behalten Sie das.«"
 
   - id: show_paeckchen_kroeger
     on: { verb: show, object: zigarettenpaeckchen, with: kroeger }
@@ -634,7 +913,7 @@ rules:
       - say:
           - when: { has: clue_gestaendnis }
             text: Kröger sieht weg. »Stecken Se das ein. Ich hab alles gesagt.«
-          - text: Kröger sieht kurz hin, dann in sein Glas. »Englische. Gibt's an jeder Ecke.«
+          - text: Kröger sieht kurz hin, dann in sein Glas. »Englische. Gibt’s an jeder Ecke.«
 
   - id: show_kroeger
     on: { verb: show, with: kroeger }
@@ -644,7 +923,7 @@ rules:
   - id: give_kroeger
     on: { verb: give, with: kroeger }
     do:
-      - say: "»Behalten Se's.«"
+      - say: "»Behalten Se das.«"
 
   - id: show_wirt
     on: { verb: show, with: wirt }
@@ -654,12 +933,12 @@ rules:
   - id: give_wirt
     on: { verb: give, with: wirt }
     do:
-      - say: "»Behalten Se's.«"
+      - say: "»Behalten Se das.«"
 
   - id: show_lene_wieder
     on: { verb: show, object: zigarettenpaeckchen, with: lene }
     do:
-      - say: "»Hab ich dir doch alles erzählt. Steck das weg, bevor's einer sieht.«"
+      - say: "»Hab ich dir doch alles erzählt. Steck das weg, bevor’s einer sieht.«"
 
   - id: show_lene
     on: { verb: show, with: lene }
@@ -682,7 +961,7 @@ rules:
   - id: give_tadeusz
     on: { verb: give, with: tadeusz }
     do:
-      - say: "»Behalten Sie es.«"
+      - say: "»Behalten Sie das.«"
 
   - id: show_jakob
     on: { verb: show, with: jakob }
@@ -692,7 +971,7 @@ rules:
   - id: give_jakob
     on: { verb: give, with: jakob }
     do:
-      - say: "»Behalten Sie es.«"
+      - say: "»Behalten Sie das.«"
 
   - id: show_asmussen
     on: { verb: show, with: asmussen }

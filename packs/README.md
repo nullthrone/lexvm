@@ -10,8 +10,11 @@ releases as `<pack-id>.lexpack.json`.
 
 | Pack | Language | Length | License | Status |
 |---|---|---|---|---|
-| [`locked-study`](locked-study/pack.yaml): *The Locked Study* | English | 5 minutes | CC0-1.0 | Demo and reference example for authors and the prompt kit |
-| German noir mystery (working title) | German | | | In progress |
+| [`letzte-nacht-der-reichsmark`](letzte-nacht-der-reichsmark/pack.yaml): *Die letzte Nacht der Reichsmark* | German | 45 minutes (estimated 47, speedrun 24; 74-step walkthrough) | CC-BY-4.0 | Noir mystery, Hamburg 1948; design notes in [`design/`](letzte-nacht-der-reichsmark/design/) |
+| [`locked-study`](locked-study/pack.yaml): *The Locked Study* | English | 5 minutes (estimated 6; 17-step walkthrough) | CC0-1.0 | Demo and reference example for authors and the prompt kit |
+
+Length is the pack's `playtime` target, shown on its library card; the
+estimate is what `lexvm check` computes from the texts and the walkthrough.
 
 ## Layout
 
@@ -69,11 +72,15 @@ no errors. The check covers:
    and so on.
 3. **Walkthrough**: the `walkthrough` replays to a winning ending.
 4. **Exploration**: every reachable state can still reach a winning ending
-   and no losing ending exists (the `forgiving` policy).
+   and no losing ending exists (the `forgiving` policy). An exploration that
+   hits the state limit proves nothing and is an error.
 
-Warnings (for example long texts, unreached content, or an incomplete
-exploration of a very large pack) need a reason in the pull request. CI runs
-`npm run check:packs` for all packs on every push and pull request.
+Warnings (for example long texts or unreached content) need a reason in the
+pull request. CI runs `npm run check:packs` for all packs on every push and
+pull request. The player's end-to-end tests
+([`walkthroughs.spec.ts`](../apps/web/e2e/walkthroughs.spec.ts)) also play
+the walkthrough of every pack in the catalog to its winning ending by
+tapping alone, on phone viewports.
 
 Automatic checks prove that a pack can be won; they do not prove that it is
 good. Every pack is also played through by a human and reviewed against the

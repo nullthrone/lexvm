@@ -47,8 +47,9 @@ interface ActiveGame {
   /** Number of clues the player has seen in the notebook. */
   seenClues: number;
   /**
-   * `savedAt` of the stored save this tab last read or wrote (null: none). A
-   * different one in storage means another tab or window has played on.
+   * `savedAt` of the stored save this game started from (null: none). A
+   * stored save that is neither this one nor written by this tab means
+   * another tab or window has played on.
    */
   savedAt: string | null;
   /** turns.length before each undoable command, so undo also takes its output back. */
@@ -214,10 +215,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
   function persist(): void {
     if (!game || conflictOpen) return;
     const current = game;
-    const stored = current.session.toStored(new Date());
-    const expected = current.savedAt;
-    current.savedAt = stored.save.savedAt;
-    void writeSaveIfCurrent(current.key, stored, expected).then((result) => {
+    void writeSaveIfCurrent(current.key, current.session.toStored(new Date()), current.savedAt).then((result) => {
       if (result === "conflict") void resolveConflict(current);
     });
   }
@@ -236,9 +234,8 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     conflictOpen = false;
     if (destroyed || game !== conflicted) return;
     if (answer === "keep") {
-      const stored = conflicted.session.toStored(new Date());
-      conflicted.savedAt = stored.save.savedAt;
-      void writeSave(conflicted.key, stored);
+      // Written by this tab from now on, so later moves save without asking.
+      void writeSave(conflicted.key, conflicted.session.toStored(new Date()));
     } else if (answer === "load") {
       // Drop this tab's game and continue from the stored one.
       if (active === conflicted) active = null;
@@ -390,8 +387,10 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     const next = guard(() => session.view());
     if (!next) return;
     view = next;
-    transcript.appendTurn(output, { endingTitle: endingTitle() });
+    const turn = transcript.appendTurn(output, { endingTitle: endingTitle(), scroll: false });
     refresh();
+    // Scroll once the dock has its new height (e.g. a conversation's options), so they do not cover the new text.
+    transcript.scrollToTurn(turn);
     if (!wasEnded && view?.ended) showEnding();
   }
 
@@ -517,8 +516,12 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
   }
 
   function toggleKeyboard(): void {
+    // The input line makes the dock taller: keep the last line of text above it in view.
+    const log = transcript?.el;
+    const before = log?.clientHeight ?? 0;
     updateSettings({ keyboard: !settings.get().keyboard });
     refresh();
+    if (log && log.clientHeight < before) log.scrollTop += before - log.clientHeight;
     if (settings.get().keyboard) dock?.focusInput();
   }
 
@@ -600,7 +603,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
         hints: current.session.hints,
       });
       if (next && !destroyed) {
-        // The imported game replaces the stored one of this tab.
+        // The imported game replaces the stored one this game started from.
         next.game.savedAt = current.savedAt;
         // Only a game that could be shown is saved: a broken one must not become the autosave.
         if (mount(next.game, next.line ?? t("game.saveImported"))) persist();
@@ -630,8 +633,8 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
     }
     if (parsed.ok) return;
     rejectFeedback();
-    transcript.appendUiLine("echo", text, { lang: lang() });
-    transcript.appendUiLine("system", parsed.message, { lang: lang() });
+    const echo = transcript.appendUiLine("echo", text, { lang: lang(), scroll: false });
+    transcript.appendUiLine("system", parsed.message, { lang: lang(), scroll: false });
     if (parsed.error === "ambiguous" && parsed.candidates && parsed.candidates.length > 0) {
       dock?.showCandidates(parsed.candidates, lang(), (id, name) => {
         const rewritten = disambiguate(text, name);
@@ -645,6 +648,8 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
         if (view && findObject(view, id)) openObject(id);
       });
     }
+    // After the candidates row (if any) took its place in the dock, so it does not cover the question.
+    transcript.scrollToTurn(echo);
   }
 
   function handleMeta(meta: MetaCommand): void {

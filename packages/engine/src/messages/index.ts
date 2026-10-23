@@ -99,6 +99,10 @@ export interface Messages {
   rejectTooMany: string;
   rejectSameObject: string;
 
+  // A pack bug stopped the turn (rules that call each other without end, or too much work).
+  ruleRecursionLimit: string;
+  ruleWorkLimit: string;
+
   // Labels
   exitLabels: Record<StandardExit, string>;
   verbLabels: Record<CoreVerb, string>;

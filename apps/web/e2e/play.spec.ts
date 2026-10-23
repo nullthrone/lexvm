@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { watchPolicyViolations } from "./support.ts";
 
 const PACK = "The Locked Study";
 
@@ -59,23 +60,7 @@ async function expectWinningEnding(page: Page): Promise<void> {
 let violations: string[] = [];
 
 test.beforeEach(async ({ page }) => {
-  violations = [];
-  page.on("console", (message) => {
-    if (message.type() === "error" && /Content.Security.Policy|Trusted.?Type/i.test(message.text())) {
-      violations.push(message.text());
-    }
-  });
-  page.on("pageerror", (error) => {
-    if (/Content.Security.Policy|Trusted.?Type/i.test(error.message)) violations.push(error.message);
-  });
-  await page.addInitScript(() => {
-    document.addEventListener("securitypolicyviolation", (event) => {
-      console.error(
-        `Content Security Policy violation: ${event.violatedDirective} ${event.blockedURI} ` +
-          `"${event.sample}" at ${event.sourceFile}:${event.lineNumber}:${event.columnNumber}`,
-      );
-    });
-  });
+  violations = await watchPolicyViolations(page);
   await page.goto("./");
   await expect(packCard(page)).toBeVisible();
 });

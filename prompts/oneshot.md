@@ -55,6 +55,8 @@ Everything below up to "How to answer" is reference material: first the authorin
 ## The LucasArts rules (forgiving policy)
 - No deaths and no losing endings: every ending has `win: true`. Danger is a narrow escape ("You step back just in time.") that leaves the game state as it was.
 - No dead ends: from every reachable state the game stays winnable. Never consume, destroy or give away an item that is still needed; if an action uses an item up, record the result permanently (a flag) instead of needing the item again. Never lock the player out of a room they still need.
+- Players can drop carried items. If one the solution needs could be left behind a one-way exit, keep it with the player: a rule `on: { verb: drop, object: key }` that only says why (`lexvm check` explores dropping as well).
+- Progress never depends on `inventory` or another command that no action sheet offers: the inventory button only shows the bag.
 - Essential information must stay obtainable. Dialogue options with `once: true` are fine when the option `learn`s the clue (clues are permanent); otherwise keep a repeatable way to get the information.
 - No "guess the verb": solutions use the core verbs (look, take, open, close, use, talk, give, show, push, pull, go) or a pack verb that the object lists in its `verbs`, so it appears in the action sheet.
 - No pixel hunting: every object the player can interact with is visibly mentioned. Hidden objects are revealed with a clear message (`say` + `reveal`).
@@ -85,6 +87,7 @@ Everything below up to "How to answer" is reference material: first the authorin
 - A clue is a piece of knowledge: an object with `clue: true` and `location: nowhere`, acquired with the `learn` effect (reading a document, examining something, a dialogue). Clues sit in the notebook and cannot be dropped or lost.
 - Clue names are short and telling (≤ 24 characters: "Torn ticket", "Alibi gap"); the description states the fact.
 - Deductions combine two clues: a rule `on: { verb: use, object: clue_a, with: clue_b }` with `when: { not: { has: clue_c } }` that `learn`s the conclusion `clue_c` (rules are tried in both orders). Only ask for deductions a player can reasonably see; answer plausible wrong combinations gently.
+- Players tap a clue and choose "Combine with …" ("Kombinieren mit …"), which sends `use`; typed, "combine X with Y" / "kombiniere X mit Y" / "vergleiche X mit Y" work. If the story depends on deductions, teach combining once early (a line of inner voice or the first hint step).
 - Interrogations and confrontations use clues as evidence (see dialogue).
 
 ## Hints
@@ -341,7 +344,10 @@ offers `look`, `use`, `open`/`close` if openable, `show` (and `give`, not for
 clues) while a character is in the room, and `drop` (not for clues). Every
 verb listed in the object's `verbs` is added, core verbs included: `push`,
 `pull` and `talk` on a non-character must be listed to be tappable. Two-object
-verbs then ask for the second object.
+verbs then ask for the second object. For a clue, players see `use` as
+"Combine with …" ("Kombinieren mit …"), the other clues come first in the
+list of second objects, and the notebook says that entries can be combined:
+`use clue_a clue_b` is how deductions are tapped.
 
 ### 8. Conditions
 
@@ -562,16 +568,25 @@ ids, e.g. `take brass_key`, `use brass_key study_door`, `go north`,
    reachable from **every** reachable state and that no losing ending is
    reachable. It also reports rooms, rules, endings and dialogue options that
    are never reached. If the state space exceeds the limit, the result is
-   reported as incomplete (warning).
+   incomplete and proves nothing: `lexvm check` reports it as an error
+   (`explore.incomplete`; `--allow-incomplete` makes it a warning).
+
+   When that exploration is complete and finds no problem, a second one also
+   drops every carried item (action sheets offer `drop`), with a smaller state
+   budget: an item left behind a one-way exit is a dead end too. If the second
+   exploration cannot finish, an info (`explore.drop-incomplete`) says so; a
+   rule on `drop` for the items the solution needs keeps them with the player.
 
    *Offered actions* are what a tap player can do: listed exits, dialogue
-   options, look around / wait / inventory, `verb obj` when the verb is in
-   the object's action sheet, `verb a b` when the verb is in `a`'s sheet, and
-   give/show between a carried item and a character in the room. A pack
-   whose solution needs a typed-only command (e.g. `push statue` while the
-   statue does not list `push` in `verbs`) is not winnable. Typed commands are
-   explored as well: no losing ending may be reachable with them, and states
-   reachable only by typing must not be dead ends either.
+   options, look around and wait, `verb obj` when the verb is in the object's
+   action sheet, `verb a b` when the verb is in `a`'s sheet, and give/show
+   between a carried item and a character in the room. `inventory` is not
+   offered: the inventory button shows the bag without running a command, so
+   progress must not depend on it. A pack whose solution needs a typed-only
+   command (e.g. `push statue` while the statue does not list `push` in
+   `verbs`) is not winnable. Typed commands are explored as well: no losing
+   ending may be reachable with them, and states reachable only by typing must
+   not be dead ends either.
 
 `lexvm check` also prints a play time estimate and warns when it misses the
 pack's `playtime` by more than 25% (section 17).
@@ -583,7 +598,11 @@ has a stable code; Appendix A lists them all.
 
 A save stores the pack id, version and content hash, the game state and the
 log of accepted commands. If the pack changed, the player can replay the log
-against the new version.
+against the new version. A saved state is untrusted: when the log does not
+reproduce it, players use it only if it is a valid state of the pack (every
+id declared, exactly the pack's objects, flags and counters, an active
+dialogue with an available option); otherwise they continue from what the
+log reproduces.
 
 ### 16. Versioning of this format
 
@@ -789,7 +808,7 @@ walkthrough, play time and exploration results.
 | `walkthrough.ended-early` | error | The game ended before the last step. |
 | `walkthrough.not-won` | error | The walkthrough does not end in a winning ending. |
 | `walkthrough.not-offered` | warning | A step works only as a typed command: no action sheet offers it. |
-| `walkthrough.score-mismatch` | warning | The walkthrough's final score differs from `maxScore`. |
+| `walkthrough.score-mismatch` | warning | The walkthrough's final score differs from `maxScore` (not reported again when `score.maxScore-unreachable` already explains it). |
 
 **Exploration** (`lexvm check`)
 
@@ -798,7 +817,8 @@ walkthrough, play time and exploration results.
 | `explore.not-winnable` | error | No winning ending is reachable with the offered actions (reported only for a complete exploration). |
 | `explore.dead-end` | error | A reachable state from which no winning ending can be reached. |
 | `explore.losing-ending` | error | A non-winning ending is reachable. |
-| `explore.incomplete` | warning | The state limit was hit; dead ends and winnability were not proven. |
+| `explore.incomplete` | error | The state limit was hit; dead ends and winnability were not proven (a warning with `lexvm check --allow-incomplete`). |
+| `explore.drop-incomplete` | info | The second exploration, which also drops carried items, hit its state budget. |
 | `explore.unreached-room`, `explore.unreached-ending`, `explore.unreached-rule`, `explore.unreached-option` | info | Content never reached in any explored state. |
 
 **Play time** (section 17)

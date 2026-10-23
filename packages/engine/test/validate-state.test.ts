@@ -8,7 +8,10 @@ import { loadLockedStudy, makePack, play } from "./fixtures/runtime/helpers.ts";
 describe("validateState", () => {
   const pack = loadLockedStudy();
   const start = newGame(pack).state;
-  const at = (patch: Partial<GameState>): GameState => ({ ...(JSON.parse(JSON.stringify(start)) as GameState), ...patch });
+  const at = (patch: Partial<GameState>): GameState => ({
+    ...(JSON.parse(JSON.stringify(start)) as GameState),
+    ...patch,
+  });
 
   it("accepts every state of a walkthrough", () => {
     expect(validateState(pack, start)).toEqual([]);

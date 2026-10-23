@@ -83,7 +83,7 @@ describe("no HTML injection", () => {
         String.raw`\.(innerHTML|outerHTML|insertAdjacentHTML)\b`,
         String.raw`\[\s*["'\x60](innerHTML|outerHTML|srcdoc)["'\x60]\s*\]`,
         String.raw`document\.write(ln)?\(`,
-        String.raw`(set|parse)HTMLUnsafe`,
+        "(set|parse)HTMLUnsafe",
         "createContextualFragment",
         "DOMParser",
         String.raw`\bsrcdoc\b`,

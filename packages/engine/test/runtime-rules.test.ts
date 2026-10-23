@@ -276,6 +276,10 @@ describe("event rules", () => {
     expect(r.status).toBe("ok");
     expect(linesOf(r.output, "system")).toContain("internal: rule work limit");
     expect(linesOf(r.output, "room-title").length).toBeLessThanOrEqual(MAX_WORK);
+    // In the pack's language, like every engine message.
+    const de = makePack({ language: "de", start: { room: "hall" }, rooms: fanRooms, rules: fanRules });
+    const german = step(de, newGame(de).state, { verb: "go", object: "north" });
+    expect(linesOf(german.output, "system")).toContain("intern: Regeln brauchen zu viele Schritte");
   });
 
   it("guards against dialogues that restart themselves forever", () => {

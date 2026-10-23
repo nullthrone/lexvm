@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createSave,
   isGameState,
+  MAX_SAVE_FILE,
   parseSaveFile,
   sanitizeHints,
   saveFileName,
@@ -42,6 +43,8 @@ describe("save files", () => {
     expect(validateSave({ ...save, state: { ...save.state, v: 2 } }).ok).toBe(false);
     expect(validateSave({ ...save, state: sampleState({ pack: { id: "other", version: "1.0.0" } }) }).ok).toBe(false);
     expect(validateSave({ ...save, savedAt: 5 }).ok).toBe(false);
+    // Oversized files are refused before JSON.parse.
+    expect(parseSaveFile(" ".repeat(MAX_SAVE_FILE + 1))).toEqual({ ok: false, reason: "file too large" });
   });
 
   it("checks the game state structure", () => {

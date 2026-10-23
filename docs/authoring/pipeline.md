@@ -205,9 +205,12 @@ engine, in this order, stopping at the first gate with errors:
    command and ends in a winning ending.
 3. **Exploration** — a breadth-first search over all reachable states proves
    that a win is always still reachable (no dead ends) and that no losing
-   ending exists. If the state space exceeds `--max-states`, the result is
-   incomplete and reported as a warning (an incomplete exploration proves
-   neither winnability nor its absence, so it never reports "not winnable").
+   ending exists; a second search also drops carried items. If the state
+   space exceeds `--max-states`, the result is incomplete and reported as an
+   error (`explore.incomplete`): an incomplete exploration proves neither
+   winnability nor its absence, so it never reports "not winnable", but the
+   pack is not verified either. Bound counters changed by turn rules, or raise
+   `--max-states`.
 
 Once the walkthrough gate passes, the play time estimate runs against the
 `--minutes` target. The pipeline writes that target to `playtime` in

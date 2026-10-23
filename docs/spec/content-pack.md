@@ -212,7 +212,10 @@ offers `look`, `use`, `open`/`close` if openable, `show` (and `give`, not for
 clues) while a character is in the room, and `drop` (not for clues). Every
 verb listed in the object's `verbs` is added, core verbs included: `push`,
 `pull` and `talk` on a non-character must be listed to be tappable. Two-object
-verbs then ask for the second object.
+verbs then ask for the second object. For a clue, players see `use` as
+"Combine with …" ("Kombinieren mit …"), the other clues come first in the
+list of second objects, and the notebook says that entries can be combined:
+`use clue_a clue_b` is how deductions are tapped.
 
 ## 8. Conditions
 
@@ -433,16 +436,25 @@ ids, e.g. `take brass_key`, `use brass_key study_door`, `go north`,
    reachable from **every** reachable state and that no losing ending is
    reachable. It also reports rooms, rules, endings and dialogue options that
    are never reached. If the state space exceeds the limit, the result is
-   reported as incomplete (warning).
+   incomplete and proves nothing: `lexvm check` reports it as an error
+   (`explore.incomplete`; `--allow-incomplete` makes it a warning).
+
+   When that exploration is complete and finds no problem, a second one also
+   drops every carried item (action sheets offer `drop`), with a smaller state
+   budget: an item left behind a one-way exit is a dead end too. If the second
+   exploration cannot finish, an info (`explore.drop-incomplete`) says so; a
+   rule on `drop` for the items the solution needs keeps them with the player.
 
    *Offered actions* are what a tap player can do: listed exits, dialogue
-   options, look around / wait / inventory, `verb obj` when the verb is in
-   the object's action sheet, `verb a b` when the verb is in `a`'s sheet, and
-   give/show between a carried item and a character in the room. A pack
-   whose solution needs a typed-only command (e.g. `push statue` while the
-   statue does not list `push` in `verbs`) is not winnable. Typed commands are
-   explored as well: no losing ending may be reachable with them, and states
-   reachable only by typing must not be dead ends either.
+   options, look around and wait, `verb obj` when the verb is in the object's
+   action sheet, `verb a b` when the verb is in `a`'s sheet, and give/show
+   between a carried item and a character in the room. `inventory` is not
+   offered: the inventory button shows the bag without running a command, so
+   progress must not depend on it. A pack whose solution needs a typed-only
+   command (e.g. `push statue` while the statue does not list `push` in
+   `verbs`) is not winnable. Typed commands are explored as well: no losing
+   ending may be reachable with them, and states reachable only by typing must
+   not be dead ends either.
 
 `lexvm check` also prints a play time estimate and warns when it misses the
 pack's `playtime` by more than 25% (section 17).
@@ -454,7 +466,11 @@ has a stable code; Appendix A lists them all.
 
 A save stores the pack id, version and content hash, the game state and the
 log of accepted commands. If the pack changed, the player can replay the log
-against the new version.
+against the new version. A saved state is untrusted: when the log does not
+reproduce it, players use it only if it is a valid state of the pack (every
+id declared, exactly the pack's objects, flags and counters, an active
+dialogue with an available option); otherwise they continue from what the
+log reproduces.
 
 ## 16. Versioning of this format
 
@@ -660,7 +676,7 @@ walkthrough, play time and exploration results.
 | `walkthrough.ended-early` | error | The game ended before the last step. |
 | `walkthrough.not-won` | error | The walkthrough does not end in a winning ending. |
 | `walkthrough.not-offered` | warning | A step works only as a typed command: no action sheet offers it. |
-| `walkthrough.score-mismatch` | warning | The walkthrough's final score differs from `maxScore`. |
+| `walkthrough.score-mismatch` | warning | The walkthrough's final score differs from `maxScore` (not reported again when `score.maxScore-unreachable` already explains it). |
 
 **Exploration** (`lexvm check`)
 
@@ -669,7 +685,8 @@ walkthrough, play time and exploration results.
 | `explore.not-winnable` | error | No winning ending is reachable with the offered actions (reported only for a complete exploration). |
 | `explore.dead-end` | error | A reachable state from which no winning ending can be reached. |
 | `explore.losing-ending` | error | A non-winning ending is reachable. |
-| `explore.incomplete` | warning | The state limit was hit; dead ends and winnability were not proven. |
+| `explore.incomplete` | error | The state limit was hit; dead ends and winnability were not proven (a warning with `lexvm check --allow-incomplete`). |
+| `explore.drop-incomplete` | info | The second exploration, which also drops carried items, hit its state budget. |
 | `explore.unreached-room`, `explore.unreached-ending`, `explore.unreached-rule`, `explore.unreached-option` | info | Content never reached in any explored state. |
 
 **Play time** (section 17)

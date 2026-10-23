@@ -528,6 +528,8 @@ describe("English parser", () => {
     expect(d("leg den Brief hin")).toEqual({ verb: "drop", object: "brief" });
     expect(d("leg den Brief ab")).toEqual({ verb: "drop", object: "brief" });
     expect(d("schließ die Tür ab")).toBe("error:unknown-verb");
+    expect(d("zieh den Brief aus der Tür")).toEqual({ verb: "take", object: "brief" });
+    expect(d("zieh die Tür")).toEqual({ verb: "pull", object: "tuer" });
     expect(d("schließ die Tür")).toEqual({ verb: "close", object: "tuer" });
     expect(d("Laden")).toEqual({ verb: "go", object: "laden" });
     expect(d("speichern")).toBe("meta:save");

@@ -115,6 +115,8 @@ can no longer lead to a win.
 ## The LucasArts rules (forgiving policy)
 - No deaths and no losing endings: every ending has `win: true`. Danger is a narrow escape ("You step back just in time.") that leaves the game state as it was.
 - No dead ends: from every reachable state the game stays winnable. Never consume, destroy or give away an item that is still needed; if an action uses an item up, record the result permanently (a flag) instead of needing the item again. Never lock the player out of a room they still need.
+- Players can drop carried items. If one the solution needs could be left behind a one-way exit, keep it with the player: a rule `on: { verb: drop, object: key }` that only says why (`lexvm check` explores dropping as well).
+- Progress never depends on `inventory` or another command that no action sheet offers: the inventory button only shows the bag.
 - Essential information must stay obtainable. Dialogue options with `once: true` are fine when the option `learn`s the clue (clues are permanent); otherwise keep a repeatable way to get the information.
 - No "guess the verb": solutions use the core verbs (look, take, open, close, use, talk, give, show, push, pull, go) or a pack verb that the object lists in its `verbs`, so it appears in the action sheet.
 - No pixel hunting: every object the player can interact with is visibly mentioned. Hidden objects are revealed with a clear message (`say` + `reveal`).
@@ -178,6 +180,7 @@ deduce something, or *show* a clue to a character to confront them.
 - A clue is a piece of knowledge: an object with `clue: true` and `location: nowhere`, acquired with the `learn` effect (reading a document, examining something, a dialogue). Clues sit in the notebook and cannot be dropped or lost.
 - Clue names are short and telling (≤ 24 characters: "Torn ticket", "Alibi gap"); the description states the fact.
 - Deductions combine two clues: a rule `on: { verb: use, object: clue_a, with: clue_b }` with `when: { not: { has: clue_c } }` that `learn`s the conclusion `clue_c` (rules are tried in both orders). Only ask for deductions a player can reasonably see; answer plausible wrong combinations gently.
+- Players tap a clue and choose "Combine with …" ("Kombinieren mit …"), which sends `use`; typed, "combine X with Y" / "kombiniere X mit Y" / "vergleiche X mit Y" work. If the story depends on deductions, teach combining once early (a line of inner voice or the first hint step).
 - Interrogations and confrontations use clues as evidence (see dialogue).
 <!-- prompt:end guide -->
 

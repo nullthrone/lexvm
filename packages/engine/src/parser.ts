@@ -446,6 +446,11 @@ function parseArgs(pc: PCtx, verb: string, rest: Token[]): ParseResult {
       // "schließ Tür mit Schlüssel auf" → use key with door; a single object → open it.
       return command(r.b === undefined ? { verb: "open", object: r.a } : { verb: "use", object: r.b, with: r.a });
     }
+    case "pull": {
+      // "zieh den Brief aus der Schublade", "pull the letter out of the drawer": taking it from somewhere.
+      if (rest.some((x, i) => i > 0 && t.source.has(x.f))) return parseArgs(pc, "take", rest);
+      break;
+    }
     case "take": {
       const r = objectArg(pc, rest, label("take"), false);
       if (r.ok) return command({ verb, object: r.id as string });

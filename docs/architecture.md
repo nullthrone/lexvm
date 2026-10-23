@@ -53,6 +53,7 @@ flowchart TB
   CMDS --> RUNTIME
   CMDS -->|generate only| API["Anthropic API"]
   UI --> COMPILE
+  UI -->|import: walkthrough| VERIFY
   UI --> PARSER
   UI --> RUNTIME
   UI --> STORE
@@ -234,8 +235,11 @@ flowchart LR
    `drop`. It proves that a winning ending is reachable from every reachable
    state (no dead ends) and that no losing ending is reachable, and it reports
    content that is never reached. The search stops at a state limit (200,000
-   by default) and then reports an incomplete result as a warning. Counters
-   changed by `turn` rules must be bounded, or the state space is infinite.
+   by default); an incomplete result proves nothing and fails `lexvm check`
+   unless `--allow-incomplete` is given. Counters changed by `turn` rules must
+   be bounded, or the state space is infinite. When the first search is clean,
+   a second one with a smaller budget also drops carried items, which action
+   sheets offer (packages/cli/src/exploration.ts).
 
 Alongside, `lexvm check` estimates the play time and warns when it misses the
 pack's `playtime` by more than 25% (informative, never an error).
@@ -247,7 +251,7 @@ Where verification runs:
 | `lexvm check`, `npm run check:packs` | All four stages. |
 | CI ([`ci.yml`](../.github/workflows/ci.yml)) | `npm run check:packs` on every push and pull request. |
 | `lexvm generate` | All stages after every generation step; diagnostics drive the repair loop. |
-| Player, on import | Schema and semantics before a pack is loaded. The verifier is part of the engine, so the player can run it too. |
+| Player, on import | Schema and semantics before a pack is imported, then the walkthrough replay and the play time estimate (shown to the player). Exploration runs only in the CLI. |
 
 The policy behind this is described in
 [ADR 0005](adr/0005-forgiving-policy-verified-by-exploration.md).
@@ -267,21 +271,31 @@ flowchart LR
 
 `npm run build` produces two deliverables in `apps/web/dist`:
 
-1. **The PWA**, built with Vite for the base path `/lexvm/`, with a web app
-   manifest, a hand-written service worker and the compiled content packs in
-   `dist/packs/`.
+1. **The PWA**, built with Vite with a relative base (`./`), so the same
+   build runs under any path (on GitHub Pages under `/lexvm/`), with a web
+   app manifest, a hand-written service worker and the compiled content packs
+   in `dist/packs/`.
 2. **`lexvm-offline.html`**, a single HTML file with all scripts, styles and
-   the bundled content packs inlined. It works from `file://`, where service
-   workers are not available, and makes no network requests.
+   the bundled content packs inlined (built into `dist-offline/` and copied
+   to `dist/`). It works from `file://`, where service workers are not
+   available, and makes no network requests.
 
-Service worker behaviour:
+Both carry a Content-Security-Policy meta tag computed from the final HTML
+(`apps/web/build/csp.ts`; see [section 8](#8-security-model)).
 
-- **Install:** precache the app shell and the bundled packs of this build
-  under a cache name that is versioned per build.
-- **Fetch:** answer same-origin `GET` requests for precached files from the
-  cache; the player needs nothing else.
-- **Update:** a new build installs in the background and takes over on the
-  next launch; old caches are deleted on activation. A running game is never
+Service worker behaviour (`apps/web/src/sw.ts`, registered with scope `./`,
+the directory the player is served from):
+
+- **Install:** precache every file of the build (app shell, chunks, icons,
+  the bundled packs and `lexvm-offline.html`) under a cache name derived
+  from a content hash of those files.
+- **Fetch:** cache-first for precached same-origin `GET` requests;
+  navigations get the cached app shell, also offline. Cross-origin requests
+  are never touched or cached.
+- **Update:** a new build installs in the background and waits. The player
+  shows "New version available – reload"; tapping it activates the new
+  version, otherwise it takes over once every window of the player has been
+  closed. Old caches are deleted on activation. A running game is never
   swapped out from under the player.
 
 Saves, settings and imported packs are stored in browser storage on the
@@ -309,8 +323,18 @@ model is in [SECURITY.md](../SECURITY.md). Rules for code in this repository:
 - **No network at runtime.** The engine performs no I/O. The player requests
   only its own same-origin files. Only `lexvm generate` in the CLI talks to a
   network service (the Anthropic API), with a key from the environment.
-- **Bounded work.** Exploration has a state limit; the player keeps
-  verification off the UI thread or bounded.
+- **Content-Security-Policy.** Both builds carry a CSP meta tag generated
+  at build time (`apps/web/build/csp.ts`): `default-src 'none'`, scripts
+  and styles from the app's own origin plus hashed inline code (the
+  single-file build allows only the hashed inline code), and Trusted Types
+  for script sinks; the only sink, the service worker URL, goes through the
+  `lexvm` policy. Code must not add inline handlers, `eval`-like calls or
+  new script sinks. The end-to-end tests fail on any violation.
+- **Bounded work.** Exploration has a state limit, and every engine call is
+  bounded in nesting depth and total work. The player runs the import checks
+  (compile, walkthrough replay, play time estimate) on the main thread, so a
+  very large imported pack can block the tab for a while; it never runs the
+  exploration.
 
 ## 9. Extension points
 

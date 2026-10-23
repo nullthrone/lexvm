@@ -40,9 +40,14 @@ for free, with deployment from GitHub Actions.
 - Works in airplane mode after the first visit.
 - The single-file build gives players and archivists a copy that does not
   depend on GitHub, and lets people pass the game on as a file.
-- The Vite base path is `/lexvm/`; the service worker scope is `/lexvm/`.
+- The build uses relative URLs (Vite `base: "./"`) and hash routes, so the
+  same files run under `/lexvm/` on GitHub Pages, on any other path and from
+  `file://`. The service worker is registered with scope `./`, the directory
+  the player is served from (`/lexvm/` on GitHub Pages). (Amended during
+  implementation: this ADR first fixed both to `/lexvm/`.)
 - GitHub Pages cannot send custom HTTP headers; security headers such as a
-  Content Security Policy can only be set via `<meta>` tags.
+  Content Security Policy can only be set via `<meta>` tags (both builds
+  carry one, see [SECURITY.md](../../SECURITY.md)).
 - All GitHub Pages sites of the account share one origin and therefore
   browser storage (see [SECURITY.md](../../SECURITY.md)).
 - iOS may evict storage of websites that are not installed; the README

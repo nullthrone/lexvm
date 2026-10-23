@@ -54,6 +54,9 @@ export const de: Messages = {
   rejectTooMany: "Zu viele Objekte für diesen Befehl.",
   rejectSameObject: "Das geht nicht mit sich selbst.",
 
+  ruleRecursionLimit: "intern: Regeln rufen sich ohne Ende auf",
+  ruleWorkLimit: "intern: Regeln brauchen zu viele Schritte",
+
   exitLabels: {
     north: "Norden",
     south: "Süden",

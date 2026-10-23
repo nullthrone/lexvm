@@ -20,6 +20,7 @@ instead of by accident ([ADR 0001](0001-record-architecture-decisions.md)).
 | [0008](0008-language-policy.md) | Language policy | Accepted |
 | [0009](0009-vanilla-typescript-ui.md) | Vanilla TypeScript UI without a framework | Accepted |
 | [0010](0010-content-licensing.md) | Content licensing | Proposed |
+| [0011](0011-text-first-optional-svg-vignettes.md) | Text first, optional SVG vignettes later | Accepted |
 
 ## When to write an ADR
 

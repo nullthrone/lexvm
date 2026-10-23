@@ -24,24 +24,34 @@ function serialised<T>(key: string, work: () => Promise<T>): Promise<T> {
   return next;
 }
 
+/** This tab (page load): autosaves record which tab wrote them. */
+export const TAB_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
 /** Writes are serialised per key so an older save never overwrites a newer one. */
-export function writeSave(key: string, stored: StoredSave): Promise<boolean> {
-  return serialised(key, () => kvSet("saves", key, stored));
+export function writeSave(key: string, stored: StoredSave, writer = TAB_ID): Promise<boolean> {
+  return serialised(key, () => kvSet("saves", key, { ...stored, writer }));
 }
 
 export type WriteResult = "written" | "conflict" | "failed";
 
 /**
- * Write the save unless another tab or window has written this game since
- * this tab last read or wrote it. `expected` is the `savedAt` of that save
- * (null: there was none). Two tabs on the same game would otherwise silently
- * overwrite each other's progress; the caller asks the player instead.
+ * Write the save unless another tab or window has played this game on: the
+ * stored save must be the one this tab started from (`baseline`, its
+ * `savedAt`; null: there was none) or one this tab wrote. Two tabs on the
+ * same game would otherwise silently overwrite each other's progress; the
+ * caller asks the player instead. A failed write leaves the tab's own save in
+ * place, so it never looks like another tab's.
  */
-export function writeSaveIfCurrent(key: string, stored: StoredSave, expected: string | null): Promise<WriteResult> {
+export function writeSaveIfCurrent(
+  key: string,
+  stored: StoredSave,
+  baseline: string | null,
+  writer = TAB_ID,
+): Promise<WriteResult> {
   return serialised(key, async () => {
     const current = validateStoredSave(await kvGet("saves", key));
-    if (current !== null && current.save.savedAt !== expected) return "conflict";
-    return (await kvSet("saves", key, stored)) ? "written" : "failed";
+    if (current !== null && current.writer !== writer && current.save.savedAt !== baseline) return "conflict";
+    return (await kvSet("saves", key, { ...stored, writer })) ? "written" : "failed";
   });
 }
 

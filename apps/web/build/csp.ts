@@ -14,7 +14,7 @@
  */
 import { createHash } from "node:crypto";
 
-export const CSP_META = /<meta http-equiv="Content-Security-Policy"[^>]*>\n?/g;
+export const CSP_META = /\n?[ \t]*<meta http-equiv="Content-Security-Policy"[^>]*>/g;
 
 function sha256(text: string): string {
   return `'sha256-${createHash("sha256").update(text, "utf8").digest("base64")}'`;

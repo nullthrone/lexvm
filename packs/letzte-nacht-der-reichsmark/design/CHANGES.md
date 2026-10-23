@@ -158,3 +158,202 @@ style.md are exceeded only by names taken from world.md (six clue names of
 21–24 characters, »Speicher K, Wasserseite« and »Treppenhaus Speicher
 K«), the boat-hook message (256 characters over two paragraphs), option
 `f_s2_hand` (61) and the second step of `h_verhoer` (122).
+
+## Playtest round 1
+
+Inputs: two blind playtests (a tap-only phone player, 180 commands, 9 hints;
+an adventure veteran, 226 commands, 1 hint), a German story editor's
+playtest (190 commands, all endings) and the engine/UI fixes that landed
+just before (parser verbs »zünde … an«, »vergleiche«, »verbinde«,
+»fahr«/»steig«, bare exit ids and labels, »notizbuch«, localised meta
+texts, and »Kombinieren mit …« for `use` on clues). Each entry is
+issue → decision.
+
+### Blocker: combining notebook entries was never taught
+
+- **Not taught in the game** → taught three times, in Voss's voice, without
+  instructions to the player:
+  1. Intro (`an_schluessel`, the second entry): »Du schreibst mit, wie
+     früher bei der Versicherung. Ein einzelner Eintrag im Notizbuch beweist
+     nichts. Erst wenn du zwei kombinierst, die zusammenpassen, wird ein
+     Schluss daraus.« It uses the UI's word (»Kombinieren mit …«) and the
+     parser's (»kombiniere«).
+  2. Spind 23 (`open_spind`, the first valid pair): »Ein zweiter Schlüssel,
+     beim Vorarbeiter. Und Jakobs eigener hing zu Hause am Haken. Zwei
+     Einträge in deinem Notizbuch, die zusammengehören.« The walkthrough now
+     makes D3 first, and `h_nur_kroeger` comes before `h_frisch`.
+  3. Notebook descriptions: each half of a deduction ends with the question
+     its partner answers, without naming it (»Wer kam dann noch an den
+     Spind?«, »Wann kam dieses an Land?«, »Und wer verdient daran?«).
+     Taking the pack after reading the Aushang adds »Welches Schiff, steht
+     auf der Löschliste.«
+- **Hints said »Benutze … mit …«** (deviation 2 of the first section) → the
+  action sheet now says »Kombinieren mit …«, so third steps read
+  »Im Notizbuch: Kombiniere »A« mit »B«.« The part after the colon can be
+  typed as it stands; second steps use »Vergleiche …«, which the parser
+  now maps to `use`.
+- **Combining the wrong kind of thing** → `use … clue_kroeger_version`
+  answers »Krögers Behauptungen widerlegst du nicht im Notizbuch, sondern ihm
+  ins Gesicht.« `use … clue_asmussen` points to what is missing in each act.
+  `use … aushang` points to the notebook entry.
+
+### Kröger's interrogation loops without a pointer
+
+- **Wrong evidence before the deduction** → after the rebuttal, a line in
+  Voss's voice (an `if` on the missing proof; no state):
+  - stage 1 with both halves noted: »Die Antwort steht schon in deinem
+    Notizbuch, verteilt auf zwei Einträge. Erst kombiniert nagelt sie ihn
+    fest.« With one half missing it points to the missing source (who
+    profits, what he counted). With nothing in hand: »Du hast nichts in der
+    Hand, was dagegen hält. Noch nicht.«
+  - `k_s1_heft`: »Ein Heft gegen sein Wort. Gegen den Schwund brauchst du
+    einen Schluss aus deinem Notizbuch, keinen einzelnen Eintrag.«
+  - stage 2 points to Jakob's Heft, stage 4 to Anni (»Was in dem Kuvert
+    war, weiß nur eine.«). Stage 3 needs none: it is reached only with the
+    Heft, which Tadeusz gives only for »Untergeschoben«.
+- **Showing half a proof to Tadeusz got the generic brush-off** →
+  `show clue_frisch_an_land/clue_nur_kroeger tadeusz`: »Ein halber Beweis,
+  Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.« With
+  »Untergeschoben« noted, it opens his dialogue like the full proof.
+
+### Natural verbs and phrasings
+
+- **»bezahle wirt«, »kaufe bier«** → new pack verb `bezahlen` (Bezahlen;
+  bezahle, zahl, kauf, bestich, spendier …), offered on the Wirt and on the
+  new scenery `tresen` (Dünnbier, Bier, Köm, Glas). `bezahlen wirt`,
+  `tresen`, `hoftuer` and `reichsmark` (in the Kneipe) do what
+  `give reichsmark wirt` does; the walkthrough and `h_hintertuer` now use
+  »Bezahl den Wirt.« In the backyard, buying anything gets Lene's »Zeig mir
+  lieber, was du in der Tasche hast.«
+- **»angle … mit dem Bootshaken«, »hol das Klemmbrett«** → `use` gets the
+  synonyms angle/angeln/fische/halte, and `take klemmbrett` while holding
+  the hook fishes for it (`take_klemmbrett_haken`).
+- **»zünde die Laterne an«** (no matches named) → `use sturmlaterne`
+  lights it (`laterne_anzuenden_kurz`); the matches cannot be dropped.
+- **»zähle geld«, »horche an der Kontortür«, »hilf/trage Jakob«** →
+  typed-only pack verbs `zaehlen`, `horchen`, `helfen` with a few answers
+  (the Reichsmark, the crates, both doors, Jakob) and neutral defaults.
+- **»lies zählheft«, »lies rechnungen«, »lies krögers version«** → the pack
+  verb `lesen` is removed. Without a `read` verb the parser maps
+  »lies/lese/lesen« to `look`, so every clue and object can be read.
+  Documents show their text when examined; `look aushang` and `look zettel`
+  teach their clues (rules `look_aushang`, `look_zettel`; the walkthrough
+  says `look`). One verb fewer in the action sheet.
+- **»setz (mit Tadeusz) über«, »fahr mit Tadeusz«, »steig ins Boot«,
+  »nimm/fahr mit der Straßenbahn«, »geh auf den Hof«** → exit synonyms
+  »setz über«, »setze über«, »Haltestelle«; the rest works through the
+  engine's new go verbs and exit matching.
+- **»untersuche hintertür«, »öffne hintertür«** → scenery `hoftuer`
+  (Hintertür); opening it after paying walks into the yard (`goto`).
+- **»öffne kontortür« said »Geh hinunter.«** → it now walks into the Kontor
+  (»Sie ist nur angelehnt. Drei Stufen tiefer brennt Licht …«).
+- **Disambiguation »Klemmbrett oder Tallyzettel: 180 Kisten?«** → the
+  scenery no longer shares words with the clues: `aushang` loses
+  »Löschliste/Liste«, `klemmbrett` loses »Tallyzettel/Tally«. The two
+  clues are renamed »Löschliste (200 Kisten)« and »Tallyzettel (180
+  Kisten)« (no colon in a name, 24 characters at most).
+- **Plausible pairs rejected** → accepted where they carry the same
+  facts: Jakob's count + Tallyzettel → D1 (»Jakob hat zweihundert Hieven
+  gezählt, Kröger hundertachtzig Kisten …«); the pack + Löschliste → D2;
+  the note on the floor + Persilschein → D6 (copies the note too). New
+  near misses: »Frisch an Land« + »Der vergessene Schlüssel«, Asmussen's
+  card + Lene's statement, Asmussen's card + Jakob's statement.
+- **Not fixable in the pack (engine/UI follow-ups):** »hole X mit Y«,
+  »bezahle den Wirt mit Reichsmark« and »angle mit dem Bootshaken nach …«
+  (an instrument phrase after a one-object verb); »nimm alles«; echo lines
+  of pack verbs use the label (»Bezahlen Wirt«, »Zählen Reichsmark«) and
+  of give/show the colon form; `use` is still offered on every piece of
+  scenery; answers to »Was meinst du …?«; »untersuche jakob« matching the
+  clue »Jakobs Zählheft« when Jakob is absent.
+
+### Fewer one-answer dialogue taps (tap player: 69 of 180 commands)
+
+- **Anni's intro, 5 taps** → 3. She tells the police part unasked (one
+  question fewer), and the promise is part of accepting the case
+  (»Ich übernehme den Fall. Ich finde ihn.«); her farewell ends the scene.
+- **Closers removed** (the answer ends the conversation): »Das wird es.«
+  (`ah_gehen`), »Danke, Tadeusz.« (`t_danke`), »Verstehe.« after Lotte and
+  after Tadeusz's condition, »Danke, Lene.« and »Und weiter?« (Lene's two
+  lines are one beat now), »Wahrscheinlich nicht.« after Lene's Monday
+  line, and »Und die Brücke?« (Kröger tells the way across with the key).
+  »Ich hoffe, Sie finden sie.« stays as a beat but ends the conversation.
+- **Kept on purpose:** »Natürlich nicht.« (Lene's lie), the ambush's two
+  questions, Jakob's »Halten Sie durch.«, the refrain »Geld kann man
+  umtauschen. Schuld nicht.« and every evidence choice.
+- **The finale ladder forgets progress when you leave** → the Kontor (exit
+  and `open kontortuer`) now opens only with Jakob's statement and D6. Its
+  blocked texts point first to the note, then to the notebook. The ladder
+  is never entered half-armed, and the state count fell (7,311 → 6,869).
+
+### Editor's line edits
+
+| Issue | Decision |
+|---|---|
+| Kröger's confession »Ich wollt ihn nicht schubsen … das Bein war ab« | »Ich hab ihn nicht geschubst, ehrlich. Er is auf der Lukentreppe ausgerutscht, das Bein war hin.« The notebook records his claim: »Gestoßen hat er ihn nicht, sagt Kröger.« |
+| »das Bartschloss … bleibt stecken« | »… gibt das Bartschloss nach. Du lässt den Schlüssel stecken.« |
+| »Ich habe es nicht gegeben.« | »Ich habe es ihr nicht gegeben.« |
+| »Behalten Sie es.« for plural items | »Behalten Sie das.« / »Behalten Se das.« in every catch-all. |
+| »in deinem Besucherstuhl« | »auf deinem Besucherstuhl« (intro, exit, roomText, hint); the chair is scenery now. |
+| Unsourced »Tallymann war angeblich krank« | »Kröger hat selbst gezählt, in Vertretung des Tallymanns. Ausgerechnet er.« |
+| Kommissar Petersen never introduced | Anni: »Kröger hat aufgeschlossen, Kommissar Petersen hat zugesehen.«; the notebook says so; the Kripo ending refers back to it. |
+| »der einzige trockene Ort in Hamburg« under a burnt roof | »Kisten bis unter die verkohlten Balken, sorgfältig gestapelt und mit Teerpappe abgedeckt … Das Trockenste, was du heute gesehen hast.« |
+| »Geh hinunter.« | See »öffne kontortür« above. |
+| 10:1 debts before 27 June | »Es heißt, nach Sonntag schrumpfen sie auf ein Zehntel. Das wäre das einzig Gute an dieser Woche.« (a rumour). |
+| »Asmussen bittet um ein Telefon« | »Asmussen will telefonieren; sein Anwalt bringt drei neue Persilscheine.« |
+| Lene's »du« | Kept and marked: style.md gives Lene »du«; her first line adds »Schätzchen«, her description »Sie duzt jeden, der nichts kauft.« |
+| »Kondoliert hab ich« | »Beigestanden hab ich.« |
+| Asmussen »Lesen Sie Ihre eigenen Notizen.« | »Fragen Sie, wer den zweiten Schlüssel hat.« |
+| Tally + Zählheft rejected; »Zweihundert gelöscht« | Pair accepted (D1); »Laut Löschliste sollten zweihundert Kisten an Land, Kröger hat hundertachtzig gezählt.« |
+| »benutze lotte« offered | Lotte is a character (`npc: true`): look and talk only; talk, show and give answer »Du lässt sie schlafen.« |
+| Nouns in room texts that cannot be examined | New scenery: Besucherstuhl, Viadukt (Hochbahn, Pfützen, Kräne), Feldbetten (Wolldecke), Tresen (Dünnbier, Köm), Hintertür, Kolonne (with its own roomText), Plane, Thermoskanne, Asmussen's Schreibtisch. Synonyms: Handtasche (Anni), Decke (Eimer), Kreide, Rückwand, Speicherblock. »Treppe« and »Hose« stay unexaminable. |
+| Straight apostrophes | ’ everywhere in game text. |
+| »Emaille-Eimer« / »Emaillekanne« | »Emailleeimer«, »Emaillekanne«. |
+| »Wer glaubt schon einem Dieb.« | »… Dieb?« |
+| »Zu weit für deinen Arm.« | »Dein Arm reicht nicht bis an den Nagel.« |
+| »ein Gesicht, das Preise im Kopf ausrechnet« | »Hinter ihrer Stirn laufen ständig Preise mit.« |
+| Wirt names the sum without counting | »Der Wirt wiegt das Bündel in der Hand, statt zu zählen. »Zweihundert, schätz ich. …«« |
+| »Jakob hat dasselbe gezählt wie du«, »Beweisen musst du es zuerst Kröger«, »war vorher noch auf See« | »Jakob kam auf dieselbe Rechnung wie du, zwanzig zu wenig.«; »Aber zuerst musst du Kröger damit festnageln.«; »war am Donnerstagmittag noch auf See.« |
+| »Seit Donnerstagmittag passte nur noch Ihr Schlüssel.«; Asmussen jumps to Kröger | »Seit Donnerstagmittag kam nur Ihr Schlüssel an den Spind.«; »Ich war oben« now gets »Oben? Da lagert nichts. Und wenn doch, fragen Sie Kröger.« before »Ein Vorarbeiter unter Hunderten …«. |
+| The new lock is »das einzig Neue« twice | Opening: »Der Schlüssel passt, natürlich. Das Schloss ist geölt, die Tür schwingt lautlos nach innen auf.« |
+| Hint tense and repetition | »… und Lene hat genau dieses Los bei Kröger gekauft.«; »Fahr mit der Straßenbahn zur Siedlung und frag Anni nach Krögers Kuvert.« |
+| »Block K«; Kaischuppen at night | Speicher K is »Speicherblock K« on examination (synonyms »Speicherblock«, »Block K«); the Baumwall says the shed lies »noch diesseits des Zollzauns«. |
+| Ending chronology; Tadeusz's thread | Jakob is carried out before Kröger's later fate; every variant adds »Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug.« Kröger »redet drei Stunden lang«. Variants stay ≤ 800 characters. |
+| Notebook »7 Uhr« and »NAAFI« before any source | »Freitag früh: zwei Stangen englische Zigaretten …« |
+| Hint 3 »Tippe Anni an …« (GUI words) | »Sprich mit Anni und hör ihr bis zum Ende zu.« |
+| Boat hook vanishes after »an der Schuppenwand lehnen« | It falls into the locked cabin (»Er gehörte Tadeusz ja sowieso nicht.«); the cabin shows it, `take` explains it stays. |
+| Lene's »Ratschläge kosten extra« never pays off (veteran) | Her statement ends »Der Ratschlag war umsonst. Wegen Jakob.« |
+| Accepting a bribe (veteran) | Not added: under the forgiving policy every ending is a win, and a bribed ending would have to be one. |
+| Parser messages in „…“, »(1–1)«, English meta texts, echo grammar | Engine catalog; handled or listed by the engine fixes, not in the pack. |
+
+### Deviations from the design files (this round)
+
+1. No pack verb `lesen` (puzzles.md "Pack verbs"); documents are read with
+   `look`. New pack verbs `bezahlen`, `zaehlen`, `horchen`, `helfen`.
+2. Walkthrough 74 steps (puzzles.md and concept.md updated): `look`
+   instead of `lesen`, `bezahlen wirt` instead of `give reichsmark wirt`,
+   D3 before D2, five one-answer `choose` steps fewer.
+3. The Kontor needs `clue_dieselbe_hand` as well (world.md gives only
+   Jakob's statement).
+4. Clue names »Löschliste (200 Kisten)« and »Tallyzettel (180 Kisten)«
+   (world.md: »Löschliste: 200 Kisten«, »Tallyzettel: 180 Kisten«).
+5. Second triggers for four clues (puzzles.md, rule for implementers 1):
+   they need only clues the primary source needs too, so they add
+   transitions, not states (explorer: 6,869 states, down from 7,311).
+6. Lotte is `npc: true` (world.md: scenery).
+7. Option ids removed: `an_frag_polizei`, `an_abschied`, `ah_gehen`,
+   `ah_zurueck`, `l_und`, `l_zurueck2`, `l_zurueck3`, `t_zurueck1`,
+   `t_danke`, `k_g_weiter`; node `k_boot` merged into `k_wo`, `l_kuvert`
+   into `l_redet`, `an_polizei` into `an_jakob` (cast.md).
+
+### Diagnostics after this round
+
+`lexvm check`: 0 errors, 0 warnings, 1 info (play time). Walkthrough 74
+steps, ending `ende_erster_morgen`, 25/25. Exploration complete, 6,869
+states, winnable, shortest win 69 steps, 0 dead ends, 0 losing endings;
+nothing unreached. Play time ≈ 47 min expected (47.4; target 40, +18%,
+inside the 30–50 window and the 25% tolerance), speedrun 24 min. The +2.6
+minutes against the integration pass come from the new scenery and
+answers players asked for; the merged dialogue steps save about half a
+minute. Text: every hard limit holds; above style.md's soft targets are
+only `h_verhoer` step 2 (122 characters) and the names from world.md
+listed above.

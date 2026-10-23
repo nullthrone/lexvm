@@ -68,15 +68,18 @@ objects:
   # -------------------------------------------------------------------------
   anni:
     name: Anni
-    synonyms: [Anni Brodersen, Frau Brodersen, Frau, Klientin]
+    synonyms: [Anni Brodersen, Frau Brodersen, Frau, Klientin, Handtasche]
     location: detektei
     npc: true
     dialogue: anni_huette
     roomText:
       - when: { at: detektei }
-        text: "{anni} wartet in deinem Besucherstuhl."
+        text: "{anni} wartet auf deinem {besucherstuhl}."
       - text: "{anni} sitzt am Ofen und flickt eine Hose, die keinem mehr passt."
-    description: Anni Brodersen, Mitte dreißig. Der Mantel ist umgefärbt, die Hände sind rau vom Nähen. Sie sieht dich an, als hätte sie schon zu viele Leute gefragt.
+    description:
+      - when: { at: detektei }
+        text: Anni Brodersen, Mitte dreißig. Der Mantel ist umgefärbt, die Hände sind rau vom Nähen. Die Handtasche lässt sie nicht los. Sie sieht dich an, als hätte sie schon zu viele Leute gefragt.
+      - text: Anni Brodersen, Mitte dreißig. Der Mantel ist umgefärbt, die Hände sind rau vom Nähen. Sie sieht dich an, als hätte sie schon zu viele Leute gefragt.
 
   kroeger:
     name: Kröger
@@ -86,20 +89,37 @@ objects:
     dialogue: kroeger_verhoer
     roomText:
       - when: { has: clue_gestaendnis }
-        text: Am Ecktisch sitzt {kroeger} vor einem leeren Glas. Seine Kolonne ist gegangen.
+        text: Am Ecktisch sitzt {kroeger} vor einem leeren Glas.
       - when: { has: clue_kroeger_version }
         text: Am Ecktisch sitzt {kroeger} und rührt seinen Köm nicht an.
-      - text: Am Ecktisch sitzt {kroeger} vor einem Köm, den er nicht anrührt. Seine Kolonne sitzt zwei Tische weiter und sieht nicht her.
+      - text: Am Ecktisch sitzt {kroeger} vor einem Köm, den er nicht anrührt.
     description:
       - when: { has: clue_gestaendnis }
         text: Willi Kröger, Vorarbeiter. Er sitzt da wie einer, der eine Last abgesetzt hat und nicht weiß, wohin mit den Händen. Das Glas ist leer.
       - text: Willi Kröger, Vorarbeiter. Breite Schultern, ein Gesicht wie ein Kai bei Ebbe. Er hat seit einer Stunde denselben Köm vor sich.
 
+  # Right after Kröger, so its roomText follows his.
+  kolonne:
+    name: Kolonne
+    synonyms: [Krögers Kolonne, Männer, Schauerleute, Kollegen, Arbeiter]
+    location: kneipe
+    roomText:
+      - when: { has: clue_gestaendnis }
+        text: Der Tisch seiner {kolonne} ist leer.
+      - when: { has: clue_kroeger_version }
+        text: Zwei Tische weiter seine {kolonne}.
+      - text: Seine {kolonne} sitzt zwei Tische weiter und sieht nicht her.
+    description:
+      - when: { has: clue_gestaendnis }
+        text: Die Kolonne ist gegangen. Sechs leere Gläser bleiben stehen.
+      - text: Sechs Männer, sechs Dünnbiere. Sie reden leise und sehen auf Krögers Rücken, nicht auf dich.
+
   wirt:
     name: Wirt
-    synonyms: [Kneipenwirt, Tresen]
+    synonyms: [Kneipenwirt]
     location: kneipe
     npc: true
+    verbs: [bezahlen]
     description: Ein Wirt mit Schürze und Bleistift hinter dem Ohr. Er sieht immer zur Hintertür, wenn jemand Geld erwähnt.
 
   lene:
@@ -108,7 +128,7 @@ objects:
     location: hinterhof
     npc: true
     dialogue: lene_gespraech
-    description: Lene Harms, früher Schaffnerin bei der Straßenbahn. Die Mütze trägt sie noch. Sie hat ein Gesicht, das Preise im Kopf ausrechnet.
+    description: Lene Harms, früher Schaffnerin bei der Straßenbahn. Die Mütze trägt sie noch. Hinter ihrer Stirn laufen ständig Preise mit. Sie duzt jeden, der nichts kauft.
 
   tadeusz:
     name: Tadeusz
@@ -119,7 +139,7 @@ objects:
     roomText:
       - when: { flag: tadeusz_rudert }
         text: "{tadeusz} sitzt unten im Boot und wartet."
-      - text: Auf einem Poller sitzt {tadeusz} mit einer Thermoskanne.
+      - text: Auf einem Poller sitzt {tadeusz}.
     description: Tadeusz Wrona, Schutenwächter. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
 
   asmussen:
@@ -131,7 +151,7 @@ objects:
     roomText:
       - when: { at: kontor }
         text: Hinter dem Schreibtisch sitzt {asmussen} und sieht nicht überrascht aus.
-      - text: Unter dem Viadukt steht {asmussen} im Kamelhaarmantel.
+      - text: "{asmussen} wartet im Regen, als hätte er einen Termin."
     description:
       - when: { at: kontor }
         text: Konrad Asmussen, Kaffee-Import. Der Kamelhaarmantel hängt über der Stuhllehne. Siegelring, ein Gesicht, das noch nie gefroren hat.
@@ -148,6 +168,15 @@ objects:
         text: Jakob Brodersen, Schauermann. Fiebrig, aber wach. Er zählt jetzt die Tropfen, die durchs Dach kommen.
       - text: Jakob Brodersen, Schauermann. Unrasiert und fiebrig, das rechte Bein mit zwei Latten geschient. Er zählt leise vor sich hin.
 
+  # A sleeping child: a character, so the action sheet offers no »Benutzen«.
+  # Every talk, show and give is answered by rules (»Du lässt sie schlafen.«).
+  lotte:
+    name: Lotte
+    synonyms: [Mädchen, Tochter, Kind]
+    location: nissenhuette
+    npc: true
+    description: Lotte, elf, schläft unter zwei Mänteln. Ihre Schuhe stehen ordentlich nebeneinander, eine Nummer zu klein.
+
   # -------------------------------------------------------------------------
   # Detektei
   # -------------------------------------------------------------------------
@@ -155,13 +184,22 @@ objects:
     name: Schreibtisch
     synonyms: [Tisch, Rechnungen]
     location: detektei
-    description: Unbezahlte Rechnungen. Ab Sonntag schrumpfen sie auf ein Zehntel. Das ist das einzig Gute an dieser Woche.
+    description: Unbezahlte Rechnungen. Es heißt, nach Sonntag schrumpfen sie auf ein Zehntel. Das wäre das einzig Gute an dieser Woche.
 
   regeneimer:
     name: Eimer
-    synonyms: [Regeneimer, Emaille-Eimer]
+    synonyms: [Regeneimer, Emailleeimer, Decke, Regen]
     location: detektei
-    description: Ein Emaille-Eimer, halb voll. Der Regen tropft im Takt einer Uhr, die niemand aufzieht.
+    description: Ein Emailleeimer, halb voll. Der Regen tropft durch die Decke, im Takt einer Uhr, die niemand aufzieht.
+
+  besucherstuhl:
+    name: Besucherstuhl
+    synonyms: [Stuhl, Fleck]
+    location: detektei
+    description:
+      - when: { flag: auftrag_angenommen }
+        text: Ein Wiener Stuhl mit geflickter Sitzfläche. Wo Anni saß, trocknet ein nasser Fleck.
+      - text: Ein Wiener Stuhl mit geflickter Sitzfläche. Anni sitzt auf der vorderen Kante, als wollte sie gleich wieder gehen.
 
   # -------------------------------------------------------------------------
   # Baumwall
@@ -170,8 +208,13 @@ objects:
     name: Bekanntmachung
     synonyms: [Plakat, Litfaßsäule, Säule]
     location: baumwall
-    verbs: [lesen]
-    description: "Ein Plakat der Militärregierung, schon halb vom Regen gelöst. Darauf, groß: NEUES GELD."
+    description: "Ein Plakat der Militärregierung, halb vom Regen gelöst. Groß: NEUES GELD. Darunter: ›Am Sonntag, dem 20. Juni 1948, erhält jeder Einwohner bei seiner Kartenstelle 40 Deutsche Mark gegen 40 Reichsmark. Ab Montag gilt das neue Geld.‹"
+
+  viadukt:
+    name: Viadukt
+    synonyms: [Hochbahn, Pfützen, Pfütze, Ziegelstaub, Kräne, Kran, Galgen]
+    location: baumwall
+    description: Über dir rumpelt die Hochbahn, unter dir stehen Pfützen voller Ziegelstaub. Dahinter die Kräne des Hafens, still wie Galgen.
 
   # -------------------------------------------------------------------------
   # Nissenhütte 14
@@ -182,11 +225,11 @@ objects:
     location: nissenhuette
     description: Ein Kanonenofen, im Juni angeheizt, weil die Wäsche sonst nie trocknet.
 
-  lotte:
-    name: Lotte
-    synonyms: [Mädchen, Tochter, Kind]
+  feldbetten:
+    name: Feldbetten
+    synonyms: [Feldbett, Betten, Bett, Wolldecke, Decke, Wand]
     location: nissenhuette
-    description: Lotte, elf, schläft unter zwei Mänteln. Ihre Schuhe stehen ordentlich nebeneinander, eine Nummer zu klein.
+    description: Zwei Feldbetten aus Wehrmachtsbeständen. Eine Wolldecke an einer Schnur trennt Lottes Ecke ab.
 
   blechdose:
     name: Blechdose
@@ -201,22 +244,23 @@ objects:
   # -------------------------------------------------------------------------
   # Kaischuppen 17
   # -------------------------------------------------------------------------
+  # No description: looking at it reads it (rule look_aushang). Not called
+  # »Löschliste«, so that the word names the notebook entry without a
+  # »Was meinst du« question.
   aushang:
     name: Aushang
-    synonyms: [Löschliste, Liste, Tor]
+    synonyms: [Anschlag, Tor]
     location: kaischuppen
-    verbs: [lesen]
-    description: Ein Aushang am Tor, mit Reißzwecken gegen den Wind gehalten. Eine Löschliste.
 
   spindreihe:
     name: Spinde
-    synonyms: [Spindreihe, Blechspinde]
+    synonyms: [Spindreihe, Blechspinde, Kreide]
     location: kaischuppen
     description: "Zwanzig Blechspinde, grau gestrichen. Auf einem steht mit Kreide eine 23, darunter, kleiner: DIEB."
 
   spind_jakob:
     name: Spind 23
-    synonyms: [Spind, Jakobs Spind, "23", Bartschloss]
+    synonyms: [Spind, Jakobs Spind, "23", Bartschloss, Rückwand]
     location: kaischuppen
     container: true
     openable: true
@@ -235,35 +279,64 @@ objects:
 
   glaskabine:
     name: Glaskabine
-    synonyms: [Kabine, Schuppenbüro, Glaskasten, Spalt]
+    # »Bootshaken«: after the tally the hook lies inside (rule angeln_klemmbrett).
+    synonyms: [Kabine, Schuppenbüro, Glaskasten, Spalt, Bootshaken]
     location: kaischuppen
     verbs: [open]
-    description: Das Büro des Schuppenmeisters, ein Glaskasten mit Vorhängeschloss. Über der Tür ein Spalt, breit wie eine Hand.
+    description:
+      - when: { has: clue_tally }
+        text: Das Büro des Schuppenmeisters, ein Glaskasten mit Vorhängeschloss. Drinnen liegt der Bootshaken quer über dem Tisch. Dort bleibt er bis Montag.
+      - text: Das Büro des Schuppenmeisters, ein Glaskasten mit Vorhängeschloss. Über der Tür ein Spalt, breit wie eine Hand.
 
   klemmbrett:
     name: Klemmbrett
-    synonyms: [Tallyzettel, Tally, Brett, Nagel]
+    synonyms: [Brett, Nagel]
     location: kaischuppen
     description:
       - when: { has: clue_tally }
         text: "›Tally – Elspeth Gray‹. Es hängt wieder hinter dem Spalt, ein wenig schief. Was draufsteht, steht jetzt auch in deinem Notizbuch."
-      - text: "›Tally – Elspeth Gray‹. Es hängt an einem Nagel hinter dem Spalt über der Tür. Zu weit für deinen Arm. Du bräuchtest etwas Langes mit einem Haken."
+      - text: "›Tally – Elspeth Gray‹. Es hängt an einem Nagel hinter dem Spalt über der Tür. Dein Arm reicht nicht bis dorthin. Du bräuchtest etwas Langes mit einem Haken."
 
   # -------------------------------------------------------------------------
   # Zum Letzten Groschen, Hinterhof
   # -------------------------------------------------------------------------
   kreidetafel:
     name: Kreidetafel
-    synonyms: [Tafel, Schiefertafel, Preise]
+    synonyms: [Tafel, Schiefertafel, Preise, Kreide]
     location: kneipe
-    verbs: [lesen]
-    description: Eine Schiefertafel über dem Tresen, voll Preise, die keiner mehr zahlt.
+    description: "Eine Schiefertafel über dem Tresen, voll Preise, die keiner mehr zahlt. Quer darüber: ›Reichsmark nur noch bis Sonntag!‹ Darunter, kleiner: ›Ab Montag nur gegen DM. Anschreiben zwecklos.‹"
+
+  tresen:
+    name: Tresen
+    synonyms: [Theke, Dünnbier, Bier, Köm, Kümmel, Schnaps, Glas, Gläser, Runde]
+    location: kneipe
+    verbs: [bezahlen]
+    description:
+      - when: { has: clue_gestaendnis }
+        text: Dünnbier vom Fass, Köm aus der Flasche. Krögers Glas ist inzwischen leer.
+      - text: Dünnbier vom Fass, mehr Wasser als Malz, und Köm aus der Flasche. Krögers Glas ist randvoll, seit einer Stunde. Er trinkt nicht. Er wartet.
+
+  hoftuer:
+    name: Hintertür
+    synonyms: [Tür, Hoftür, Brettertür]
+    location: kneipe
+    verbs: [open]
+    description:
+      - when: { flag: hintertuer_frei }
+        text: Die Hintertür steht offen. Dahinter Regen, eine Plane und Stimmen, die flüstern.
+      - text: Eine Brettertür zum Hof. Der Wirt behält sie im Auge. Dahinter wird geflüstert.
 
   bauchladen:
     name: Bauchladen
     synonyms: [Laden, Knöpfe, Feuersteine]
     location: hinterhof
     description: "Feuersteine, Nähnadeln, Hosenknöpfe. Unter den Knöpfen schaut eine Banderole hervor: ›NAAFI – LOT 44…‹."
+
+  plane:
+    name: Plane
+    synonyms: [Zeltbahn, Brandmauern, Brandmauer, Mauer, Mauern]
+    location: hinterhof
+    description: Eine alte Zeltbahn, an die Brandmauern genagelt. Darunter bleibt es trocken, und was trocken bleibt, ist heute Ware.
 
   # -------------------------------------------------------------------------
   # Am Zollkanal
@@ -272,8 +345,28 @@ objects:
     name: Wachbude
     synonyms: [Bude, Register, Schutenregister, Petroleumlampe]
     location: zollkanal
-    verbs: [lesen]
-    description: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Schutenregister.
+    description:
+      - when:
+          - { has: clue_zaehlheft }
+          - { flag: tadeusz_rudert }
+        text: "Eine Bretterbude mit Petroleumlampe. Das Schutenregister liegt offen, eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+      - when: { has: clue_zaehlheft }
+        text: "Eine Bretterbude mit Petroleumlampe. Tadeusz schiebt dir das Schutenregister hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+      - text: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Schutenregister. Als du hineinsehen willst, legt Tadeusz die Hand darauf. »Das ist nicht für Fremde.«
+
+  # After Tadeusz, so its roomText follows his.
+  thermoskanne:
+    name: Thermoskanne
+    synonyms: [Thermos, Muckefuck, Becher]
+    location: zollkanal
+    roomText:
+      - when: { flag: tadeusz_rudert }
+        text: Die {thermoskanne} steht neben ihm auf der Ducht.
+      - text: Er hält eine {thermoskanne} auf den Knien.
+    description:
+      - when: { has: clue_zaehlheft }
+        text: Die Kanne ist offen. Muckefuck, heiß und bitter. Einen Becher hat Tadeusz dir eingeschenkt.
+      - text: Eine verbeulte Thermoskanne, zugeschraubt. Muckefuck für zwei, seit Donnerstag für einen.
 
   schuten:
     name: Schuten
@@ -293,9 +386,9 @@ objects:
 
   speicher_k:
     name: Speicher K
-    synonyms: [Speicher, Ruine, Speicherstadt, Luken]
+    synonyms: [Speicher, Speicherblock, Block K, Ruine, Speicherstadt, Luken]
     location: zollkanal
-    description: Halb verbrannt, die oberen Fenster schwarz. Aber die Luken im vierten Boden sind frisch mit Brettern vernagelt. Wer vernagelt einen leeren Speicher?
+    description: Speicherblock K, halb verbrannt, die oberen Fenster schwarz. Aber die Luken im vierten Boden sind frisch mit Brettern vernagelt. Wer vernagelt einen leeren Speicher?
 
   # -------------------------------------------------------------------------
   # Speicher K
@@ -324,14 +417,14 @@ objects:
 
   kontortuer:
     name: Kontortür
-    synonyms: [Kontor, Lichtstreifen]
+    synonyms: [Kontor, Lichtstreifen, Klinke]
     location: speicher_treppe
     verbs: [open]
     description: Unter der Tür ein Lichtstreifen. Dahinter klirrt eine Tasse.
 
   kisten:
     name: NAAFI-Kisten
-    synonyms: [Kisten, Kiste, Los, NAAFI]
+    synonyms: [Kisten, Kiste, Los, NAAFI, Teerpappe]
     location: vierter_boden
     description: "Zwanzig NAAFI-Kisten, sauber gestapelt. Auf jeder: ›LOT 4471‹. Eine ist aufgebrochen, es fehlen Stangen."
 
@@ -347,19 +440,21 @@ objects:
     location: vierter_boden
     description: Eine Emaillekanne, halb voll. Jemand füllt sie jeden Abend.
 
+  # No description: looking at it reads it (rule look_zettel).
   zettel:
     name: Zettel
     synonyms: [Anweisung, Papier, Notiz]
     location: vierter_boden
-    verbs: [lesen]
-    description:
-      - when: { has: clue_anweisung }
-        text: Der Zettel klemmt wieder unter der Wasserkanne. Du hast ihn Wort für Wort abgeschrieben. Grüne Tinte.
-      - text: Ein Zettel, unter die Wasserkanne geklemmt, damit er nicht wegweht. Grüne Tinte.
 
   # -------------------------------------------------------------------------
   # Kontor Asmussen
   # -------------------------------------------------------------------------
+  kontortisch:
+    name: Schreibtisch
+    synonyms: [Tisch, Mahagoni, Mahagonitisch]
+    location: kontor
+    description: Mahagoni, poliert, kein Stäubchen. Kein Papier darauf, nur der Füllhalter und die Tasse.
+
   fuellhalter:
     name: Füllhalter
     synonyms: [Füller, Tinte, Feder]
@@ -379,21 +474,22 @@ objects:
     description: Ein Kachelofen, der im Juni brennt. Weil er es kann.
 
   # -------------------------------------------------------------------------
-  # Clues, in notebook order
+  # Clues, in notebook order. The descriptions of the halves of a deduction
+  # end with the question their partner answers, without naming it.
   # -------------------------------------------------------------------------
   clue_auftrag:
     name: Der Fall Brodersen
     synonyms: [Fall, Auftrag]
     location: nowhere
     clue: true
-    description: "Jakob Brodersen, Schauermann in Krögers Kolonne, Kaischuppen 17. Verschwunden seit Donnerstagnacht. Zählt alles in ein Heft. Freitag, 7 Uhr: zwei Stangen NAAFI-Zigaretten in seinem verschlossenen Spind 23; Kröger schloss für die Polizei auf. Freund: Tadeusz am Zollkanal."
+    description: "Jakob Brodersen, Schauermann in Krögers Kolonne, Kaischuppen 17. Verschwunden seit Donnerstagnacht. Zählt alles in ein Heft. Freitag früh: zwei Stangen englische Zigaretten in seinem verschlossenen Spind 23; Kröger schloss auf, Kommissar Petersen sah zu. Freund: Tadeusz am Zollkanal."
 
   clue_schluessel:
     name: Der vergessene Schlüssel
     synonyms: [vergessener Schlüssel]
     location: nowhere
     clue: true
-    description: Jakobs Spindschlüssel hing seit Donnerstagmittag zu Hause in der Nissenhütte am Haken. Jakob hatte ihn vergessen.
+    description: Jakobs Spindschlüssel hing seit Donnerstagmittag zu Hause in der Nissenhütte am Haken. Jakob hatte ihn vergessen. Wer kam dann noch an den Spind?
 
   clue_kroeger_version:
     name: Krögers Version
@@ -415,8 +511,8 @@ objects:
     description: Konrad Asmussen, Kaffee-Import, Speicher K, Kehrwieder. Kennt angeblich keinen Brodersen. Speicher K sei seit 1943 eine Ruine. Bot dir 500 Reichsmark fürs Nachhausegehen. Nach Speicher K hatte ihn niemand gefragt.
 
   clue_loeschliste:
-    name: "Löschliste: 200 Kisten"
-    synonyms: [Löschliste]
+    name: Löschliste (200 Kisten)
+    synonyms: [Löschliste, Liste]
     location: nowhere
     clue: true
     description: "Kaischuppen 17, Donnerstag, 17. Juni, Nachtschicht: Dampfer »Elspeth Gray«, NAAFI-Ware Los 4471, 200 Kisten Zigaretten. Abtransport ins NAAFI-Depot Freitag, 5 Uhr, unter Bewachung."
@@ -425,26 +521,26 @@ objects:
     name: Zweitschlüssel
     location: nowhere
     clue: true
-    description: "Innen an der Tür von Spind 23, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Ein Bartschloss: Auf- und zuschließen geht nur mit Schlüssel."
+    description: "Innen an der Tür von Spind 23, schabloniert: ›Zweitschlüssel beim Vorarbeiter‹. Ein Bartschloss: Auf- und zuschließen geht nur mit Schlüssel. Und wo war Jakobs eigener?"
 
   clue_los4471:
     name: Los 4471
     synonyms: [Losnummer]
     location: nowhere
     clue: true
-    description: "Ein Päckchen aus Jakobs Spind, NAAFI-Banderole ›LOT 4471‹. Losnummern vergibt die NAAFI pro Lieferung: ein Los, ein Schiff."
+    description: "Ein Päckchen aus Jakobs Spind, NAAFI-Banderole ›LOT 4471‹. Losnummern vergibt die NAAFI pro Lieferung: ein Los, ein Schiff. Wann kam dieses an Land?"
 
   clue_frisch_an_land:
     name: Frisch an Land
     location: nowhere
     clue: true
-    description: Los 4471 kam erst Donnerstagnacht mit der »Elspeth Gray« an Land. Die Ware in Jakobs Spind kann frühestens Donnerstagnacht hineingelegt worden sein.
+    description: Los 4471 kam erst Donnerstagnacht mit der »Elspeth Gray« an Land. Die Ware in Jakobs Spind kann frühestens Donnerstagnacht hineingelegt worden sein. Wer kam da noch an Spind 23?
 
   clue_nur_kroeger:
     name: Nur Krögers Schlüssel
     location: nowhere
     clue: true
-    description: Jakobs Schlüssel hing seit Donnerstagmittag zu Hause. Den Zweitschlüssel hat der Vorarbeiter. Seitdem konnte nur Kröger Spind 23 auf- und wieder zuschließen.
+    description: Jakobs Schlüssel hing seit Donnerstagmittag zu Hause. Den Zweitschlüssel hat der Vorarbeiter. Seitdem konnte nur Kröger Spind 23 auf- und wieder zuschließen. Und wann kam die Ware?
 
   clue_untergeschoben:
     name: Untergeschoben
@@ -453,17 +549,17 @@ objects:
     description: "Die Ware kam Donnerstagnacht an Land, als nur noch Kröger an Spind 23 konnte. Jakob kann sie nicht hineingelegt haben. Jemand hat sie ihm untergeschoben: Kröger."
 
   clue_tally:
-    name: "Tallyzettel: 180 Kisten"
-    synonyms: [Tallyzettel, Tally]
+    name: Tallyzettel (180 Kisten)
+    synonyms: [Tallyzettel, Tally, Zählung]
     location: nowhere
     clue: true
-    description: "Tallyzettel »Elspeth Gray«, Donnerstag, Nachtschicht: 180 Kisten in den Schuppen gezählt. Unterschrift: ›W. Kröger, i. V. Tallymann‹. Der Tallymann war angeblich krank."
+    description: "Tallyzettel »Elspeth Gray«, Donnerstag, Nachtschicht: 180 Kisten in den Schuppen gezählt. Unterschrift: ›W. Kröger, i. V. Tallymann‹. Kröger hat selbst gezählt, in Vertretung des Tallymanns. Ausgerechnet er."
 
   clue_zwanzig_kisten:
     name: Zwanzig Kisten fehlen
     location: nowhere
     clue: true
-    description: 200 Kisten laut Löschliste, 180 auf Krögers Tallyzettel. Zwanzig Kisten sind zwischen Schiff und Schuppen verschwunden. Gezählt hat Kröger.
+    description: 200 Kisten laut Löschliste, 180 auf Krögers Tallyzettel. Zwanzig Kisten sind zwischen Schiff und Schuppen verschwunden. Gezählt hat Kröger. Und wer verdient daran?
 
   clue_lene:
     name: Lenes Aussage
@@ -497,7 +593,7 @@ objects:
     synonyms: [Geständnis]
     location: nowhere
     clue: true
-    description: Kröger hat Jakob Donnerstagnacht in Speicher K erwischt. Jakob stürzte die Lukentreppe hinunter, das Bein gebrochen. Kröger wollte einen Arzt holen. Seitdem bringt er ihm jeden Abend Wasser. Jakob liegt auf dem vierten Boden.
+    description: Kröger hat Jakob Donnerstagnacht in Speicher K erwischt. Jakob stürzte die Lukentreppe hinunter, das Bein gebrochen. Gestoßen hat er ihn nicht, sagt Kröger. Er wollte einen Arzt holen. Seitdem bringt er ihm jeden Abend Wasser. Jakob liegt auf dem vierten Boden.
 
   clue_persilschein:
     name: Krögers Persilschein
@@ -510,7 +606,7 @@ objects:
     name: Die Anweisung
     location: nowhere
     clue: true
-    description: "›W. – Der Mann bleibt oben. Wasser ja, Licht nein. Montag sechs Uhr geht die Ware raus, dann lass ihn laufen. Wer glaubt schon einem Dieb.‹ Keine Unterschrift. Grüne Tinte, steile Schrift, jedes »g« mit einer Schleife nach rechts."
+    description: "›W. – Der Mann bleibt oben. Wasser ja, Licht nein. Montag sechs Uhr geht die Ware raus, dann lass ihn laufen. Wer glaubt schon einem Dieb?‹ Keine Unterschrift. Grüne Tinte, steile Schrift, jedes »g« mit einer Schleife nach rechts."
 
   clue_jakob_aussage:
     name: Jakobs Aussage
