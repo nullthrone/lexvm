@@ -97,10 +97,13 @@ objects:
     name: Aussage des Wirts
     location: nowhere
     clue: true
+    # Pack verbs appear in an action sheet only where listed; without this, tap players could not combine.
+    verbs: [kombinieren]
   notiz:
     name: Notiz
     location: nowhere
     clue: true
+    verbs: [kombinieren]
 rules:
   - id: lies_logbuch
     on: { verb: lesen, object: logbuch }

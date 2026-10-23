@@ -109,7 +109,7 @@ describe("explore", () => {
       start: { room: "hall" },
       counters: { tide: 0 },
       rooms: { hall: { name: "Hall", description: "A hall." } },
-      objects: { boat: { name: "boat", location: "hall" } },
+      objects: { boat: { name: "boat", location: "hall", verbs: ["push"] } },
       rules: [
         {
           on: { event: "turn" },
@@ -125,25 +125,99 @@ describe("explore", () => {
     expect(report.deadEnds).toEqual([]);
   });
 
-  it("finds rules on objects that only the parser can reach and two-object rules in both orders", () => {
-    const pack = makePack({
+  const statuePack = (statueVerbs: string[]) =>
+    makePack({
       start: { room: "hall" },
       flags: { spliced: false },
       rooms: { hall: { name: "Hall", description: "A hall." } },
       objects: {
         rope: { name: "rope", location: "hall" },
         hook: { name: "hook", location: "hall" },
-        statue: { name: "statue", location: "hall" },
+        statue: { name: "statue", location: "hall", verbs: statueVerbs },
       },
       rules: [
         { on: { verb: "use", object: "hook", with: "rope" }, do: { set: "spliced" } },
         { on: { verb: "take", object: "statue" }, when: { flag: "spliced" }, do: { end: "won" } },
       ],
     });
-    const report = explore(pack);
+
+  it("finds rules on non-portable objects and two-object rules in both orders", () => {
+    // 'take' on scenery is offered only because the statue lists it.
+    const report = explore(statuePack(["take"]));
     expect(report.winnable).toBe(true);
     expect(report.shortestWin?.at(-1)).toBe("take statue");
     expect(report.deadEnds).toEqual([]);
+    expect(report.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("judges winnability by offered actions: a typed-only solution does not count", () => {
+    const report = explore(statuePack([]));
+    expect(report.complete).toBe(true);
+    expect(report.winnable).toBe(false);
+    expect(report.shortestWin).toBeNull();
+    expect(report.deadEnds).toEqual([]);
+    const d = report.diagnostics.find((x) => x.code === "explore.not-winnable");
+    expect(d?.severity).toBe("error");
+    expect(d?.message).toContain('"take statue"');
+    expect(d?.message).toContain("verbs");
+    expect(report.diagnostics.filter((x) => x.severity === "error")).toHaveLength(1);
+  });
+
+  const leverPack = (rules: unknown[]) =>
+    makePack({
+      start: { room: "hall" },
+      flags: { jammed: false },
+      rooms: { hall: { name: "Hall", description: "A {lever} in the wall." } },
+      objects: { lever: { name: "lever", location: "hall", verbs: ["pull", "push"] } },
+      rules,
+    });
+
+  it("reports tap dead ends that only a typed command could escape", () => {
+    const report = explore(
+      leverPack([
+        { on: { verb: "pull", object: "lever" }, when: { not: { flag: "jammed" } }, do: { end: "won" } },
+        { on: { verb: "push", object: "lever" }, do: { set: "jammed" } },
+        { on: { verb: "take", object: "lever" }, when: { flag: "jammed" }, do: { end: "won" } },
+      ]),
+    );
+    expect(report.winnable).toBe(true);
+    expect(report.shortestWin).toEqual(["pull lever"]);
+    expect(report.deadEnds).toEqual([{ path: ["push lever"] }]);
+    const d = report.diagnostics.find((x) => x.code === "explore.dead-end");
+    expect(d?.message).toContain("Dead end for tap players");
+    expect(d?.message).toContain('"take lever"');
+  });
+
+  it("reports dead ends that only typed commands reach", () => {
+    const report = explore(
+      leverPack([
+        { on: { verb: "pull", object: "lever" }, when: { not: { flag: "jammed" } }, do: { end: "won" } },
+        { on: { verb: "take", object: "lever" }, do: { set: "jammed" } },
+      ]),
+    );
+    expect(report.winnable).toBe(true);
+    expect(report.deadEnds).toEqual([{ path: ["take lever"] }]);
+    const d = report.diagnostics.find((x) => x.code === "explore.dead-end");
+    expect(d?.message).toContain("(typed commands)");
+  });
+
+  it("counts give/show from either side of the action sheet as offered", () => {
+    const pack = makePack({
+      start: { room: "hall" },
+      rooms: { hall: { name: "Hall", description: "A hall." } },
+      objects: {
+        coin: { name: "coin", location: "inventory", portable: true },
+        note: { name: "note", location: "nowhere", clue: true },
+        clerk: { name: "clerk", location: "hall", npc: true },
+      },
+      rules: [
+        { on: { verb: "give", object: "coin", with: "clerk" }, do: { learn: "note" } },
+        { on: { verb: "show", object: "note", with: "clerk" }, do: { end: "won" } },
+      ],
+    });
+    const report = explore(pack);
+    expect(report.winnable).toBe(true);
+    expect(report.shortestWin).toEqual(["give coin clerk", "show note clerk"]);
   });
 
   it("includeDrop explores dropping items", () => {

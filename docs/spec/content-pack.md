@@ -145,7 +145,7 @@ Everything the player can refer to is an object.
 | `name` | Display name without article, e.g. `Logbuch`, `brass key`. |
 | `synonyms` | Extra parser words. The words of `name` always work. |
 | `description` | Text printed on *look*. |
-| `roomText` | Sentence appended to the room description while the object lies directly in the current room. Objects without `roomText` that are portable are listed automatically ("You see here: …"). Scenery without `roomText` must be mentioned in the room description. |
+| `roomText` | Sentence appended to the room description while the object lies directly in the current room (or the current room is listed in its `alsoIn`). Objects without `roomText` that are portable are listed automatically ("You see here: …"). Scenery without `roomText` must be mentioned in the room description. |
 | `location` | **Required.** Room id, container object id, `inventory` or `nowhere` (not in play yet). |
 | `alsoIn` | Extra rooms where a non-portable object is present (doors, the sea, the sky). |
 | `portable` | Can be taken and dropped. |
@@ -195,6 +195,15 @@ verbs:
 Pack verbs have `arity` 1 (default) or 2 (with `prep`). A pack verb only
 appears in an object's action sheet if the object lists it in `verbs`; the
 parser accepts it everywhere.
+
+**Action sheets.** Tapping an object offers `look`; `talk` for an `npc`;
+`take` for a portable object or clue lying around; `open` or `close` for an
+openable object; `use` for everything except characters. A carried object
+offers `look`, `use`, `open`/`close` if openable, `show` (and `give`, not for
+clues) while a character is in the room, and `drop` (not for clues). Every
+verb listed in the object's `verbs` is added, core verbs included: `push`,
+`pull` and `talk` on a non-character must be listed to be tappable. Two-object
+verbs then ask for the second object.
 
 ## 8. Conditions
 
@@ -401,13 +410,23 @@ ids, e.g. `take brass_key`, `use brass_key study_door`, `go north`,
    doors are openable, custom exits have labels, `once` rules have ids, text
    references point to objects, dialogue `goto`s exist, endings are wins.
 3. **Walkthrough**: replaying it from a new game, every command is accepted
-   and the last command reaches a winning ending.
+   and the last command reaches a winning ending. A step that no action sheet
+   offers (see below) gets a warning: tap players cannot perform it.
 4. **Exploration**: a breadth-first search over all reachable logical states
    (using every offered action except `drop`) proves that a winning ending is
    reachable from **every** reachable state and that no losing ending is
    reachable. It also reports rooms, rules, endings and dialogue options that
    are never reached. If the state space exceeds the limit, the result is
    reported as incomplete (warning).
+
+   *Offered actions* are what a tap player can do: listed exits, dialogue
+   options, look around / wait / inventory, `verb obj` when the verb is in
+   the object's action sheet, `verb a b` when the verb is in `a`'s sheet, and
+   give/show between a carried item and a character in the room. A pack
+   whose solution needs a typed-only command (e.g. `push statue` while the
+   statue does not list `push` in `verbs`) is not winnable. Typed commands are
+   explored as well: no losing ending may be reachable with them, and states
+   reachable only by typing must not be dead ends either.
 
 A pack is publishable when `lexvm check` reports no errors.
 

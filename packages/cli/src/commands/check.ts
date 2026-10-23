@@ -102,8 +102,9 @@ function summarizeWalkthrough(
 
 function summarizeExplore(report: ExploreReport, diagnostics: Diagnostic[]): CheckReport["explore"] {
   diagnostics.push(...report.diagnostics);
-  // Fallbacks in case the explorer reports a problem only in its result fields.
-  if (!report.winnable) {
+  // Fallbacks in case the explorer reports a problem only in its result fields. An incomplete
+  // exploration that found no win proves nothing; the explore.incomplete warning covers it.
+  if (!report.winnable && report.complete) {
     addUnlessPresent(diagnostics, {
       severity: "error",
       code: "explore.not-winnable",

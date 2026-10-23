@@ -5,7 +5,10 @@ import { loadFixture, loadLockedStudy, makePack } from "./fixtures/runtime/helpe
 const base = {
   start: { room: "hall" },
   rooms: { hall: { name: "Hall", description: "A hall.", exits: { north: { to: "hall" } } } },
-  objects: { button: { name: "button", location: "hall" }, lamp: { name: "lamp", location: "hall", portable: true } },
+  objects: {
+    button: { name: "button", location: "hall", verbs: ["push", "pull"] },
+    lamp: { name: "lamp", location: "hall", portable: true },
+  },
   rules: [
     { on: { verb: "push", object: "button" }, do: { end: "won" } },
     { on: { verb: "pull", object: "button" }, do: { end: "lost" } },
@@ -77,6 +80,21 @@ describe("runWalkthrough", () => {
     expect(report.diagnostics).toEqual([
       expect.objectContaining({ code: "walkthrough.ended-early", path: "walkthrough[1]" }),
     ]);
+  });
+
+  it("warns about steps that only work as typed commands", () => {
+    const report = runWalkthrough(
+      makePack({
+        ...base,
+        objects: { ...base.objects, button: { name: "button", location: "hall" } },
+        walkthrough: ["take lamp", "push button"],
+      }),
+    );
+    expect(report.ok).toBe(true);
+    expect(report.diagnostics).toEqual([
+      expect.objectContaining({ severity: "warning", code: "walkthrough.not-offered", path: "walkthrough[1]" }),
+    ]);
+    expect(report.diagnostics[0]?.message).toContain('Add "push" to objects.button.verbs');
   });
 
   it("reports walkthroughs that do not reach a winning ending", () => {

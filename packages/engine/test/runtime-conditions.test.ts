@@ -65,6 +65,13 @@ describe("conditions", () => {
         state((s) => s.visited.push("cellar")),
       ),
     ).toBe(true);
+    // The current room counts even before its entry is recorded (start rules run before the first entry).
+    expect(
+      holds(
+        { visited: "hall" },
+        state((s) => (s.visited = [])),
+      ),
+    ).toBe(true);
   });
 
   it("here uses presence", () => {

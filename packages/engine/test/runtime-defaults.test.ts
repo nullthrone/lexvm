@@ -46,6 +46,7 @@ const pack = makePack({
     rug: { name: "rug", location: "hall" },
     graves: { name: "Graves", location: "hall", npc: true, dialogue: "chat" },
     mute: { name: "Mute Max", location: "hall", npc: true },
+    phone: { name: "phone", location: "hall", dialogue: "chat" },
     clue: { name: "odd clue", location: "hall", clue: true },
     note: { name: "note", location: "inventory", portable: true },
     known: { name: "known fact", location: "inventory", clue: true },
@@ -171,6 +172,8 @@ describe("default behaviours", () => {
     expect(linesOf(r.output, "echo")).toEqual(["Talk to Graves"]);
     expect(text(["talk mute"])).toContain("There is no answer.");
     expect(text(["talk rug"])).toContain("There is no answer.");
+    // Any object's dialogue starts (spec section 6: `dialogue` is started by the default talk).
+    expect(run(["talk phone"]).state.dialogue).toEqual({ id: "chat", node: "hi" });
   });
 
   it("give/show: the object must be held (clues count for show), then the npc is not interested", () => {

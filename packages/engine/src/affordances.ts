@@ -3,7 +3,7 @@ import { evalConditions } from "./conditions.ts";
 import type { Messages, StandardExit } from "./messages/index.ts";
 import type { PackIndex } from "./pack-index.ts";
 import type { Exit, GameObject, Pack } from "./schema.ts";
-import type { GameState, ObjectKind, ObjectState } from "./types.ts";
+import type { Command, GameState, ObjectKind, ObjectState } from "./types.ts";
 
 /** Exits of the current room whose `visibleWhen` holds, in pack order. */
 export function listedExits(pack: Pack, state: GameState): Array<{ id: string; exit: Exit }> {
@@ -62,6 +62,51 @@ export function inventoryObjectVerbs(ix: PackIndex, def: GameObject, os: ObjectS
   if (!def.clue) verbs.push("drop");
   appendObjectVerbs(ix, def, verbs);
   return verbs;
+}
+
+/**
+ * Whether a tap UI offers a command in this state (spec section 14: the
+ * explorer judges winnability and dead ends by offered actions). Offered are:
+ * listed exits, dialogue options, the zero-object verbs of the View (look
+ * around, wait, inventory), `verb obj` when the verb is in obj's action
+ * sheet, `verb a b` when the verb is in a's sheet (the UI then lets the
+ * player pick any other present object), and give/show to an npc in the room
+ * from either side (item sheet → character, or a character whose sheet lists
+ * give/show → carried item). `present` must be presentObjects() of `state`.
+ */
+export function offeredPredicate(
+  pack: Pack,
+  ix: PackIndex,
+  state: GameState,
+  present: { room: readonly string[]; inv: readonly string[] },
+): (cmd: Command) => boolean {
+  const inRoom = new Set(present.room);
+  const carried = new Set(present.inv);
+  const npcHere = present.room.some((id) => pack.objects[id]?.npc === true);
+  const sheets = new Map<string, string[]>();
+  const sheet = (id: string): string[] => {
+    let verbs = sheets.get(id);
+    if (verbs === undefined) {
+      const def = pack.objects[id];
+      const os = state.objects[id];
+      if (!def || !os) verbs = [];
+      else if (carried.has(id)) verbs = inventoryObjectVerbs(ix, def, os, npcHere);
+      else if (inRoom.has(id)) verbs = roomObjectVerbs(ix, def, os);
+      else verbs = [];
+      sheets.set(id, verbs);
+    }
+    return verbs;
+  };
+  return (cmd) => {
+    if (cmd.verb === "go" || cmd.verb === "choose") return true;
+    if (cmd.object === undefined) return cmd.with === undefined && ix.verbs.get(cmd.verb)?.min === 0;
+    if (cmd.with === undefined) return sheet(cmd.object).includes(cmd.verb);
+    if (cmd.verb === "give" || cmd.verb === "show") {
+      if (!inRoom.has(cmd.with) || pack.objects[cmd.with]?.npc !== true) return false;
+      return sheet(cmd.object).includes(cmd.verb) || (carried.has(cmd.object) && sheet(cmd.with).includes(cmd.verb));
+    }
+    return sheet(cmd.object).includes(cmd.verb);
+  };
 }
 
 function appendObjectVerbs(ix: PackIndex, def: GameObject, verbs: string[]): void {

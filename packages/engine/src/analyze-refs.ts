@@ -284,7 +284,7 @@ function checkObjects(refs: Refs): void {
         out.warning(
           "object.dialogue-not-npc",
           `${p}.dialogue`,
-          `Object "${id}" has a dialogue but is not an npc, so 'talk' is not offered. Set npc: true.`,
+          `Object "${id}" has a dialogue but is not an npc, so its action sheet does not offer 'talk' (only a typed 'talk' starts the dialogue). Set npc: true, or add talk to objects.${id}.verbs.`,
         );
       }
     }

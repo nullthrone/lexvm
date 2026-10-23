@@ -1,16 +1,20 @@
 /** Replay of `pack.walkthrough` (spec section 14, step 3). */
 
-import { listedExits } from "./affordances.ts";
+import { listedExits, offeredPredicate } from "./affordances.ts";
 import { formatCommand, parseCanonical } from "./commands.ts";
 import { availableOptions } from "./effects.ts";
 import { indexPack } from "./pack-index.ts";
-import { presentObjects } from "./presence.ts";
+import { isHeld, presentObjects } from "./presence.ts";
 import { newGame, step } from "./runtime.ts";
 import type { Pack } from "./schema.ts";
 import { renderPlain } from "./text.ts";
-import type { Diagnostic, GameState, WalkthroughReport, WalkthroughStep } from "./types.ts";
+import type { Command, Diagnostic, GameState, WalkthroughReport, WalkthroughStep } from "./types.ts";
 
-/** Replay pack.walkthrough from a new game. ok = all steps accepted and a winning ending reached at the last step. */
+/**
+ * Replay pack.walkthrough from a new game. ok = all steps accepted and a
+ * winning ending reached at the last step. Accepted steps that no action
+ * sheet offers get a warning: tap players cannot perform them.
+ */
 export function runWalkthrough(pack: Pack): WalkthroughReport {
   const diagnostics: Diagnostic[] = [];
   const steps: WalkthroughStep[] = [];
@@ -47,6 +51,16 @@ export function runWalkthrough(pack: Pack): WalkthroughReport {
       break;
     }
     const result = step(pack, state, cmd);
+    if (result.status === "ok" && !isOffered(pack, state, cmd)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "walkthrough.not-offered",
+        path,
+        message:
+          `Step ${i + 1} "${text}" works only as a typed command: no action sheet offers it, so tap players ` +
+          `cannot do it. ${offerHint(pack, state, cmd)}`,
+      });
+    }
     steps.push({ command: formatCommand(cmd), status: result.status, output: renderPlain(result.output) });
     if (result.status === "rejected") {
       const reason = result.output.map((b) => b.spans.map((s) => s.text).join("")).join(" ");
@@ -77,6 +91,25 @@ export function runWalkthrough(pack: Pack): WalkthroughReport {
     });
   }
   return { ok: !failed && won, steps, ending, score: state.score, diagnostics };
+}
+
+function isOffered(pack: Pack, state: GameState, cmd: Command): boolean {
+  const ix = indexPack(pack);
+  return offeredPredicate(pack, ix, state, presentObjects(pack, state, ix.objectIds))(cmd);
+}
+
+/** How to offer a command in the action sheet. */
+function offerHint(pack: Pack, state: GameState, cmd: Command): string {
+  if (cmd.object === undefined || !pack.objects[cmd.object]) return "Use a command the action sheets offer.";
+  if (cmd.verb === "give" || cmd.verb === "show") {
+    if (cmd.with !== undefined && !pack.objects[cmd.with]?.npc) {
+      return `${cmd.verb} needs a character (npc: true) as its second object.`;
+    }
+    if (!isHeld(pack, state, cmd.object)) {
+      return `The action sheet offers ${cmd.verb} only for carried items: take ${cmd.object} first.`;
+    }
+  }
+  return `Add "${cmd.verb}" to objects.${cmd.object}.verbs, or change the rule to a verb its action sheet offers.`;
 }
 
 /** Where the player is and what can be referred to, so an author (or an LLM) can fix a step. */

@@ -10,7 +10,8 @@ export function evalCondition(pack: Pack, state: GameState, c: Condition): boole
   if ("in" in c) return state.objects[c.in.object]?.location === c.in.location;
   if ("flag" in c) return state.flags[c.flag] === true;
   if ("counter" in c) return counterHolds(state.counters[c.counter.name] ?? 0, c.counter);
-  if ("visited" in c) return state.visited.includes(c.visited);
+  // The current room counts, also during `start` rules, before the first room entry is recorded.
+  if ("visited" in c) return state.room === c.visited || state.visited.includes(c.visited);
   if ("isOpen" in c) return state.objects[c.isOpen]?.open === true;
   if ("isLocked" in c) return state.objects[c.isLocked]?.locked === true;
   if ("not" in c) return !evalCondition(pack, state, c.not);
