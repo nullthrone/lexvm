@@ -1,0 +1,159 @@
+# Fixture: a small German pack for messages, parser and an integration run.
+format: lexvm-pack/1
+id: hafen-test
+version: 1.0.0
+title: Hafen 1948
+description: Kleines Testpack für Laufzeit und Parser.
+language: de
+author: LexVM tests
+license: CC0-1.0
+maxScore: 2
+start:
+  room: kontor
+  intro: Hamburg, 1948. Es regnet.
+verbs:
+  lesen:
+    label: Lesen
+    synonyms: [lies, lese]
+    default: Da gibt es nichts zu lesen.
+  kombinieren:
+    label: Kombinieren
+    arity: 2
+    prep: mit
+    synonyms: [verknüpfe]
+rooms:
+  kontor:
+    name: Hafenkontor
+    description: Ein enger Raum voller Aktenschränke. Eine {luke} führt in den Keller.
+    exits:
+      north: { to: kai }
+      keller:
+        to: archiv
+        label: Kellertreppe
+        synonyms: [treppe]
+        door: luke
+        blocked: Die Luke ist zu.
+  kai:
+    name: Kai
+    description: Möwen kreischen über dem Wasser.
+    exits:
+      south: { to: kontor }
+  archiv:
+    name: Archiv
+    description: Staub und Akten.
+    exits:
+      up:
+        to: kontor
+        door: luke
+        blocked: Die Luke ist zu.
+objects:
+  logbuch:
+    name: Logbuch
+    synonyms: [Buch des Kapitäns]
+    location: kontor
+    portable: true
+    verbs: [lesen]
+    description: Ein dickes, fleckiges Logbuch.
+  schluessel:
+    name: Messingschlüssel
+    synonyms: [Schlüssel]
+    location: kontor
+    portable: true
+  kiste:
+    name: Kiste
+    location: kontor
+    container: true
+    openable: true
+    description: Eine Holzkiste mit Eisenbeschlägen.
+  foto:
+    name: Foto
+    synonyms: [Fotografie, Bild]
+    location: kiste
+    portable: true
+  luke:
+    name: Luke
+    synonyms: [Falltür]
+    location: kontor
+    alsoIn: [archiv]
+    openable: true
+    locked: true
+    unlockedBy: schluessel
+  rotes_buch:
+    name: rotes Buch
+    location: archiv
+    portable: true
+  blaues_buch:
+    name: blaues Buch
+    location: archiv
+    portable: true
+  wirt:
+    name: Wirt
+    synonyms: [Mann]
+    location: kai
+    npc: true
+    dialogue: wirt_gespraech
+    roomText: Ein {wirt|Mann} mit Schürze lehnt an einem Poller.
+  aussage_wirt:
+    name: Aussage des Wirts
+    location: nowhere
+    clue: true
+    # Pack verbs appear in an action sheet only where listed; without this, tap players could not combine.
+    verbs: [kombinieren]
+  notiz:
+    name: Notiz
+    location: nowhere
+    clue: true
+    verbs: [kombinieren]
+rules:
+  - id: lies_logbuch
+    on: { verb: lesen, object: logbuch }
+    do:
+      - say: Ein Eintrag erwähnt die {kiste}.
+      - learn: notiz
+  - id: kombiniere
+    on: { verb: kombinieren, object: aussage_wirt, with: notiz }
+    do:
+      - say: Das passt zusammen!
+      - score: 2
+      - end: geloest
+dialogues:
+  wirt_gespraech:
+    with: wirt
+    start: hallo
+    nodes:
+      hallo:
+        say: "»Was willst du?«"
+        options:
+          - id: frage_brandt
+            text: "»Kennen Sie Karl Brandt?«"
+            goto: brandt
+          - id: zeige_foto
+            text: "»Haben Sie diesen Mann gesehen?«"
+            when: { has: foto }
+            once: true
+            goto: foto
+          - id: tschuess
+            text: "»Schon gut.«"
+      brandt:
+        say: "»Nie gehört.«"
+        do: { learn: aussage_wirt }
+        options:
+          - id: zurueck
+            text: "»Verstehe.«"
+            goto: hallo
+      foto:
+        say: Er wird blass.
+endings:
+  geloest:
+    title: Fall gelöst
+    text: Der Regen hört auf.
+    win: true
+walkthrough:
+  - take logbuch
+  - lesen logbuch
+  - go north
+  - talk wirt
+  - choose frage_brandt
+  - choose zurueck
+  - choose tschuess
+  - kombinieren aussage_wirt notiz

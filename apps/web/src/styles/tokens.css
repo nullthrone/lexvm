@@ -1,0 +1,93 @@
+/*
+ * Design tokens. Sepia is the default; [data-theme] on <html> selects
+ * light, sepia or dark (resolved from the setting and the system scheme).
+ * All text/background pairs meet WCAG AA (checked in test/contrast.test.ts).
+ */
+:root {
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Noto Serif", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --measure: 40rem;
+  --gutter: 1.25rem;
+  --touch: 2.75rem;
+  --radius: 0.75rem;
+  --reading-size: 1.125rem;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  color-scheme: light;
+  --bg: #f3ead7;
+  --surface: #ebe0c8;
+  --surface-2: #dfd1b4;
+  --raised: #faf5ea;
+  --ink: #3a2f25;
+  --muted: #6a5644;
+  --accent: #8a2e1c;
+  --accent-ink: #fbf5ea;
+  --ref-line: rgba(138, 46, 28, 0.55);
+  --npc-rule: rgba(138, 46, 28, 0.35);
+  --rule: rgba(58, 47, 37, 0.24);
+  --faint: rgba(58, 47, 37, 0.12);
+  --danger: #962a1c;
+  --ok: #3c5f2f;
+  --warning: #7a5410;
+  --shadow: rgba(58, 40, 20, 0.18);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fbfaf6;
+  --surface: #f1eee6;
+  --surface-2: #e4dfd3;
+  --raised: #ffffff;
+  --ink: #1f1c18;
+  --muted: #5c564d;
+  --accent: #8f2b1c;
+  --accent-ink: #ffffff;
+  --ref-line: rgba(143, 43, 28, 0.5);
+  --npc-rule: rgba(143, 43, 28, 0.32);
+  --rule: rgba(31, 28, 24, 0.2);
+  --faint: rgba(31, 28, 24, 0.1);
+  --danger: #a12c1d;
+  --ok: #33652a;
+  --warning: #7a5410;
+  --shadow: rgba(20, 16, 10, 0.16);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #15120e;
+  --surface: #1f1a15;
+  --surface-2: #302820;
+  --raised: #241f19;
+  --ink: #e6dccb;
+  --muted: #a89a86;
+  --accent: #d9a55b;
+  --accent-ink: #1a140d;
+  --ref-line: rgba(217, 165, 91, 0.6);
+  --npc-rule: rgba(217, 165, 91, 0.4);
+  --rule: rgba(230, 220, 203, 0.2);
+  --faint: rgba(230, 220, 203, 0.1);
+  --danger: #ef9a85;
+  --ok: #9fc98c;
+  --warning: #e3b768;
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+/* Text size steps (rem-based, so UI and reading text scale together). */
+:root[data-text-size="1"] {
+  font-size: 93.75%;
+}
+:root[data-text-size="2"] {
+  font-size: 100%;
+}
+:root[data-text-size="3"] {
+  font-size: 112.5%;
+}
+:root[data-text-size="4"] {
+  font-size: 125%;
+}

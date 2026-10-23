@@ -1,0 +1,41 @@
+format: lexvm-pack/1
+id: multi-file
+version: 1.0.0
+title: Multi File
+description: A pack split over several files.
+language: en
+author: Test
+license: CC0-1.0
+start:
+  room: hall
+flags:
+  bell_rung: false
+rooms:
+  hall:
+    name: Hall
+    description: A hall with a {bell}. The garden lies north.
+    exits:
+      north: { to: garden }
+objects:
+  bell:
+    name: bell
+    location: hall
+rules:
+  - id: ring_bell
+    on: { verb: push, object: bell }
+    do:
+      - set: bell_rung
+      - say: Ding.
+endings:
+  done:
+    title: Done
+    text: The end.
+    win: true
+hints:
+  - id: ring
+    until: { flag: bell_rung }
+    steps: [Push the bell.]
+walkthrough:
+  - push bell
+  - go north
+  - wait

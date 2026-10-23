@@ -1,0 +1,98 @@
+# On a version tag (v*), builds the player and publishes a GitHub Release with the
+# single-file offline build and the compiled content packs attached.
+# Tags with a hyphen (v0.1.0-rc.1) become pre-releases.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Least privilege: the build job (which runs npm ci and third-party build code) gets a read-only token;
+# only the publish job, which runs nothing but the GitHub CLI, may write releases.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Verify content packs
+        run: npm run check:packs
+
+      - name: Build
+        run: npm run build
+
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p release-assets
+          test -f apps/web/dist/lexvm-offline.html || { echo "::error::apps/web/dist/lexvm-offline.html is missing"; exit 1; }
+          packs=(apps/web/dist/packs/*.lexpack.json)
+          if [ ${#packs[@]} -eq 0 ]; then
+            echo "::error::no compiled content packs in apps/web/dist/packs"
+            exit 1
+          fi
+          cp apps/web/dist/lexvm-offline.html release-assets/
+          cp "${packs[@]}" release-assets/
+          (cd release-assets && sha256sum -- * > SHA256SUMS.txt)
+          ls -l release-assets
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-assets
+          path: release-assets
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --clobber
+          else
+            flags=(--title "LexVM $TAG" --generate-notes --verify-tag)
+            if [[ "$TAG" == *-* ]]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$TAG" "${flags[@]}" release-assets/*
+          fi

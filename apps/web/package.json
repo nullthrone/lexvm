@@ -1,0 +1,23 @@
+{
+  "name": "@lexvm/web",
+  "version": "0.1.0",
+  "description": "LexVM progressive web app player (offline-first, mobile portrait).",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json --noEmit && vite build --mode singlefile && vite build",
+    "preview": "vite preview",
+    "icons": "tsx scripts/icons.ts",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "vite": "8.3.5",
+    "vite-plugin-singlefile": "2.3.4"
+  },
+  "dependencies": {
+    "@lexvm/engine": "0.1.0"
+  }
+}

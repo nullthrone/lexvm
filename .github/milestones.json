@@ -1,0 +1,18 @@
+[
+  {
+    "title": "v0.1 – Playable",
+    "description": "First playable release: deterministic engine, tap-first mobile PWA on GitHub Pages (offline), first German content pack, validator/verifier and LLM generation pipeline."
+  },
+  {
+    "title": "v0.2 – Authoring & Polish",
+    "description": "Better authoring loop and player polish: in-browser pack workshop, accessibility audit, parser coverage, save slots, more engine messages and languages."
+  },
+  {
+    "title": "v0.3 – Community Pipeline",
+    "description": "Public content workflow: pack proposals via issue forms, automated generation PRs, pack catalog, review guidelines, provenance and signing."
+  },
+  {
+    "title": "v1.0 – Stable Format",
+    "description": "Freeze lexvm-pack/1 with a compatibility promise, documentation site, security review and performance budgets."
+  }
+]

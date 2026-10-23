@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" data-theme="sepia">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f3ead7" />
+    <meta name="description" content="LexVM – offline text adventures in your browser. Tap or type, play anywhere, even in airplane mode." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="LexVM" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>LexVM</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <script>
+      // Apply the saved theme before the first paint (no flash). Mirrors src/services/settings.ts.
+      (() => {
+        const root = document.documentElement;
+        try {
+          const s = JSON.parse(localStorage.getItem("lexvm:settings") || "{}") || {};
+          const dark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+          const themes = ["light", "sepia", "dark"];
+          root.dataset.theme = themes.includes(s.theme) ? s.theme : dark ? "dark" : "sepia";
+          if (s.textSize >= 1 && s.textSize <= 4) root.dataset.textSize = String(s.textSize);
+        } catch {
+          // Storage disabled: defaults apply.
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <p class="noscript">
+        LexVM needs JavaScript to run the adventures. / LexVM benötigt JavaScript, um die Abenteuer zu spielen.
+      </p>
+    </noscript>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+# Labels and milestones as code: edit .github/labels.json or
+# .github/milestones.json and push; this workflow creates or updates them.
+# It never deletes labels or milestones.
+name: Repo sync
+
+on:
+  push:
+    # Reviewed changes only: the job writes labels and milestones.
+    branches: [main]
+    paths:
+      - .github/labels.json
+      - .github/milestones.json
+      - .github/workflows/repo-sync.yml
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: repo-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const fs = require("fs");
+            const { owner, repo } = context.repo;
+
+            const labels = JSON.parse(fs.readFileSync(".github/labels.json", "utf8"));
+            const existingLabels = await github.paginate(github.rest.issues.listLabelsForRepo, { owner, repo, per_page: 100 });
+            for (const label of labels) {
+              const found = existingLabels.find((l) => l.name.toLowerCase() === label.name.toLowerCase());
+              if (found) {
+                await github.rest.issues.updateLabel({ owner, repo, name: found.name, new_name: label.name, color: label.color, description: label.description });
+                core.info(`updated label ${label.name}`);
+              } else {
+                await github.rest.issues.createLabel({ owner, repo, ...label });
+                core.info(`created label ${label.name}`);
+              }
+            }
+
+            const milestones = JSON.parse(fs.readFileSync(".github/milestones.json", "utf8"));
+            const existingMilestones = await github.paginate(github.rest.issues.listMilestones, { owner, repo, state: "all", per_page: 100 });
+            for (const ms of milestones) {
+              const found = existingMilestones.find((m) => m.title === ms.title);
+              if (found) {
+                await github.rest.issues.updateMilestone({ owner, repo, milestone_number: found.number, description: ms.description });
+                core.info(`updated milestone #${found.number} ${ms.title}`);
+              } else {
+                const created = await github.rest.issues.createMilestone({ owner, repo, title: ms.title, description: ms.description });
+                core.info(`created milestone #${created.data.number} ${ms.title}`);
+              }
+            }

@@ -1,0 +1,4 @@
+# Intermediate single-file build (copied into dist/ as lexvm-offline.html)
+/dist-offline/
+/test-results/
+/playwright-report/

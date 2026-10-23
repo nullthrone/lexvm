@@ -1,0 +1,6 @@
+rooms:
+  garden:
+    name: Garden
+    description: A small garden. The hall is south.
+    exits:
+      south: { to: hall }
