@@ -20,7 +20,8 @@
  *   (`look <object>`); O_unchosen: dialogue options the walkthrough never chooses.
  *
  * budgetForMinutes inverts the model with typical ratios of a pack
- * (BUDGET_DEFAULTS), so a generator can be given a size budget up front.
+ * (BUDGET_DEFAULTS) and the reading share of the pack's pacing
+ * (PACING_READING_SHARE), so a generator can be given a size budget up front.
  *
  * Pure and deterministic: word counting uses a Unicode regular expression on
  * NFC-normalised text, no Intl or locale-dependent calls.
@@ -29,7 +30,7 @@
 import { parseCanonical } from "./commands.ts";
 import { optionKey } from "./effects.ts";
 import { newGame, step } from "./runtime.ts";
-import type { Effects, Pack, Text } from "./schema.ts";
+import type { Effects, Pacing, Pack, Text } from "./schema.ts";
 import { markup, paragraphs } from "./text.ts";
 import type {
   BudgetOptions,
@@ -55,9 +56,31 @@ export const PLAYTIME_DEFAULTS = {
   secondsPerCommand: 10,
   secondsPerChoice: 6,
   coverage: 0.6,
-  failedAttemptsPerCommand: 0.5,
+  /**
+   * Unproductive attempts per productive command. The playtests of
+   * packs/letzte-nacht-der-reichsmark (74 walkthrough steps, 47 of them
+   * commands) logged 180 and 226 commands; after the optional looks and
+   * dialogue options the model counts separately, that leaves about 0.9 and 1.8
+   * attempts per command. 1.0 is the cautious end of that range.
+   */
+  failedAttemptsPerCommand: 1,
   tolerance: 0.25,
 } as const;
+
+/**
+ * Target share of the expected play time spent reading, per pacing (spec
+ * section 17). A pack without `pacing` is sized as 'balanced'.
+ */
+export const PACING_READING_SHARE: Readonly<Record<Pacing, number>> = {
+  narrative: 0.6,
+  balanced: 0.45,
+  puzzle: 0.3,
+};
+
+/** Allowed absolute deviation of the reading share from its pacing target (playtime.pacing). */
+export const PACING_BAND = 0.1;
+
+export const DEFAULT_PACING: Pacing = "balanced";
 
 /**
  * Typical ratios of a pack, calibrated against packs/locked-study (English)
@@ -74,8 +97,6 @@ export const BUDGET_DEFAULTS = {
   optionalWordRatio: 0.6,
   /** D_path ≈ 0.25 · all walkthrough steps (measured: 0.28). */
   choiceShare: 0.25,
-  /** W_path ≈ 20 · C_path: words of new text per productive command (measured: 20.7). */
-  wordsPerCommand: 20,
   /** L_unseen ≈ 0.5 · C_path (measured: 0.56). */
   unseenLooksPerCommand: 0.5,
   /** O_unchosen ≈ 0.25 · D_path (measured: 0.14; rounded up, longer games have more side topics). */
@@ -234,14 +255,14 @@ interface Counts {
   oUnchosen: number;
 }
 
-/** The two model formulas. */
-function modelMinutes(n: Counts, p: Params): { min: number; expected: number } {
+/** The two model formulas, plus the reading part of the expected time. */
+function modelMinutes(n: Counts, p: Params): { min: number; expected: number; reading: number } {
   const min = n.wPath / p.wpm + (n.cPath * p.tCmd + n.dPath * p.tChoice) / 60;
   const expected =
     min +
     (p.c * n.wOptional) / p.wpm +
     (p.c * n.lUnseen * p.tCmd + p.c * n.oUnchosen * p.tChoice + p.f * n.cPath * p.tCmd) / 60;
-  return { min, expected };
+  return { min, expected, reading: (n.wPath + p.c * n.wOptional) / p.wpm };
 }
 
 /** Count everything the model needs from a pack. */
@@ -381,6 +402,8 @@ export function estimatePlaytime(pack: Pack, options: PlaytimeOptions = {}): Pla
   const target =
     options.targetMinutes !== undefined ? positive(options.targetMinutes, "targetMinutes") : (pack.playtime ?? null);
   const rawDeviation = target === null ? null : minutes.expected / target - 1;
+  const readingShare = minutes.expected > 0 ? minutes.reading / minutes.expected : 0;
+  const pacing = pack.pacing ?? null;
 
   const diagnostics: Diagnostic[] = [];
   const expectedText = `≈ ${wholeMinutes(minutes.expected)} min expected (speedrun ${wholeMinutes(minutes.min)} min)`;
@@ -389,7 +412,8 @@ export function estimatePlaytime(pack: Pack, options: PlaytimeOptions = {}): Pla
     `${plural(n.dPath, "dialogue choice", "dialogue choices")}; optional: ${plural(n.wOptional, "word", "words")}, ` +
     `${plural(n.lUnseen, "unexamined object", "unexamined objects")}, ` +
     `${plural(n.oUnchosen, "unchosen dialogue option", "unchosen dialogue options")}; ` +
-    `reading speed ${p.wpm} words/min (${pack.language}).`;
+    `reading speed ${p.wpm} words/min (${pack.language}); reading ${Math.round(readingShare * 100)}% of the expected time` +
+    `${pacing === null ? "" : ` (pacing ${pacing}: target ${Math.round(PACING_READING_SHARE[pacing] * 100)}%)`}.`;
   const partial = r.ok
     ? ""
     : ` The walkthrough does not reach a winning ending, so this covers only its first ${plural(r.accepted, "accepted step", "accepted steps")}.`;
@@ -411,7 +435,21 @@ export function estimatePlaytime(pack: Pack, options: PlaytimeOptions = {}): Pla
     });
   }
   if (r.ok && target !== null && rawDeviation !== null && Math.abs(rawDeviation) > p.tolerance) {
-    diagnostics.push(deviationWarning(n, p, minutes, target, rawDeviation, options.targetMinutes === undefined));
+    diagnostics.push(
+      deviationWarning(
+        n,
+        p,
+        minutes,
+        target,
+        rawDeviation,
+        options.targetMinutes === undefined,
+        pacing ?? DEFAULT_PACING,
+      ),
+    );
+  }
+  if (r.ok && pacing !== null) {
+    const warning = pacingWarning(minutes, readingShare, pacing, p);
+    if (warning !== null) diagnostics.push(warning);
   }
 
   return {
@@ -425,7 +463,9 @@ export function estimatePlaytime(pack: Pack, options: PlaytimeOptions = {}): Pla
       unchosenOptions: n.oUnchosen,
       failedAttempts: round(p.f * n.cPath, 2),
     },
-    minutes: { min: round(minutes.min, 2), expected: round(minutes.expected, 2) },
+    minutes: { min: round(minutes.min, 2), expected: round(minutes.expected, 2), reading: round(minutes.reading, 2) },
+    readingShare: round(readingShare, 3),
+    pacing,
     target,
     deviation: rawDeviation === null ? null : round(rawDeviation, 3),
     diagnostics,
@@ -440,11 +480,13 @@ function deviationWarning(
   target: number,
   deviation: number,
   targetFromPack: boolean,
+  pacing: Pacing,
 ): Diagnostic {
   const delta = Math.abs(target - minutes.expected);
   const steps = n.cPath + n.dPath;
   // Minutes per walkthrough step, text and side content included, as in this pack (else as in a typical pack).
-  const perStep = steps > 0 ? minutes.expected / steps : budgetModel(p, BUDGET_DEFAULTS).perStep;
+  const perStep =
+    steps > 0 ? minutes.expected / steps : typicalMinutesPerStep(p, ratios({}), PACING_READING_SHARE[pacing]);
   const commands = Math.max(1, Math.round(delta / perStep));
   const pct = Math.round(Math.abs(deviation) * 100);
   const head =
@@ -454,11 +496,19 @@ function deviationWarning(
   if (deviation < 0) {
     const optionalWords = roundWords((delta * p.wpm) / Math.max(p.c, 0.01));
     const puzzles = puzzleRange(delta);
-    const ways = [
+    const mechanics = [
       puzzles === null ? null : `add ${puzzles}`,
       `${puzzles === null ? "add " : ""}≈ ${plural(commands, "walkthrough command", "walkthrough commands")}`,
-      `≈ ${thousands(optionalWords)} words of optional dialogue/description`,
-    ].filter((w) => w !== null);
+    ];
+    // A narrative pack grows by its scenes first: prose the walkthrough shows (read in full) or optional text.
+    const ways = (
+      pacing === "narrative"
+        ? [
+            `add ≈ ${thousands(roundWords(delta * p.wpm))} words of scene prose along the walkthrough (or ≈ ${thousands(optionalWords)} of optional dialogue/description)`,
+            ...mechanics,
+          ]
+        : [...mechanics, `≈ ${thousands(optionalWords)} words of optional dialogue/description`]
+    ).filter((w) => w !== null);
     return {
       severity: "warning",
       code: "playtime.too-short",
@@ -485,6 +535,44 @@ function deviationWarning(
   };
 }
 
+/** playtime.pacing: the reading share is outside the band of the declared pacing. */
+function pacingWarning(
+  minutes: { expected: number; reading: number },
+  readingShare: number,
+  pacing: Pacing,
+  p: Params,
+): Diagnostic | null {
+  const goal = PACING_READING_SHARE[pacing];
+  if (Math.abs(readingShare - goal) <= PACING_BAND) return null;
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  const head =
+    `Reading is ${pct(readingShare)} of the expected play time; pacing ${pacing} aims at ${pct(goal)} ` +
+    `(${pct(goal - PACING_BAND)}–${pct(goal + PACING_BAND)})`;
+  const interaction = minutes.expected - minutes.reading;
+  if (readingShare < goal) {
+    // Reading minutes needed so that reading / (reading + interaction) reaches the lower edge of the band.
+    const low = goal - PACING_BAND;
+    const words = roundWords(((low * interaction) / (1 - low) - minutes.reading) * p.wpm);
+    return {
+      severity: "warning",
+      code: "playtime.pacing",
+      path: "pacing",
+      message:
+        `${head}: the story is told too thinly for its mechanics. Write out the scenes along the walkthrough ` +
+        `(≈ ${thousands(words)} more words: arrivals, turning points of conversations, what a clue means, transitions ` +
+        "between acts), or cut commands that tell nothing. Do not pad descriptions with adjectives.",
+    };
+  }
+  return {
+    severity: "warning",
+    code: "playtime.pacing",
+    path: "pacing",
+    message:
+      `${head}: the player reads much more than they act. Give scenes something to do (an examination, a dialogue ` +
+      "choice), trim description, or declare a pacing that fits the pack.",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Budget
 // ---------------------------------------------------------------------------
@@ -492,7 +580,6 @@ function deviationWarning(
 interface Ratios {
   optionalWordRatio: number;
   choiceShare: number;
-  wordsPerCommand: number;
   unseenLooksPerCommand: number;
   unchosenOptionsPerChoice: number;
 }
@@ -503,7 +590,6 @@ function ratios(options: BudgetOptions): Ratios {
   return {
     optionalWordRatio: share(options.optionalWordRatio ?? BUDGET_DEFAULTS.optionalWordRatio, "optionalWordRatio"),
     choiceShare,
-    wordsPerCommand: share(options.wordsPerCommand ?? BUDGET_DEFAULTS.wordsPerCommand, "wordsPerCommand"),
     unseenLooksPerCommand: share(
       options.unseenLooksPerCommand ?? BUDGET_DEFAULTS.unseenLooksPerCommand,
       "unseenLooksPerCommand",
@@ -515,27 +601,32 @@ function ratios(options: BudgetOptions): Ratios {
   };
 }
 
-/**
- * The model per walkthrough step under typical ratios: with S steps,
- * C_path = (1 - d)·S, D_path = d·S, W_path = k·C_path, W_optional = o·W_path,
- * L_unseen = l·C_path, O_unchosen = u·D_path, so minutes_expected = S · perStep
- * and the pack has S · wordsPerStep player-visible words.
- */
-function budgetModel(p: Params, q: Ratios): { perStep: number; wordsPerStep: number } {
-  const commandShare = 1 - q.choiceShare;
-  const perCommand =
-    (q.wordsPerCommand * (1 + p.c * q.optionalWordRatio)) / p.wpm +
-    (p.tCmd * (1 + p.f + p.c * q.unseenLooksPerCommand)) / 60;
+/** Interaction minutes per walkthrough step under typical ratios: tapping, wrong attempts, side looks and options. */
+function interactionPerStep(p: Params, q: Ratios): number {
+  const perCommand = (p.tCmd * (1 + p.f + p.c * q.unseenLooksPerCommand)) / 60;
   const perChoice = (p.tChoice * (1 + p.c * q.unchosenOptionsPerChoice)) / 60;
-  return {
-    perStep: commandShare * perCommand + q.choiceShare * perChoice,
-    wordsPerStep: commandShare * q.wordsPerCommand * (1 + q.optionalWordRatio),
-  };
+  return (1 - q.choiceShare) * perCommand + q.choiceShare * perChoice;
+}
+
+/** Expected minutes per walkthrough step, reading included, for a pack whose reading share is `share`. */
+function typicalMinutesPerStep(p: Params, q: Ratios, share: number): number {
+  return interactionPerStep(p, q) / (1 - share);
+}
+
+function readingShareOf(options: BudgetOptions): number {
+  const value = options.readingShare ?? PACING_READING_SHARE[options.pacing ?? DEFAULT_PACING];
+  if (!Number.isFinite(value) || value <= 0 || value >= 1) {
+    throw new RangeError("playtime: readingShare must be between 0 and 1");
+  }
+  return value;
 }
 
 /**
- * A size budget for a target length: the inverse of the model under typical
- * ratios (BUDGET_DEFAULTS). The ranges span ±tolerance/2 around the target, so
+ * A size budget for a target length: the inverse of the model. The reading
+ * share of the pacing splits the minutes into reading and interaction:
+ * interaction sizes the walkthrough (steps · interactionPerStep), reading
+ * sizes the text (W_path + c · W_optional = reading minutes · wpm, with
+ * W_optional = o · W_path). The ranges span ±tolerance/2 around the target, so
  * any combination of words and steps inside them lands within the tolerance
  * (the model is increasing in both).
  */
@@ -543,10 +634,12 @@ export function budgetForMinutes(minutes: number, language: string, options: Bud
   positive(minutes, "minutes");
   const p = params(language, options);
   const q = ratios(options);
-  const { perStep, wordsPerStep } = budgetModel(p, q);
+  const readShare = readingShareOf(options);
+  const steps = ((1 - readShare) * minutes) / interactionPerStep(p, q);
+  const pathWords = (readShare * minutes * p.wpm) / (1 + p.c * q.optionalWordRatio);
+  const words = pathWords * (1 + q.optionalWordRatio);
+  const wordsPerCommand = pathWords / Math.max(1, (1 - q.choiceShare) * steps);
   const band = p.tolerance / 2;
-  const steps = minutes / perStep;
-  const words = steps * wordsPerStep;
   const stepRange = {
     min: Math.max(1, Math.ceil(steps * (1 - band))),
     max: Math.max(1, Math.floor(steps * (1 + band))),
@@ -561,10 +654,11 @@ export function budgetForMinutes(minutes: number, language: string, options: Bud
 
   const pathShare = Math.round(100 / (1 + q.optionalWordRatio));
   const notes = [
-    `Target: about ${round(minutes, 1)} minutes for a typical first play (reading speed ${p.wpm} words per minute, language ${language}).`,
+    `Target: about ${round(minutes, 1)} minutes for a typical first play (reading speed ${p.wpm} words per minute, language ${language}), ` +
+      `about ${Math.round(readShare * 100)}% of it reading${options.pacing === undefined ? "" : ` (pacing ${options.pacing})`}.`,
     `Walkthrough: ${stepRange.min}–${stepRange.max} steps, about ${Math.round(q.choiceShare * 100)}% of them dialogue choices (choose).`,
     `Text: ${thousands(wordRange.min)}–${thousands(wordRange.max)} player-visible words in the whole pack, about ${pathShare}% of them ` +
-      `shown along the walkthrough (about ${round(q.wordsPerCommand, 1)} words of new text per command), the rest in optional ` +
+      `shown along the walkthrough (about ${Math.round(wordsPerCommand)} words of new text per command), the rest in optional ` +
       "descriptions, dialogue branches and custom responses to wrong attempts.",
     `Side content: ${perUnit(q.unseenLooksPerCommand, "described object", "walkthrough command")} that the walkthrough never ` +
       `examines, and ${perUnit(q.unchosenOptionsPerChoice, "dialogue option", "dialogue choice")} that it never chooses.`,

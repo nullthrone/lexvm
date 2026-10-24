@@ -8,7 +8,7 @@
  *   can be saved, hashed, compared and sent anywhere.
  * - Functions never mutate their inputs; they return new state.
  */
-import type { Id } from "./schema.ts";
+import type { Id, Pacing } from "./schema.ts";
 
 // ---------------------------------------------------------------------------
 // State
@@ -267,7 +267,7 @@ export interface PlaytimeOptions {
   secondsPerChoice?: number;
   /** c: share of the optional content a typical player sees. Default 0.6. */
   coverage?: number;
-  /** f: unproductive attempts per productive command. Default 0.5. */
+  /** f: unproductive attempts per productive command. Default 1. */
   failedAttemptsPerCommand?: number;
   /** Allowed relative deviation of the expected time from the target. Default 0.25. */
   tolerance?: number;
@@ -299,12 +299,16 @@ export interface PlaytimeReport {
     failedAttempts: number;
   };
   /** min: speedrun along the walkthrough; expected: a typical first play. Rounded to 0.01. */
-  minutes: { min: number; expected: number };
+  minutes: { min: number; expected: number; reading: number };
+  /** Share of the expected time spent reading (reading / expected), rounded to 0.001. */
+  readingShare: number;
+  /** pack.pacing, or null when the pack declares none. */
+  pacing: Pacing | null;
   /** options.targetMinutes ?? pack.playtime ?? null. */
   target: number | null;
   /** expected / target - 1, rounded to 0.001; null without a target. */
   deviation: number | null;
-  /** playtime.estimate (always), playtime.no-target, playtime.too-short, playtime.too-long. */
+  /** playtime.estimate (always), playtime.no-target, playtime.too-short, playtime.too-long, playtime.pacing. */
   diagnostics: Diagnostic[];
 }
 
@@ -314,8 +318,10 @@ export interface BudgetOptions extends PlaytimeOptions {
   optionalWordRatio?: number;
   /** D_path / all walkthrough steps. Default 0.25. */
   choiceShare?: number;
-  /** W_path / C_path: words of new text per productive command. */
-  wordsPerCommand?: number;
+  /** Pacing whose reading share sizes the budget. Default 'balanced'. */
+  pacing?: Pacing;
+  /** Share of the minutes spent reading, between 0 and 1; overrides pacing. */
+  readingShare?: number;
   /** L_unseen / C_path. */
   unseenLooksPerCommand?: number;
   /** O_unchosen / D_path. */

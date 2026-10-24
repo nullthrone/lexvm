@@ -21,6 +21,13 @@ object. A text parser exists but is optional. That has consequences for design:
 the player can *see* every possible action, so puzzles cannot rely on obscure
 verbs, and every tap should be answered with something worth reading.
 
+A text adventure is also a story that is *read*. Verification proves that a
+pack can be won; it cannot prove that a reader can follow it. The first noir
+pack showed the failure mode: logically sound puzzles wrapped in telegram-style
+fragments, while the actual story lived in the design documents and never
+reached the player. Section 2 ("Story and scenes") and the `pacing` setting
+exist to prevent that ([ADR 0012](../adr/0012-narrative-pacing.md)).
+
 ## 1. Shape and pacing
 
 A LexVM game is short and dense: it is played in a few sittings on a phone,
@@ -35,6 +42,35 @@ often offline. The first pack targets 30–45 minutes.
 - Score is a progress signal: usually 1 point per solved puzzle, 2 for a major deduction. Award each point exactly once (guard with a flag, a `not: { has: … }` condition or a `once` rule). `maxScore` equals the total score collected by the walkthrough.
 <!-- prompt:end guide -->
 
+## 2. Story and scenes
+
+A pack has two layers: the *mechanics* (rooms, items, rules, the puzzle
+chart) and the *story* (what happened, who wants what, what the player
+character comes to understand). The mechanics are verified; the story is
+only as good as the text the player actually reads. Two habits lose it:
+
+- writing text one data field at a time (a description here, a rule message
+  there) instead of one scene at a time, and
+- keeping the real story in design notes (the truth, the motives, the
+  backstory) and handing the player only the facts a puzzle needs.
+
+Write the story first, as scenes, then cut it into the data model. Review it
+the way the player meets it: `lexvm transcript <pack>` prints the whole text
+of a winning play in order. Read it from start to end, or give it to an
+editor (the `review` prompt stage does that with an LLM). Could a reader
+retell what happened and why?
+
+<!-- prompt:begin guide -->
+## Story and scenes
+- Write the story before the data: the truth in causal order (who did what, and why), the player character's goal and how their understanding changes, and a scene plan in play order. Then derive room, object, dialogue and rule texts from the scenes.
+- Everything the ending relies on reaches the player in game text. Motives, relationships and backstory that only live in the design notes do not exist for the player.
+- Every scene has an arrival (where am I, who is here, what is at stake), a turn (something learned or changed) and a way out (why the player goes on, and where). Write the transitions: the first entry to a room, the moment after a key clue, the move from one chapter to the next (a `once` rule on `enter`, or the response that solves the puzzle).
+- Give the player character an inner voice in moderation: after a key clue or deduction, one or two sentences on what it means and what follows from it. That is how a reader keeps track of a case.
+- Characters want something the player can see, and speak like themselves. A conversation has a turning point; write it out as a scene, not as one line of information.
+- Prose rhythm: vary sentence length. Short sentences are accents, not the default; join thoughts that belong together with their logic (because, but, so, while). No telegram style, no chains of fragments, no adjective padding.
+- Review the transcript of the walkthrough (`lexvm transcript`): it must read as a story a reader can follow from start to end.
+<!-- prompt:end guide -->
+
 ### Length budget
 
 `playtime` is the length a pack aims for, and LexVM checks it: `lexvm check`
@@ -46,13 +82,14 @@ words. To see the budget for a length before you write, print a stage prompt
 the table in [`prompts/oneshot.md`](../../prompts/oneshot.md).
 
 <!-- prompt:begin guide -->
-## Length budget
-- LexVM estimates the play time of a pack: reading the text the walkthrough shows (German 200, English 230 words per minute), about 10 seconds per walkthrough command and 6 per dialogue choice, plus part of the optional content (descriptions the walkthrough never examines, unchosen dialogue options, custom responses) and of the wrong attempts a player makes. `lexvm check` warns when the estimate misses `playtime` by more than 25%; set `playtime` to the target length.
-- Typical proportions: about 20 words of new text per walkthrough command; about a quarter of the walkthrough steps are dialogue choices; optional text about 60% of the walkthrough's text; about one described object for every two walkthrough commands that the walkthrough never examines.
-- Follow the size budget the prompt gives for the target length (walkthrough steps and words of player-visible text). Length comes from content, not padding: add a puzzle, a character to question, custom responses and side dialogue rather than longer descriptions (the text budgets for phone screens still apply). To shorten, cut a side puzzle or trim descriptions.
+## Length budget and pacing
+- LexVM estimates the play time of a pack: reading the text the walkthrough shows (German 200, English 230 words per minute), about 10 seconds per walkthrough command and 6 per dialogue choice, plus part of the optional content (descriptions the walkthrough never examines, unchosen dialogue options, custom responses) and about one wrong attempt per productive command. `lexvm check` warns when the estimate misses `playtime` by more than 25%; set `playtime` to the target length.
+- `pacing` says how that time divides between reading and acting: `narrative` (about 60% reading: mysteries, dramas, character stories), `balanced` (about 45%, the default), `puzzle` (about 30%: puzzle boxes, escape rooms). Declare it in the metadata; `lexvm check` then warns when the reading share leaves the band (±10 points). A narrative pack with the same play time has fewer puzzles and more story.
+- Follow the size budget the prompt gives for the target length and pacing (walkthrough steps and words of player-visible text). About a quarter of the walkthrough steps are dialogue choices; optional text is about 60% of the walkthrough's text.
+- Length comes from content, never from padding. Content is both mechanics (a puzzle, a character to question, custom responses) and story (an arrival, a turning point, what a clue means, a transition between acts). Padding is adjectives, repeated atmosphere and summaries of what the player just saw. To shorten a narrative pack, cut a side puzzle before you cut a scene.
 <!-- prompt:end guide -->
 
-## 2. Puzzle dependency charts
+## 3. Puzzle dependency charts
 
 Ron Gilbert's *puzzle dependency chart* is the tool for designing adventure
 puzzles. Start at the end — the winning ending — and ask: what has to be true
@@ -102,7 +139,7 @@ no long stretch where only one node is open.
   ```
 <!-- prompt:end guide -->
 
-## 3. The LucasArts rules: the `forgiving` policy
+## 4. The LucasArts rules: the `forgiving` policy
 
 LexVM follows the design philosophy that Ron Gilbert summarised in *Why
 Adventure Games Suck* and that LucasArts games made famous: the player should
@@ -123,7 +160,7 @@ can no longer lead to a win.
 - No timed puzzles, no mazes, no randomness (the engine has none).
 <!-- prompt:end guide -->
 
-## 4. Fair clueing
+## 5. Fair clueing
 
 A puzzle is fair when an attentive player could solve it from what the game
 has shown them. The test: could you write the hint for it by quoting the
@@ -137,7 +174,7 @@ game's own text?
 - Reflect state changes with text variants (`when`) in room and object descriptions (the door now stands open, the drawer is empty).
 <!-- prompt:end guide -->
 
-## 5. Rules and state
+## 6. Rules and state
 
 Rules are the heart of a pack. Read section 10 of the spec ("Turn processing")
 once carefully; most logic bugs come from forgetting that rules *replace* the
@@ -153,7 +190,7 @@ default behaviour and that only the *first* matching command rule fires.
 - Counters changed by `turn` rules must be bounded by their `when`. Prefer flags over counters.
 <!-- prompt:end guide -->
 
-## 6. Characters and dialogue
+## 7. Characters and dialogue
 
 Dialogue-heavy games (interrogations, negotiations) live from the feeling that
 conversations *progress* as the player learns more. In LexVM that is done with
@@ -168,7 +205,7 @@ options that appear when the player holds a clue.
 - Node `say` ≤ 300 characters, option text ≤ 80. Options are the player's words; narration belongs in `say` or `do`.
 <!-- prompt:end guide -->
 
-## 7. Clues, deductions and the notebook
+## 8. Clues, deductions and the notebook
 
 The notebook is LexVM's answer to "where do I keep what I learned?". Clues are
 objects that live in the notebook part of the inventory. Because they are
@@ -184,7 +221,7 @@ deduce something, or *show* a clue to a character to confront them.
 - Interrogations and confrontations use clues as evidence (see dialogue).
 <!-- prompt:end guide -->
 
-## 8. Hints
+## 9. Hints
 
 Every LexVM game has a hint button. A good hint system means nobody has to
 search the web for a walkthrough, and nobody gets the answer before they want
@@ -197,22 +234,23 @@ it.
 - The first hint whose `when` holds and whose `until` does not is shown, so order hints in the usual solving order, and make sure some hint applies at every point until the ending.
 <!-- prompt:end guide -->
 
-## 9. Text for phone screens
+## 10. Text for phone screens
 
 LexVM is read on a phone held in portrait mode, in a book-like layout. Long
 paragraphs become walls of text; references (`{id}`) become tappable words.
 
 <!-- prompt:begin guide -->
 ## Text for phone screens
-- Budgets: room descriptions ≤ 600 characters, object descriptions ≤ 400, dialogue lines ≤ 300, option texts ≤ 80, names ≤ 24. Aim well below.
-- Short paragraphs of 1–3 sentences. The first sentence says what matters; atmosphere second.
+- Budgets: room descriptions ≤ 600 characters, object descriptions ≤ 400, dialogue lines ≤ 300 (`pacing: narrative`: 1,000, 600 and 600); option texts ≤ 80, names ≤ 24 for every pacing. The player scrolls like a book; a long text needs paragraphs, not cuts.
+- Paragraphs of 1–4 sentences, separated by a blank line. In descriptions the first sentence says what matters; atmosphere second.
+- First visits get the full scene; return visits to a room get one or two sentences (a text variant with `visited`).
 - Mention exits naturally in the room description ("The library lies to the west.").
 - Every interactable object appears as `{id}` (or `{id|inflected text}`) in its room's description or in its own `roomText`. Portable objects without `roomText` are listed automatically.
 - Names are short, without articles, and distinct: "brass key", not "the small brass key".
-- Rule messages (`say`) are 1–2 sentences.
+- Rule messages (`say`) are 1–3 sentences; the response that solves a puzzle or reveals a clue may be a short scene.
 <!-- prompt:end guide -->
 
-## 10. Language conventions
+## 11. Language conventions
 
 Ids are always ASCII `lower_snake_case`; English ids are fine for every pack
 language and make diagnostics easier to read. Everything the player sees is in
@@ -226,7 +264,7 @@ the pack's `language`.
 - Pack verbs need a `label` in the pack language and parser `synonyms` (German: imperative and infinitive, e.g. `[lies, lese, lesen]`).
 <!-- prompt:end guide -->
 
-## 11. YAML pitfalls
+## 12. YAML pitfalls
 
 YAML is friendly until it is not. Almost every pack that fails to load does so
 because of one of the following.
@@ -245,7 +283,7 @@ because of one of the following.
 - Indent with two spaces, never tabs.
 <!-- prompt:end guide -->
 
-## 12. The walkthrough
+## 13. The walkthrough
 
 The walkthrough is the pack's proof of solvability. `lexvm check` replays it
 from a new game, so it has to be exact.
@@ -259,7 +297,7 @@ from a new game, so it has to be exact.
 - Write it last, after all rooms, objects, rules and dialogues exist.
 <!-- prompt:end guide -->
 
-## 13. Checklist of common mistakes
+## 14. Checklist of common mistakes
 
 Run through this list before you run `lexvm check` — and run `lexvm check`
 anyway. The LLM prompts ask the model to go through the same list.
@@ -281,7 +319,7 @@ anyway. The LLM prompts ask the model to go through the same list.
 14. **Score.** Each point is awarded once; `maxScore` equals the walkthrough's total.
 <!-- prompt:end checklist -->
 
-## 14. Reviewing a pack (human or generated)
+## 15. Reviewing a pack (human or generated)
 
 `lexvm check` proves that a pack is *correct*. Whether it is *good* is up to
 you. Before you publish, play it on a phone and ask:
@@ -290,13 +328,19 @@ you. Before you publish, play it on a phone and ask:
 - When stuck, are there always other things to try (look at the chart)?
 - Is every puzzle solvable from the text alone, without the hints?
 - Do characters react to the evidence you show them?
-- Is the text tight? Does it read well on a small screen, in the chosen
-  narrative voice, with consistent quotes?
+- Read the transcript (`lexvm transcript <pack>`) from start to end: could a
+  reader retell what happened, who wanted what, and why the player went where
+  they went? Is there a moment where something happens without a reason?
+- Does the text read well on a small screen, in the chosen narrative voice,
+  with consistent quotes? Does the rhythm vary, or is it a chain of fragments?
 - Are there plausible actions that get a bland default answer where a custom
   response would be better?
 - Does the ending pay off what the player found out?
 
-LLM-generated packs in particular tend to be wordy, to over-use atmosphere
-adjectives, and to forget custom responses for wrong attempts. A careful edit
-pass is part of the job; see [pipeline.md](pipeline.md) for provenance and
+LLM-generated packs fail in two opposite directions: wordy description with
+too many atmosphere adjectives, or, under tight length budgets, a telegram
+style that keeps the story in the model's head and gives the player only the
+facts a puzzle needs. Both get caught by reading the transcript. LLMs also
+tend to forget custom responses for wrong attempts. A careful edit pass is
+part of the job; see [pipeline.md](pipeline.md) for provenance and
 licensing.

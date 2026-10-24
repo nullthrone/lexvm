@@ -374,7 +374,7 @@ answer, as LucasArts would have it.
 ## Reactions outside dialogues (command rules)
 
 Tap-first players show and give things directly. Specific rules come first,
-then one catch-all per NPC (guide, section 6). All of these are text only,
+then one catch-all per NPC (guide, section 7). All of these are text only,
 unless noted.
 
 | Command | Reaction |

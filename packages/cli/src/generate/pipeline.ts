@@ -1,7 +1,13 @@
 /**
  * The staged generation pipeline behind `lexvm generate`:
  *
- *   concept -> puzzles -> world -> logic -> verify/repair loop
+ *   concept -> story -> puzzles -> world -> logic -> verify/repair loop -> review
+ *
+ * The story stage writes the narrative backbone (design/story.md) before any
+ * puzzle exists, so the later stages derive their texts from scenes instead of
+ * inventing them field by field. Once the pack passes every gate, one
+ * editorial review round reads the walkthrough transcript and improves the
+ * text; the result is verified again like any repair (ADR 0012).
  *
  * Every stage's prompt includes the outputs of the previous stages, every
  * artifact is written to the output directory as soon as it exists, and
@@ -14,7 +20,7 @@
  */
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
-import type { Diagnostic, SourceFile } from "@lexvm/engine";
+import type { Diagnostic, Pacing, SourceFile } from "@lexvm/engine";
 import {
   buildStagePrompt,
   buildSystemPrompt,
@@ -33,7 +39,7 @@ import {
   type VerifyFn,
 } from "./verify.ts";
 
-export const STAGES = ["concept", "puzzles", "world", "logic", "verify"] as const;
+export const STAGES = ["concept", "story", "puzzles", "world", "logic", "verify"] as const;
 export type Stage = (typeof STAGES)[number];
 
 export const DESIGN_DIR = "design";
@@ -47,7 +53,15 @@ export const DEFAULT_MAX_REPAIRS = 6;
  * remaining rounds cannot fix it, the last passing files are restored.
  */
 export const LENGTH_REPAIRS = 1;
-const LENGTH_CODES: ReadonlySet<string> = new Set(["playtime.too-short", "playtime.too-long"]);
+/** Play time warnings the length round acts on: the length, and the reading share of the pacing. */
+const LENGTH_CODES: ReadonlySet<string> = new Set(["playtime.too-short", "playtime.too-long", "playtime.pacing"]);
+/**
+ * Editorial review rounds: once the pack passes every gate (and the length
+ * round is spent), the model reads the walkthrough transcript and improves the
+ * text. Counted against --max-repairs; if it breaks the pack and the
+ * remaining rounds cannot fix it, the last passing files are restored.
+ */
+export const REVIEW_ROUNDS = 1;
 
 /** Files each file-producing stage is asked for. */
 export const STAGE_FILES = {
@@ -60,6 +74,10 @@ export interface GenerateParams {
   idea: string;
   lang: PackLanguage | null;
   minutes: number;
+  /** How the play time divides between reading and acting; written to pack.yaml like playtime. */
+  pacing: Pacing;
+  /** Run the editorial review round on the transcript once the pack passes. */
+  review: boolean;
   /** Output directory (packs/<id>). */
   outDir: string;
   packId: string;
@@ -100,7 +118,7 @@ export class PipelineError extends Error {
 // ---------------------------------------------------------------------------
 
 export interface RunEvent {
-  stage: Exclude<Stage, "verify"> | "verify" | "repair";
+  stage: Exclude<Stage, "verify"> | "verify" | "repair" | "review";
   round?: number;
   startedAt: string;
   finishedAt: string;
@@ -121,6 +139,9 @@ export interface RunLog {
     idea: string;
     lang: PackLanguage | null;
     minutes: number;
+    /** Missing in run logs written before pacing existed. */
+    pacing?: Pacing;
+    review?: boolean;
     author: string | null;
     license: string;
     maxRepairs: number;
@@ -229,12 +250,26 @@ export function withPlaytime(yaml: string, minutes: number): string {
   return `${line}\n${yaml}`;
 }
 
-/** Make pack.yaml carry the --minutes target as `playtime`. Returns true when the file changed. */
-export async function ensurePlaytime(outDir: string, minutes: number): Promise<boolean> {
+/** Set the top-level `pacing` of a pack.yaml text, replacing an existing value or adding it after `playtime`. */
+export function withPacing(yaml: string, pacing: Pacing): string {
+  const line = `pacing: ${pacing}`;
+  const existing = /^pacing:[^\n]*$/m;
+  if (existing.test(yaml)) return yaml.replace(existing, line);
+  const m = /^playtime:[^\n]*$/m.exec(yaml);
+  if (m) {
+    const end = m.index + m[0].length;
+    return `${yaml.slice(0, end)}\n${line}${yaml.slice(end)}`;
+  }
+  return `${line}\n${yaml}`;
+}
+
+/** Make pack.yaml carry the --minutes target as `playtime` and the --pacing. Returns true when the file changed. */
+export async function ensurePlaytime(outDir: string, minutes: number, pacing?: Pacing): Promise<boolean> {
   const path = join(outDir, "pack.yaml");
   const text = await readOptional(path);
   if (text === null) return false;
-  const updated = withPlaytime(text, minutes);
+  const timed = withPlaytime(text, minutes);
+  const updated = pacing === undefined ? timed : withPacing(timed, pacing);
   if (updated === text) return false;
   await writeFile(path, updated, "utf8");
   return true;
@@ -278,6 +313,8 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
       idea: params.idea,
       lang: params.lang,
       minutes: params.minutes,
+      pacing: params.pacing,
+      review: params.review,
       author: params.author,
       license: params.license,
       maxRepairs: params.maxRepairs,
@@ -293,6 +330,8 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
       idea: params.idea || runLog.params.idea,
       lang: params.lang,
       minutes: params.minutes,
+      pacing: params.pacing,
+      review: params.review,
       author: params.author,
       license: params.license,
       maxRepairs: params.maxRepairs,
@@ -313,6 +352,7 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
     lang: params.lang,
     idea: params.idea,
     minutes: params.minutes,
+    pacing: params.pacing,
     packId: params.packId,
     author: params.author,
     license: params.license,
@@ -370,7 +410,7 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
   };
 
   /** A stage whose answer is a Markdown document. */
-  const documentStage = async (stage: "concept" | "puzzles", label: string, prompt: string, name: string) => {
+  const documentStage = async (stage: "concept" | "story" | "puzzles", label: string, prompt: string, name: string) => {
     for (let attempt = 0; attempt < 2; attempt++) {
       const retryNote =
         attempt === 0 ? "" : "\n\nYour previous answer was empty. Answer with the complete Markdown document.\n";
@@ -446,10 +486,10 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
   const total = STAGES.length;
   const tag = (stage: Stage) => `[${STAGES.indexOf(stage) + 1}/${total}] ${stage}`;
   const runs = (stage: Stage) => STAGES.indexOf(stage) >= startIndex;
-  /** The --minutes target is the pack's playtime: written in the metadata (world) stage, kept through repairs. */
+  /** The --minutes target is the pack's playtime and --pacing its pacing: written in the world stage, kept through repairs. */
   const syncPlaytime = async () => {
-    if (await ensurePlaytime(outDir, params.minutes))
-      log(`      set playtime: ${params.minutes} in pack.yaml (the --minutes target)`);
+    if (await ensurePlaytime(outDir, params.minutes, params.pacing))
+      log(`      set playtime: ${params.minutes} and pacing: ${params.pacing} in pack.yaml (--minutes, --pacing)`);
   };
 
   try {
@@ -461,15 +501,22 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
         "concept.md",
       );
     }
+    if (runs("story")) {
+      const concept = await requireDoc("concept.md", "story");
+      const prompt = buildStagePrompt(deps.kit, "story", { ...inputs(), concept });
+      await documentStage("story", `${tag("story")} …`, prompt, "story.md");
+    }
     if (runs("puzzles")) {
       const concept = await requireDoc("concept.md", "puzzles");
-      const prompt = buildStagePrompt(deps.kit, "puzzles", { ...inputs(), concept });
+      const story = await requireDoc("story.md", "puzzles");
+      const prompt = buildStagePrompt(deps.kit, "puzzles", { ...inputs(), concept, story });
       await documentStage("puzzles", `${tag("puzzles")} …`, prompt, "puzzles.md");
     }
     if (runs("world")) {
       const concept = await requireDoc("concept.md", "world");
+      const story = await requireDoc("story.md", "world");
       const puzzles = await requireDoc("puzzles.md", "world");
-      const prompt = buildStagePrompt(deps.kit, "world", { ...inputs(), concept, puzzles });
+      const prompt = buildStagePrompt(deps.kit, "world", { ...inputs(), concept, story, puzzles });
       await filesStage("world", `${tag("world")} …`, prompt, {
         expected: STAGE_FILES.world,
         allowed: ["yaml"],
@@ -480,12 +527,19 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
     }
     if (runs("logic")) {
       const concept = await requireDoc("concept.md", "logic");
+      const story = await requireDoc("story.md", "logic");
       const puzzles = await requireDoc("puzzles.md", "logic");
       const files = await readPackFiles(outDir);
       if (!files.some((f) => f.name === "pack.yaml")) {
         throw new PipelineError("stage 'logic' needs pack.yaml; run the world stage first (--from-stage world)");
       }
-      const prompt = buildStagePrompt(deps.kit, "logic", { ...inputs(), concept, puzzles, files: asNamed(files) });
+      const prompt = buildStagePrompt(deps.kit, "logic", {
+        ...inputs(),
+        concept,
+        story,
+        puzzles,
+        files: asNamed(files),
+      });
       await filesStage("logic", `${tag("logic")} …`, prompt, {
         expected: STAGE_FILES.logic,
         allowed: ["yaml"],
@@ -499,10 +553,14 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
       throw new PipelineError(`no pack files in ${outDir}; run an earlier stage first (--from-stage world)`);
     }
     const concept = await readDoc("concept.md");
+    const story = await readDoc("story.md");
     const puzzles = await readDoc("puzzles.md");
     let round = 0;
     let lastCrash = "";
     let lengthRounds = 0;
+    let reviewRounds = 0;
+    let next: "repair" | "review" = "repair";
+    let transcript = "";
     /** The last version that passed every gate, kept while a length round tries to improve it. */
     let passing: {
       files: SourceFile[];
@@ -537,14 +595,24 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
 
       if (report.ok) {
         const length = report.diagnostics.find((d) => LENGTH_CODES.has(d.code));
-        if (!length || lengthRounds >= LENGTH_REPAIRS || round >= params.maxRepairs) {
+        const roundsLeft = round < params.maxRepairs;
+        if (length && lengthRounds < LENGTH_REPAIRS && roundsLeft) {
+          // Passing, but the wrong length: one more round on the length, keeping this version as a fallback.
+          passing = { files, diagnostics: report.diagnostics, counts: pick(counts) };
+          lengthRounds++;
+          next = "repair";
+          log(`        ${formatDiagnostic(length)}`);
+        } else if (params.review && reviewRounds < REVIEW_ROUNDS && roundsLeft && report.transcript !== undefined) {
+          // Passing: one editorial round on the transcript, keeping this version as a fallback.
+          passing = { files, diagnostics: report.diagnostics, counts: pick(counts) };
+          reviewRounds++;
+          next = "review";
+          transcript = report.transcript;
+        } else {
           return await succeed(report.diagnostics, counts);
         }
-        // Passing, but the wrong length: one more round on the length, keeping this version as a fallback.
-        passing = { files, diagnostics: report.diagnostics, counts: pick(counts) };
-        lengthRounds++;
-        log(`        ${formatDiagnostic(length)}`);
       } else {
+        next = "repair";
         for (const d of report.diagnostics.filter((x) => x.severity === "error").slice(0, 5)) {
           log(`        ${formatDiagnostic(d)}`);
         }
@@ -560,7 +628,7 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
         if (round >= params.maxRepairs) {
           if (passing) {
             await restorePackFiles(outDir, passing.files);
-            log("      the length repair broke the pack; restored the last passing version");
+            log("      the length or review round broke the pack; restored the last passing version");
             runLog.events.push({
               stage: "verify",
               round,
@@ -568,7 +636,7 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
               finishedAt: now().toISOString(),
               durationMs: 0,
               diagnostics: countSeverities(passing.diagnostics),
-              notes: ["restored the last passing version after an unsuccessful length repair"],
+              notes: ["restored the last passing version after an unsuccessful length or review round"],
             });
             return await succeed(passing.diagnostics, passing.counts);
           }
@@ -584,9 +652,20 @@ export async function generatePack(params: GenerateParams, deps: PipelineDeps): 
         }
       }
       round++;
+      if (next === "review") {
+        const prompt = buildStagePrompt(deps.kit, "review", { ...inputs(), story, files: asNamed(files), transcript });
+        await filesStage("review", `      review (round ${round}/${params.maxRepairs}) …`, prompt, {
+          expected: [],
+          allowed: ["yaml"],
+          required: false,
+          round,
+        });
+        continue;
+      }
       const prompt = buildStagePrompt(deps.kit, "repair", {
         ...inputs(),
         concept,
+        story,
         puzzles,
         files: asNamed(files),
         diagnostics: formatDiagnosticsForPrompt(report.diagnostics),

@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { BUDGET_DEFAULTS, budgetForMinutes, countWords, estimatePlaytime, PLAYTIME_DEFAULTS } from "../src/playtime.ts";
+import { analyze } from "../src/analyze.ts";
+import { textLimits } from "../src/analyze-text.ts";
+import {
+  BUDGET_DEFAULTS,
+  budgetForMinutes,
+  countWords,
+  estimatePlaytime,
+  PACING_BAND,
+  PACING_READING_SHARE,
+  PLAYTIME_DEFAULTS,
+} from "../src/playtime.ts";
 import type { Pack } from "../src/schema.ts";
 import type { PlaytimeReport } from "../src/types.ts";
 import { deepFreeze, loadFixture, loadLockedStudy, makePack } from "./fixtures/runtime/helpers.ts";
@@ -120,7 +130,7 @@ describe("estimatePlaytime: counting", () => {
     expect(r.commands.unseenLooks).toBe(1);
     // ask and back were never chosen; bye was.
     expect(r.commands.unchosenOptions).toBe(2);
-    expect(r.commands.failedAttempts).toBe(2);
+    expect(r.commands.failedAttempts).toBe(4);
   });
 
   it("applies the formulas with the default parameters", () => {
@@ -141,7 +151,7 @@ describe("estimatePlaytime: counting", () => {
 });
 
 describe("estimatePlaytime: reference packs", () => {
-  it("estimates packs/locked-study close to its five-minute target", () => {
+  it("estimates packs/locked-study close to its seven-minute target", () => {
     const r = estimatePlaytime(loadLockedStudy());
     expect(r.language).toBe("en");
     expect(r.wordsPerMinute).toBe(230);
@@ -152,12 +162,12 @@ describe("estimatePlaytime: reference packs", () => {
     expect(r.commands).toMatchObject({ path: 13, choices: 4, unchosenOptions: 0 });
     expect(r.minutes.min).toBeGreaterThan(3);
     expect(r.minutes.min).toBeLessThan(r.minutes.expected);
-    expect(r.minutes.expected).toBeGreaterThan(4.5);
-    expect(r.minutes.expected).toBeLessThan(7.5);
-    expect(r.target).toBe(5);
+    expect(r.minutes.expected).toBeGreaterThan(6);
+    expect(r.minutes.expected).toBeLessThan(8.5);
+    expect(r.target).toBe(7);
     expect(Math.abs(r.deviation!)).toBeLessThanOrEqual(PLAYTIME_DEFAULTS.tolerance);
     expect(codes(r)).toEqual(["playtime.estimate"]);
-    expect(r.diagnostics[0]!.message).toMatch(/^≈ \d+ min expected \(speedrun \d+ min\); target 5 min\. /);
+    expect(r.diagnostics[0]!.message).toMatch(/^≈ \d+ min expected \(speedrun \d+ min\); target 7 min\. /);
   });
 
   it("estimates the German fixture with the German reading speed and suggests a playtime", () => {
@@ -331,5 +341,70 @@ describe("budgetForMinutes", () => {
         }
       }
     }
+  });
+});
+
+describe("pacing", () => {
+  const mid = (r: { min: number; max: number }) => (r.min + r.max) / 2;
+
+  it("sizes the budget by the reading share: narrative packs get more words and fewer steps", () => {
+    for (const language of ["de", "en"]) {
+      const puzzle = budgetForMinutes(45, language, { pacing: "puzzle" });
+      const balanced = budgetForMinutes(45, language);
+      const narrative = budgetForMinutes(45, language, { pacing: "narrative" });
+      expect(mid(narrative.words)).toBeGreaterThan(mid(balanced.words));
+      expect(mid(balanced.words)).toBeGreaterThan(mid(puzzle.words));
+      expect(mid(narrative.walkthroughSteps)).toBeLessThan(mid(balanced.walkthroughSteps));
+      expect(mid(balanced.walkthroughSteps)).toBeLessThan(mid(puzzle.walkthroughSteps));
+      expect(narrative.notes[0]).toContain("60% of it reading (pacing narrative)");
+    }
+    // Words scale with the reading share: twice the share, twice the words.
+    const a = budgetForMinutes(60, "de", { readingShare: 0.3 });
+    const b = budgetForMinutes(60, "de", { readingShare: 0.6 });
+    expect(mid(b.words) / mid(a.words)).toBeCloseTo(2, 1);
+    expect(() => budgetForMinutes(30, "de", { readingShare: 1 })).toThrow(RangeError);
+  });
+
+  it("reports the reading share and warns only when a declared pacing is missed", () => {
+    const plain = estimatePlaytime(loadLockedStudy());
+    expect(plain.pacing).toBeNull();
+    expect(plain.readingShare).toBeGreaterThan(0.1);
+    expect(plain.readingShare).toBeLessThan(0.4);
+    expect(plain.minutes.reading).toBeCloseTo(plain.readingShare * plain.minutes.expected, 1);
+    expect(plain.diagnostics[0]!.message).toMatch(/reading \d+% of the expected time\./);
+    expect(codes(plain)).toEqual(["playtime.estimate"]);
+
+    const narrative = estimatePlaytime({ ...loadLockedStudy(), pacing: "narrative" });
+    expect(narrative.readingShare).toBeLessThan(PACING_READING_SHARE.narrative - PACING_BAND);
+    const warning = narrative.diagnostics.find((d) => d.code === "playtime.pacing");
+    expect(warning).toMatchObject({ severity: "warning", path: "pacing" });
+    expect(warning!.message).toContain("Write out the scenes");
+    expect(narrative.diagnostics[0]!.message).toContain("(pacing narrative: target 60%)");
+
+    const puzzle = estimatePlaytime({ ...loadLockedStudy(), pacing: "puzzle" });
+    expect(codes(puzzle)).not.toContain("playtime.pacing");
+  });
+
+  it("suggests scene prose first when a narrative pack is too short", () => {
+    const r = estimatePlaytime({ ...loadLockedStudy(), pacing: "narrative" }, { targetMinutes: 20 });
+    const short = r.diagnostics.find((d) => d.code === "playtime.too-short");
+    expect(short!.message).toMatch(/min short: add ≈ [\d,]+ words of scene prose along the walkthrough/);
+    const balanced = estimatePlaytime(loadLockedStudy(), { targetMinutes: 20 });
+    expect(balanced.diagnostics.find((d) => d.code === "playtime.too-short")!.message).toMatch(/min short: add \d/);
+  });
+
+  it("gives narrative packs longer text budgets, but not longer buttons", () => {
+    expect(textLimits("narrative").dialogueSay).toBeGreaterThan(textLimits(undefined).dialogueSay);
+    expect(textLimits("narrative").roomDescription).toBeGreaterThan(textLimits("balanced").roomDescription);
+    expect(textLimits("narrative").optionText).toBe(textLimits("puzzle").optionText);
+    expect(textLimits("narrative").name).toBe(textLimits("puzzle").name);
+    const long = (pacing: "narrative" | undefined) => {
+      const pack = { ...loadLockedStudy(), pacing };
+      const object = Object.values(pack.objects).find((o) => o.description !== undefined)!;
+      object.description = "y".repeat(500);
+      return analyze(pack).filter((d) => d.code === "text.too-long").length;
+    };
+    expect(long(undefined)).toBe(1);
+    expect(long("narrative")).toBe(0);
   });
 });

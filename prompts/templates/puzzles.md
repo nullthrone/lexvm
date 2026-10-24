@@ -1,15 +1,15 @@
-<!-- template: stage 2 (puzzle design). Output: the document design/puzzles.md. Placeholders: IDEA LANG MINUTES BUDGET CONCEPT. -->
-# Stage 2 of 4: puzzles
+<!-- template: stage 2 (puzzle design). Output: the document design/puzzles.md. Placeholders: IDEA LANG MINUTES PACING BUDGET CONCEPT STORY. -->
+# Stage 3 of 5: puzzles
 
-Design the puzzles for the adventure described in the concept below, as a **puzzle dependency chart** (Ron Gilbert). Target play time: about {{MINUTES}} minutes; pack language: {{LANG}}.
+Design the puzzles for the adventure described in the concept and the story below, as a **puzzle dependency chart** (Ron Gilbert). Target play time: about {{MINUTES}} minutes; pack language: {{LANG}}; pacing: {{PACING}}.
 
 {{BUDGET}}
 
-The puzzles and their solutions make up most of the walkthrough, so plan enough of them (with their wrong attempts and dialogue) to fill the step budget.
+The puzzles and their solutions make up most of the walkthrough, so plan enough of them (with their wrong attempts and dialogue) to fill the step budget, and no more: the rest of the play time belongs to the story. Every puzzle serves a scene of the story's scene plan; every fact of its revelation map is learned through a puzzle, a dialogue or a document the walkthrough passes.
 
 Write a Markdown document with these sections:
 
-1. **Chart:** a Mermaid `flowchart TD` from the start to the winning ending. Nodes are puzzles, events, items and clues (use their ids); an arrow means "is needed for". The chart must branch: at almost every point the player has two or three open puzzles. About 6–8 puzzles for 30–45 minutes.
+1. **Chart:** a Mermaid `flowchart TD` from the start to the winning ending. Nodes are puzzles, events, items and clues (use their ids); an arrow means "is needed for". The chart must branch: at almost every point the player has two or three open puzzles. About 6–8 puzzles for 30–45 minutes with `balanced` pacing, about 4–6 with `narrative` pacing.
 2. **Puzzles:** for each puzzle, in solving order:
    - id and one-line goal;
    - the obstacle, and where it is signposted in the text before the player must solve it;
@@ -26,6 +26,10 @@ Answer with the Markdown document only, starting with `# Puzzles`.
 # Concept
 
 {{CONCEPT}}
+
+# Story
+
+{{STORY}}
 
 # The original idea
 

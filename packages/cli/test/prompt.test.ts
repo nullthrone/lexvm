@@ -7,6 +7,7 @@ import {
   assemblePrompt,
   BUDGET_TABLE_MINUTES,
   buildSystemPrompt,
+  PACINGS,
   PROMPT_STAGES,
   type PromptInputs,
   renderBudget,
@@ -50,6 +51,8 @@ const fullInputs: PromptInputs = {
   license: "CC-BY-4.0",
   pipeline: true,
   concept: "# Concept\n\nNoir.",
+  story: "# Story\n\nSTORY_MARKER: the truth.",
+  transcript: "# Hamburg 1948\n\n## Kai\n\nTRANSCRIPT_MARKER",
   puzzles: "# Puzzles\n\n```mermaid\nflowchart TD\n  a --> b\n```",
   files: [{ name: "pack.yaml", content: "format: lexvm-pack/1\n" }],
   diagnostics: "[error] ref.unknown-object @ rules[0]: unknown object 'x'",
@@ -148,19 +151,26 @@ describe("assemblePrompt", () => {
 
   it("gives the one-shot prompt a budget table for 15/30/45/60 minutes and both languages", () => {
     const text = assemblePrompt(kit, "oneshot", { lang: null, idea: null, minutes: 30 });
-    expect(text).toContain("Pick the row that matches the requested length (no length requested: 30 minutes");
-    expect(text).toContain("| Play time | `de`: walkthrough steps | `de`: words of text | `en`: walkthrough steps |");
+    expect(text).toContain(
+      "Pick the row that matches the requested length and the pacing (no length requested: 30 minutes",
+    );
+    expect(text).toContain(
+      "| Play time | Pacing | `de`: walkthrough steps | `de`: words of text | `en`: walkthrough steps |",
+    );
     for (const minutes of BUDGET_TABLE_MINUTES) {
-      const de = budgetForMinutes(minutes, "de");
-      const en = budgetForMinutes(minutes, "en");
-      const row = text.split("\n").find((l) => l.startsWith(`| ${minutes} min |`));
-      expect(row, `${minutes} min`).toBeDefined();
-      expect(row).toContain(`${de.walkthroughSteps.min}–${de.walkthroughSteps.max}`);
-      expect(row).toContain(`${en.walkthroughSteps.min}–${en.walkthroughSteps.max}`);
+      for (const pacing of PACINGS) {
+        const de = budgetForMinutes(minutes, "de", { pacing });
+        const en = budgetForMinutes(minutes, "en", { pacing });
+        const row = text.split("\n").find((l) => l.startsWith(`| ${minutes} min | ${pacing} |`));
+        expect(row, `${minutes} min ${pacing}`).toBeDefined();
+        expect(row).toContain(`${de.walkthroughSteps.min}–${de.walkthroughSteps.max}`);
+        expect(row).toContain(`${en.walkthroughSteps.min}–${en.walkthroughSteps.max}`);
+      }
     }
-    // A requested length outside the standard rows gets its own row; a known language gets one column pair.
+    // A requested length outside the standard rows gets its own rows; a known language gets one column pair.
     const table = renderBudgetTable(40, "en");
-    expect(table.split("\n")).toHaveLength(2 + 5);
+    expect(table.split("\n")).toHaveLength(2 + 5 * PACINGS.length);
+    expect(renderBudgetTable(40, "en", "narrative").split("\n")).toHaveLength(2 + 5);
     expect(table).toContain("| 40 min |");
     expect(table).not.toContain("`de`");
     // The shared system prompt has no run-specific budget.
@@ -168,8 +178,8 @@ describe("assemblePrompt", () => {
   });
 
   it("puts the budget for --minutes into the stage prompts", () => {
-    const b = budgetForMinutes(40, "de");
-    for (const stage of ["concept", "puzzles", "world", "logic"] as const) {
+    const b = budgetForMinutes(40, "de", { pacing: "balanced" });
+    for (const stage of ["concept", "story", "puzzles", "world", "logic", "review"] as const) {
       const text = assemblePrompt(kit, stage, fullInputs);
       expect(text, stage).toContain("Size budget for about 40 minutes");
       expect(text, stage).toContain(`${b.walkthroughSteps.min}–${b.walkthroughSteps.max} steps`);
@@ -179,7 +189,26 @@ describe("assemblePrompt", () => {
     expect(both).toContain("German pack (`de`)");
     expect(both).toContain("English pack (`en`)");
     expect(assemblePrompt(kit, "world", fullInputs)).toContain("`playtime: 40` (the target play time; keep it)");
+    expect(assemblePrompt(kit, "world", fullInputs)).toContain("`pacing: balanced`");
+    const narrative = assemblePrompt(kit, "story", { ...fullInputs, pacing: "narrative" });
+    expect(narrative).toContain("pacing: `narrative` (about 60% of the play time is reading)");
+    expect(narrative).toContain(budgetForMinutes(40, "de", { pacing: "narrative" }).notes[1]!);
     expect(assemblePrompt(kit, "repair", fullInputs)).toContain("`playtime.too-short`");
+  });
+
+  it("gives the story and review stages their inputs", () => {
+    const review = assemblePrompt(kit, "review", fullInputs);
+    expect(review).toContain("TRANSCRIPT_MARKER");
+    expect(review).toContain("STORY_MARKER");
+    expect(review).toContain("```yaml file=pack.yaml");
+    expect(review).toContain("story editor");
+    for (const stage of ["puzzles", "world", "logic", "repair"] as const) {
+      expect(assemblePrompt(kit, stage, fullInputs), stage).toContain("STORY_MARKER");
+    }
+    const story = assemblePrompt(kit, "story", fullInputs);
+    expect(story).toContain("Revelation map");
+    expect(story).toContain("# Concept\n\n");
+    expect(assemblePrompt(kit, "review", { ...fullInputs, transcript: null })).toContain("lexvm -- transcript");
   });
 
   it("contains no model identifiers", () => {
@@ -220,7 +249,7 @@ describe("runPrompt", () => {
     let out = "";
     const logs: string[] = [];
     expect(await runPrompt(["--stage", "concept", "--idea", "A lighthouse"], { stdout: (t) => (out += t) })).toBe(0);
-    expect(out).toContain("# Stage 1 of 4: concept");
+    expect(out).toContain("# Stage 1 of 5: concept");
     expect(out).toContain("> A lighthouse");
     const target = join(tmp, "nested", "oneshot.md");
     expect(await runPrompt(["--out", target, "--lang", "en"], { log: (l) => logs.push(l) })).toBe(0);

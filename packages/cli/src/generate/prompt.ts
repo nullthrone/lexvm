@@ -2,8 +2,9 @@
  * `lexvm prompt`: assemble the prompt kit (spec + guide + example) for
  * copy-paste use with any LLM. Owned by the pipeline workstream.
  *
- *   lexvm prompt [--stage oneshot|concept|puzzles|world|logic|repair] [--lang de|en]
- *                [--idea "..."] [--minutes 30] [--pack <dir|file>] [--diagnostics <file>] [--out <file>]
+ *   lexvm prompt [--stage oneshot|concept|story|puzzles|world|logic|repair|review] [--lang de|en]
+ *                [--idea "..."] [--minutes 30] [--pacing narrative|balanced|puzzle] [--pack <dir|file>]
+ *                [--diagnostics <file>] [--out <file>]
  *
  * `npm run prompts` runs `--stage oneshot --out prompts/oneshot.md`, the
  * generic prompt bundled by the web app.
@@ -11,11 +12,13 @@
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { compile, type Pacing, walkthroughTranscript } from "@lexvm/engine";
 import { clean } from "../term.ts";
 import {
   assemblePrompt,
   DEFAULT_MINUTES,
   type NamedText,
+  PACINGS,
   PACK_LANGUAGES,
   type PackLanguage,
   PROMPT_STAGES,
@@ -36,8 +39,12 @@ Options:
   --lang <de|en>         Pack language (default: the language of the idea)
   --idea <text>          The story idea (or --idea-file <path>); omitted = generic prompt
   --minutes <n>          Target play time in minutes (default ${DEFAULT_MINUTES}); sizes the budget in the prompt
-  --pack <dir|file>      Existing pack directory or YAML file to include (later stages, repair)
+  --pacing <pacing>      ${PACINGS.join("|")}: how the time divides between reading and acting
+                         (default: the pack's pacing, else balanced; the one-shot prompt lets the model choose)
+  --pack <dir|file>      Existing pack directory or YAML file to include (later stages, repair, review)
   --diagnostics <file>   Diagnostics to include in a repair prompt (default: run the checks on --pack)
+
+The review stage includes the walkthrough transcript of --pack (lexvm transcript).
   --out <file>           Write to a file instead of stdout
 `;
 
@@ -53,9 +60,11 @@ class UsageError extends Error {}
 
 interface PackInputs {
   concept: string | null;
+  story: string | null;
   puzzles: string | null;
   files: NamedText[];
   language: string | null;
+  pacing: Pacing | null;
 }
 
 async function readPack(path: string): Promise<PackInputs> {
@@ -73,17 +82,31 @@ async function readPack(path: string): Promise<PackInputs> {
     const pack = files.find((f) => f.name === "pack.yaml");
     return {
       concept: await read("concept.md"),
+      story: await read("story.md"),
       puzzles: await read("puzzles.md"),
       files,
       language: pack ? languageOf(pack.content) : null,
+      pacing: pack ? pacingOf(pack.content) : null,
     };
   }
   const content = await readFile(path, "utf8");
-  return { concept: null, puzzles: null, files: [{ name: basename(path), content }], language: languageOf(content) };
+  return {
+    concept: null,
+    story: null,
+    puzzles: null,
+    files: [{ name: basename(path), content }],
+    language: languageOf(content),
+    pacing: pacingOf(content),
+  };
 }
 
 function languageOf(yaml: string): string | null {
   return /^language:\s*["']?([a-z]{2,3})\b/m.exec(yaml)?.[1] ?? null;
+}
+
+function pacingOf(yaml: string): Pacing | null {
+  const value = /^pacing:\s*["']?([a-z]+)\b/m.exec(yaml)?.[1];
+  return (PACINGS as readonly string[]).includes(value ?? "") ? (value as Pacing) : null;
 }
 
 export async function runPrompt(argv: string[], deps: PromptCliDeps = {}): Promise<number> {
@@ -123,13 +146,28 @@ export async function runPrompt(argv: string[], deps: PromptCliDeps = {}): Promi
     let idea: string | null = values.idea ?? null;
     if (values["idea-file"]) idea = await readFile(resolve(cwd, values["idea-file"]), "utf8");
 
-    const inputs: PromptInputs = { lang: (values.lang as PackLanguage | undefined) ?? null, idea, minutes };
+    if (values.pacing !== undefined && !(PACINGS as readonly string[]).includes(values.pacing)) {
+      throw new UsageError(`--pacing must be one of: ${PACINGS.join(", ")}`);
+    }
+    const inputs: PromptInputs = {
+      lang: (values.lang as PackLanguage | undefined) ?? null,
+      idea,
+      minutes,
+      pacing: (values.pacing as Pacing | undefined) ?? null,
+    };
     if (values.pack) {
       const packPath = resolve(cwd, values.pack);
       const pack = await readPack(packPath);
       inputs.concept = pack.concept;
+      inputs.story = pack.story;
       inputs.puzzles = pack.puzzles;
       inputs.files = pack.files;
+      if (inputs.pacing === null) inputs.pacing = pack.pacing;
+      if (stage === "review") {
+        const compiled = compile(pack.files.map((f) => ({ name: f.name, text: f.content })));
+        if (compiled.pack === null) log("lexvm prompt: the pack does not compile; paste the transcript by hand.");
+        else inputs.transcript = walkthroughTranscript(compiled.pack).markdown;
+      }
       if (inputs.lang === null && (pack.language === "de" || pack.language === "en")) inputs.lang = pack.language;
       const dirName = basename(packPath);
       if ((await stat(packPath)).isDirectory() && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(dirName)) inputs.packId = dirName;
@@ -183,6 +221,7 @@ function parse(argv: string[]) {
       idea: { type: "string" },
       "idea-file": { type: "string" },
       minutes: { type: "string" },
+      pacing: { type: "string" },
       pack: { type: "string" },
       diagnostics: { type: "string" },
       out: { type: "string" },

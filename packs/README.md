@@ -11,7 +11,7 @@ releases as `<pack-id>.lexpack.json`.
 | Pack | Language | Length | License | Status |
 |---|---|---|---|---|
 | [`letzte-nacht-der-reichsmark`](letzte-nacht-der-reichsmark/pack.yaml): *Die letzte Nacht der Reichsmark* | German | 45 minutes (estimated 47, speedrun 24; 74-step walkthrough) | CC-BY-4.0 | Noir mystery, Hamburg 1948; design notes in [`design/`](letzte-nacht-der-reichsmark/design/) |
-| [`locked-study`](locked-study/pack.yaml): *The Locked Study* | English | 5 minutes (estimated 6; 17-step walkthrough) | CC0-1.0 | Demo and reference example for authors and the prompt kit |
+| [`locked-study`](locked-study/pack.yaml): *The Locked Study* | English | 7 minutes (estimated 7; 17-step walkthrough) | CC0-1.0 | Demo and reference example for authors and the prompt kit |
 
 Length is the pack's `playtime` target, shown on its library card; the
 estimate is what `lexvm check` computes from the texts and the walkthrough.

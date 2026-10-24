@@ -13,7 +13,7 @@ and the same verification ([ADR 0007](../adr/0007-llm-pipeline-byo-prompt-kit-an
 
 Neither flow replaces playtesting. Verification proves that a pack is
 *winnable without dead ends*; whether it is *good* is decided by people. See
-the [authoring guide](guide.md) for what "good" means, and section 14 there
+the [authoring guide](guide.md) for what "good" means, and section 15 there
 for reviewing a pack.
 
 ## The prompt kit

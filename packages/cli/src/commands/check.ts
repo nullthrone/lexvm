@@ -184,7 +184,7 @@ function printReport(report: CheckReport, baseDir: string): void {
       target = off ? color.yellow(text) : text;
     }
     out(
-      `  playtime      ≈ ${expected} min expected, speedrun ${speedrun} min, ${target}; ${p.words.path + p.words.optional} words, ${p.wordsPerMinute} wpm`,
+      `  playtime      ≈ ${expected} min expected, speedrun ${speedrun} min, ${target}; ${p.words.path + p.words.optional} words, ${p.wordsPerMinute} wpm, reading ${Math.round(p.readingShare * 100)}%${p.pacing === null ? "" : ` (pacing ${p.pacing})`}`,
     );
   }
   const x = report.explore;

@@ -3,14 +3,22 @@
  * an LLM. Used by `lexvm prompt` (copy-paste prompts for any LLM) and by
  * `lexvm generate` (staged API pipeline), so both always use the same words.
  */
-import { budgetForMinutes, PLAYTIME_DEFAULTS, type PlaytimeBudget } from "@lexvm/engine";
+import {
+  budgetForMinutes,
+  DEFAULT_PACING,
+  PACING_READING_SHARE,
+  type Pacing,
+  PLAYTIME_DEFAULTS,
+  type PlaytimeBudget,
+} from "@lexvm/engine";
 import { fenceFile } from "./fenced.ts";
 import { type PromptKit, renderTemplate } from "./kit.ts";
 
-export const PROMPT_STAGES = ["oneshot", "concept", "puzzles", "world", "logic", "repair"] as const;
+export const PROMPT_STAGES = ["oneshot", "concept", "story", "puzzles", "world", "logic", "repair", "review"] as const;
 export type PromptStage = (typeof PROMPT_STAGES)[number];
 
 export const PACK_LANGUAGES = ["de", "en"] as const;
+export const PACINGS = ["narrative", "balanced", "puzzle"] as const satisfies readonly Pacing[];
 export type PackLanguage = (typeof PACK_LANGUAGES)[number];
 
 export const DEFAULT_MINUTES = 30;
@@ -30,6 +38,8 @@ export interface PromptInputs {
   /** The user's idea; null renders the "write your idea here" instruction (generic prompt). */
   idea: string | null;
   minutes: number;
+  /** Pacing of the pack; null or undefined = the default (balanced), or the model's choice in the one-shot prompt. */
+  pacing?: Pacing | null;
   /** Pack id (kebab-case), when the output directory already fixes it. */
   packId?: string | null;
   /** Author for pack metadata (API pipeline); null = ask the model to use the user's name. */
@@ -41,8 +51,12 @@ export interface PromptInputs {
   staged?: boolean;
   /** design/concept.md, if available. */
   concept?: string | null;
+  /** design/story.md, if available. */
+  story?: string | null;
   /** design/puzzles.md, if available. */
   puzzles?: string | null;
+  /** The walkthrough transcript (lexvm transcript), for the review stage. */
+  transcript?: string | null;
   /** Current pack files (YAML), if available. */
   files?: NamedText[] | null;
   /** Diagnostics text for the repair stage. */
@@ -102,6 +116,13 @@ function renderFiles(files: NamedText[] | null | undefined): string {
   return files.map((f) => fenceFile(f.name, f.content)).join("\n\n");
 }
 
+function renderTranscript(text: string | null | undefined): string {
+  if (text === null || text === undefined || text.trim() === "") {
+    return "(Paste the output of `npm run lexvm -- transcript <pack>` here.)";
+  }
+  return fence(text.trim(), "markdown");
+}
+
 function renderDiagnostics(text: string | null | undefined): string {
   if (text === null || text === undefined || text.trim() === "") {
     return "(Paste the output of `npm run lexvm -- check <pack>` or the diagnostics shown by the LexVM app here.)";
@@ -116,48 +137,63 @@ function range(r: { min: number; max: number }): string {
   return `${fmt(r.min)}–${fmt(r.max)}`;
 }
 
-function budgetIntro(minutes: number): string {
+function budgetIntro(minutes: number, pacing: Pacing): string {
   return (
-    `Size budget for about ${minutes} minutes. LexVM estimates the play time from the walkthrough and the texts; ` +
-    `\`lexvm check\` warns when the estimate misses \`playtime\` by more than ${TOLERANCE_PERCENT}%. Stay within these ranges:`
+    `Size budget for about ${minutes} minutes with pacing \`${pacing}\` (about ${Math.round(PACING_READING_SHARE[pacing] * 100)}% of the time is reading). ` +
+    "LexVM estimates the play time from the walkthrough and the texts; " +
+    `\`lexvm check\` warns when the estimate misses \`playtime\` by more than ${TOLERANCE_PERCENT}%, and when the reading share misses the pacing. Stay within these ranges:`
   );
 }
 
 /** The size budget for one target length, as Markdown (stage prompts). */
-export function renderBudget(minutes: number, lang: PackLanguage | null): string {
+export function renderBudget(minutes: number, lang: PackLanguage | null, pacing: Pacing = DEFAULT_PACING): string {
   if (lang !== null) {
-    return [budgetIntro(minutes), ...budgetForMinutes(minutes, lang).notes.map((n) => `- ${n}`)].join("\n");
+    return [
+      budgetIntro(minutes, pacing),
+      ...budgetForMinutes(minutes, lang, { pacing }).notes.map((n) => `- ${n}`),
+    ].join("\n");
   }
   const lines = PACK_LANGUAGES.map((l) => {
-    const b = budgetForMinutes(minutes, l);
+    const b = budgetForMinutes(minutes, l, { pacing });
     return `- ${LANGUAGE_NAMES[l]} pack (\`${l}\`): ${range(b.walkthroughSteps)} walkthrough steps and ${range(b.words)} player-visible words in the whole pack.`;
   });
   return [
-    budgetIntro(minutes),
+    budgetIntro(minutes, pacing),
     ...lines,
     '- About a quarter of the steps are dialogue choices; about 60% of the words appear along the walkthrough, the rest in optional descriptions, dialogue branches and custom responses (see "Length budget" in the guide).',
   ].join("\n");
 }
 
-/** The size budget table for 15/30/45/60 minutes (and the requested length), as Markdown (one-shot prompt). */
-export function renderBudgetTable(minutes: number, lang: PackLanguage | null): string {
+/**
+ * The size budget table for 15/30/45/60 minutes (and the requested length) and every pacing (or the given
+ * one), as Markdown (one-shot prompt).
+ */
+export function renderBudgetTable(minutes: number, lang: PackLanguage | null, pacing: Pacing | null = null): string {
   const rows = [...new Set<number>([...BUDGET_TABLE_MINUTES, minutes])].sort((a, b) => a - b);
   const langs = lang === null ? [...PACK_LANGUAGES] : [lang];
-  const budgets = (m: number): PlaytimeBudget[] => langs.map((l) => budgetForMinutes(m, l));
+  const pacings: readonly Pacing[] = pacing === null ? PACINGS : [pacing];
+  const budgets = (m: number, p: Pacing): PlaytimeBudget[] => langs.map((l) => budgetForMinutes(m, l, { pacing: p }));
   const head =
     langs.length === 1
-      ? ["| Play time | Walkthrough steps | Words of text |", "|---|---|---|"]
+      ? ["| Play time | Pacing | Walkthrough steps | Words of text |", "|---|---|---|---|"]
       : [
-          `| Play time | ${langs.map((l) => `\`${l}\`: walkthrough steps | \`${l}\`: words of text`).join(" | ")} |`,
-          `|---|${langs.map(() => "---|---|").join("")}`,
+          `| Play time | Pacing | ${langs.map((l) => `\`${l}\`: walkthrough steps | \`${l}\`: words of text`).join(" | ")} |`,
+          `|---|---|${langs.map(() => "---|---|").join("")}`,
         ];
-  const body = rows.map(
-    (m) =>
-      `| ${m} min | ${budgets(m)
-        .map((b) => `${range(b.walkthroughSteps)} | ${range(b.words)}`)
-        .join(" | ")} |`,
+  const body = rows.flatMap((m) =>
+    pacings.map(
+      (p) =>
+        `| ${m} min | ${p} | ${budgets(m, p)
+          .map((b) => `${range(b.walkthroughSteps)} | ${range(b.words)}`)
+          .join(" | ")} |`,
+    ),
   );
   return [...head, ...body].join("\n");
+}
+
+function describePacing(pacing: Pacing | null | undefined): string {
+  const p = pacing ?? DEFAULT_PACING;
+  return `\`${p}\` (about ${Math.round(PACING_READING_SHARE[p] * 100)}% of the play time is reading)`;
 }
 
 function provenance(inputs: PromptInputs): { AUTHOR: string; LICENSE: string; GENERATOR: string } {
@@ -191,14 +227,18 @@ export function promptVars(kit: PromptKit, inputs: PromptInputs): Record<string,
         : describeLanguage(inputs.lang),
     MINUTES: String(inputs.minutes),
     // The shared system prompt is rendered with minutes 0 and uses neither.
-    BUDGET: inputs.minutes > 0 ? renderBudget(inputs.minutes, inputs.lang) : "",
-    BUDGET_TABLE: inputs.minutes > 0 ? renderBudgetTable(inputs.minutes, inputs.lang) : "",
+    PACING: describePacing(inputs.pacing),
+    PACING_ID: inputs.pacing ?? DEFAULT_PACING,
+    BUDGET: inputs.minutes > 0 ? renderBudget(inputs.minutes, inputs.lang, inputs.pacing ?? DEFAULT_PACING) : "",
+    BUDGET_TABLE: inputs.minutes > 0 ? renderBudgetTable(inputs.minutes, inputs.lang, inputs.pacing ?? null) : "",
     IDEA: renderIdea(inputs.idea),
     PACK_ID: inputs.packId
       ? `\`${inputs.packId}\``
       : "a short kebab-case id derived from the title (e.g. `hamburg-1948`)",
     CONCEPT: renderDoc("concept.md", inputs.concept, "concept"),
+    STORY: renderDoc("story.md", inputs.story, "story"),
     PUZZLES: renderDoc("puzzles.md", inputs.puzzles, "puzzle design"),
+    TRANSCRIPT: renderTranscript(inputs.transcript),
     FILES: renderFiles(inputs.files),
     DIAGNOSTICS: renderDiagnostics(inputs.diagnostics),
     ...provenance(inputs),

@@ -210,7 +210,7 @@ describe("lexvm build", () => {
         packs: Array<{ id: string; playtime?: number; estimatedMinutes?: number }>;
       };
       const entry = index.packs.find((p) => p.id === "locked-study")!;
-      expect(entry.playtime).toBe(5);
+      expect(entry.playtime).toBe(7);
       expect(Number.isInteger(entry.estimatedMinutes)).toBe(true);
       expect(entry.estimatedMinutes).toBeGreaterThanOrEqual(4);
       expect(entry.estimatedMinutes).toBeLessThanOrEqual(8);
@@ -268,6 +268,23 @@ describe("lexvm schema", () => {
       expect(schema.$id).toMatch(/lexvm-pack-1\.schema\.json$/);
       expect(Object.keys(schema.$defs)).toContain("Condition");
       expect(readFileSync(join(ROOT, "schema/lexvm-pack-1.schema.json"), "utf8")).toBe(readFileSync(out, "utf8"));
+    },
+    TIMEOUT,
+  );
+});
+
+describe("lexvm transcript", () => {
+  it(
+    "prints the walkthrough as Markdown and writes it to a file",
+    () => {
+      const r = lexvm(["transcript", LOCKED_STUDY]);
+      expect(r.code).toBe(0);
+      expect(r.stdout).toMatch(/^# The Locked Study\n/);
+      expect(r.stdout).toContain("## Entrance Hall");
+      expect(r.stdout).toContain("> Talk to Graves");
+      const file = join(tmp, "transcript.md");
+      expect(lexvm(["transcript", LOCKED_STUDY, "--out", file]).code).toBe(0);
+      expect(readFileSync(file, "utf8")).toBe(r.stdout);
     },
     TIMEOUT,
   );
@@ -458,7 +475,9 @@ describe("lexvm check", () => {
     () => {
       const r = lexvm(["check", "--no-explore", "packs/locked-study"]);
       expect(r.code, r.stdout + r.stderr).toBe(0);
-      expect(r.stdout).toMatch(/ {2}playtime {6}≈ \d+ min expected, speedrun \d+ min, target 5 min \([+-]\d+%\)/);
+      expect(r.stdout).toMatch(
+        / {2}playtime {6}≈ \d+ min expected, speedrun \d+ min, target 7 min \([+-]\d+%\); \d+ words, \d+ wpm, reading \d+%/,
+      );
       expect(r.stdout).toContain("playtime.estimate");
       expect(r.stdout).not.toContain("playtime.too-");
 

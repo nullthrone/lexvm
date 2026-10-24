@@ -488,6 +488,13 @@ export const PackSchema = z.strictObject({
   generator: z.strictObject({ pipeline: z.string().min(1).optional(), notes: z.string().min(1).optional() }).optional(),
   /** Target play time in minutes; `lexvm check` compares its play time estimate against it (spec section 17). */
   playtime: z.number().int().positive().optional(),
+  /**
+   * How the play time divides between reading and interaction (spec section 17):
+   * 'narrative' (about 60% reading), 'balanced' (about 45%), 'puzzle' (about 30%).
+   * Sizes the budget, sets the text budgets (section 4) and, when declared,
+   * makes `lexvm check` compare the reading share against it.
+   */
+  pacing: z.enum(["narrative", "balanced", "puzzle"]).optional(),
   maxScore: z.number().int().positive().optional(),
   start: z.strictObject({
     room: IdSchema,
@@ -514,5 +521,7 @@ export const PackSchema = z.strictObject({
 
 /** A parsed, normalised pack. */
 export type Pack = z.output<typeof PackSchema>;
+/** How the play time divides between reading and interaction. */
+export type Pacing = NonNullable<Pack["pacing"]>;
 /** What authors (and LLMs) write, before normalisation. */
 export type PackInput = z.input<typeof PackSchema>;

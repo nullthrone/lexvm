@@ -1,11 +1,13 @@
-<!-- template: stage 4 (logic). Output files: rules.yaml, dialogues.yaml, solution.yaml (plus any earlier file that must change, complete). Placeholders: LANG MINUTES BUDGET CONCEPT PUZZLES FILES. -->
-# Stage 4 of 4: logic
+<!-- template: stage 4 (logic). Output files: rules.yaml, dialogues.yaml, solution.yaml (plus any earlier file that must change, complete). Placeholders: LANG MINUTES PACING BUDGET CONCEPT STORY PUZZLES FILES. -->
+# Stage 5 of 5: logic
 
-Write the **logic** of the adventure on top of the world files below: rules, dialogues, endings, hints and the walkthrough. Pack language: {{LANG}}; target play time: about {{MINUTES}} minutes.
+Write the **logic** of the adventure on top of the world files below: rules, dialogues, endings, hints and the walkthrough. Pack language: {{LANG}}; target play time: about {{MINUTES}} minutes; pacing: {{PACING}}.
 
 {{BUDGET}}
 
 The walkthrough length and the texts of rules, dialogues and endings decide whether the game hits this target: count the walkthrough steps before you answer.
+
+The dialogues and rule messages carry most of the story. Write the conversations' turning points, the responses that solve puzzles, the deductions and the endings from the story's scenes and key-scene prose: what the player learns, how the character reacts, and in a sentence or two of the player character's voice what it means. Write the transitions between chapters (a `once` rule on `enter`, or the solving response). Follow the voice and rhythm of the story document.
 
 Return these files:
 
@@ -20,6 +22,10 @@ Before you answer, go through the checklist of common mistakes.
 # Concept
 
 {{CONCEPT}}
+
+# Story
+
+{{STORY}}
 
 # Puzzle design
 
