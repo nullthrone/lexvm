@@ -489,7 +489,7 @@ objects:
     synonyms: [vergessener Schlüssel]
     location: nowhere
     clue: true
-    description: Jakobs Spindschlüssel hing seit Donnerstagmittag zu Hause in der Nissenhütte am Haken. Jakob hatte ihn vergessen. Wer kam dann noch an den Spind?
+    description: Jakobs Spindschlüssel hing seit Donnerstagmittag bei den Brodersens zu Hause am Haken. Jakob hatte ihn vergessen. Wer kam dann noch an den Spind?
 
   clue_kroeger_version:
     name: Krögers Version

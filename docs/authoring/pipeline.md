@@ -86,7 +86,10 @@ words when narrative: fewer puzzles, more story.
 Verification proves a pack can be won; it cannot tell whether a reader can
 follow it. `lexvm transcript <pack>` replays the walkthrough and prints
 everything the player reads along it as Markdown (room titles as headings,
-commands as quotes; `--out <file>` writes it to a file). Read it from start to
+commands as quotes, each new notebook entry with its text where it is learned;
+`--out <file>` writes it to a file). The entries are there because the player
+can read them at that moment: an entry that names something the transcript
+has not shown yet is ahead of the story. Read it from start to
 end, or have it reviewed:
 
 ```sh

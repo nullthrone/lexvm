@@ -430,3 +430,39 @@ compiled pack before and after, with every text field, name, synonym and
 hint step removed, is identical: the revision changes no mechanics. Both
 tap-walkthrough end-to-end tests pass. `lexvm transcript` prints the text a
 player reads along the walkthrough (about 5,800 words, before about 3,000).
+
+## Notebook entries ahead of the story
+
+A player opened the notebook during Anni's opening conversation and read
+»Freund: Tadeusz am Zollkanal« two nodes before Anni names him. The cause
+was in the design from the start: world.md wrote each clue's text as a
+summary of its whole source, cast.md placed the `learn` in an early node of
+that source, and the merge of `an_polizei` into `an_jakob` moved it earlier
+still. No stage owned the timing of a clue against its text, and the
+transcript, which the review reads, showed no notebook entries.
+
+The rule now in the authoring guide: a clue says only what the player has
+read when its `learn` runs; the exception is an entry that is the text of a
+document. Reading the transcript, which now shows every entry where it is
+learned, found five more entries ahead of the story:
+
+| Clue | Ahead of the story | Change |
+|---|---|---|
+| `clue_auftrag` | Tadeusz and the Zollkanal (`an_bezahlung`) | `learn` moved from `an_jakob` to the end of `an_bezahlung` |
+| `clue_asmussen` | his denial, the Ruine, the 500 Reichsmark (`a_w_geld`) | `learn` moved from `a_w_start` to option `a_w_ablehnen` |
+| `clue_zaehlheft` | the register and its owner (`t_elise`) | `learn` moved from `t_heft` to `t_elise`; the point stays in `t_heft` |
+| `clue_schweigegeld` | that Anni paid Voss with it (`ah_warum`) | `learn` moved from `ah_kuvert` to `ah_warum`; the point stays in `ah_kuvert` |
+| `clue_gestaendnis` | where Jakob lies (`k_wo`) | `learn` moved from `k_gestaendnis` to `k_wo`; the points stay in `k_gestaendnis` |
+| `clue_schluessel` | »Nissenhütte«, before anyone says where the Brodersens live | text: »bei den Brodersens zu Hause« |
+
+Each `learn` moved within a forced sequence: the nodes in between offer one
+option and a dialogue accepts only `choose`, so no state outside the
+conversation changes. Left as they are: `clue_persilschein`,
+`clue_anweisung`, `clue_loeschliste` and the card fields of `clue_asmussen`
+(the entry is the document), and the lock in `clue_zweitschluessel`
+(Voss's own observation of what the player has just seen). Version 1.1.1.
+
+### Verification
+
+`lexvm check`: 0 errors, 0 warnings; walkthrough 74 steps, 25/25;
+exploration complete, 6,869 states (unchanged), 0 dead ends.
