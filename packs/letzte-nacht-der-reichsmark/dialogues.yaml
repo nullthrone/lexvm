@@ -28,7 +28,6 @@ dialogues:
         say: "»Er ist in Krögers Kolonne, Schuppen 17. Jakob klaut nicht. Jakob zählt.« Zum ersten Mal sieht sie weg, auf ihre Hände. »Seit Russland zählt er jeden Löffel Suppe, jede Stufe, jede Kiste, die der Kran aus einem Schiff hebt. Alles schreibt er in ein Heft. Das hat ihn durch die Gefangenschaft gebracht, sagt er.«"
         do:
           - say: "Sie holt Luft, und ihre Stimme wird härter. »Freitag früh haben sie seinen Spind aufgemacht, Nummer 23. Kröger hat aufgeschlossen, das ist sein Vorarbeiter, und Kommissar Petersen hat zugesehen. Drin lagen zwei Stangen englische Zigaretten. Jetzt ist Jakob ein Dieb, der mit der Beute abgehauen ist. Das schreibt Petersen in seine Akte, und dann sucht er nicht weiter.«"
-          - learn: clue_auftrag
         options:
           - id: an_frag_schluessel
             text: "»Wer hat einen Schlüssel zu dem Spind?«"
@@ -48,6 +47,8 @@ dialogues:
         do:
           - say: "»Fragen Sie Tadeusz am Zollkanal. Er ist Jakobs Freund, sie trinken nachts zusammen Muckefuck, Ersatzkaffee aus der Thermoskanne. Ich bin in der Siedlung, Hütte 14.« Dann ist sie fort, so schnell, wie man geht, wenn man nicht weinen will. Auf dem Besucherstuhl bleibt ein nasser Fleck."
           - say: Du ordnest, was du hast. Ein Spind, zu dem Jakob seit Donnerstagmittag keinen Schlüssel mehr hatte, und in dem trotzdem Diebesgut lag. Ein Freund am Zollkanal. Ein Vorarbeiter, der beim Aufschließen dabei war. Das ist nicht viel. Aber es ist mehr, als der Kommissar aufgeschrieben hat.
+          # Learned last: the entry names Tadeusz, whom Anni names only here.
+          - learn: clue_auftrag
           - move: { object: reichsmark, to: inventory }
           - set: auftrag_angenommen
           - move: { object: anni, to: nissenhuette }
@@ -85,7 +86,6 @@ dialogues:
       ah_kuvert:
         say: "Lange sagt sie nichts. Die Nadel steckt im Stoff, ihre Hand liegt daneben. Dann steht sie auf, holt die Blechdose vom Bord und stellt sie vor dich hin, wie man einen Beweis vor Gericht hinlegt. Darin liegt nur noch ein leeres Kuvert mit einem Stempel: ›A. & Co. · Speicher K‹. »Zweihundert Reichsmark«, sagt sie. »›Von der Kolonne‹, hat er gesagt. Die Kolonne hat noch nie für irgendwen gesammelt.«"
         do:
-          - learn: clue_schweigegeld
           - score: 1
           - if:
               when: { has: clue_asmussen }
@@ -102,6 +102,9 @@ dialogues:
           - when: { has: reichsmark }
             text: "Zum ersten Mal lächelt sie, und es ist kein freundliches Lächeln. »In Ihrer Tasche, Voss. Ich hab Sie davon bezahlt. Ich hab mir gedacht: Wenn es schon Schweigegeld ist, soll es wenigstens für Jakob reden.« Sie nimmt die Nadel wieder auf. »Jetzt reden Sie.«"
           - text: "Zum ersten Mal lächelt sie, und es ist kein freundliches Lächeln. »Ich hab Sie davon bezahlt, Voss. Wo es jetzt ist, will ich nicht wissen. Ich hab mir gedacht: Wenn es schon Schweigegeld ist, soll es wenigstens für Jakob reden.« Sie nimmt die Nadel wieder auf. »Jetzt reden Sie.«"
+        # Learned here, not in ah_kuvert: the entry says Anni paid Voss with it.
+        do:
+          - learn: clue_schweigegeld
         # No options: her line closes the scene.
       ah_lebt:
         say:
@@ -317,7 +320,6 @@ dialogues:
         say: "»Von der Kolonne«, sagst du. »In einem Kuvert mit dem Stempel von Speicher K.« Kröger starrt in sein Glas. Lange. Dann schiebt er es weg, und du merkst, dass er die ganze Zeit nur darauf gewartet hat, dass jemand fragt. »Ich hab ihn nicht geschubst, ehrlich. Er is mir nach, bis rauf zur Luke. Da is er auf der Treppe an der Ladeluke ausgerutscht, und das Bein war hin. Ich hab’s knacken hören.«"
         do:
           - say: "Er schluckt. »Ich wollt ’n Arzt holen. Wirklich. Aber dann kam … es kam einer, der hat gesagt, das geht nich. Seitdem bring ich ihm jeden Abend Wasser. Jeden Abend, Voss. Mit dem Boot.« Er sieht dich an wie einer, der eine Last abgesetzt hat und nicht weiß, wohin mit den Händen."
-          - learn: clue_gestaendnis
           - score: 2
         options:
           - id: k_g_wo
@@ -330,6 +332,8 @@ dialogues:
           - say: "»Über die Brücke kommen Se nachts nicht, da is der Zoll. Ich nehm jeden Abend das Boot vom Wächter am Zollkanal. Der sieht weg. Der sieht immer weg.« Kröger hebt den Kopf, und zum ersten Mal an diesem Abend fragt er etwas. »Was wird jetzt aus mir?«"
           - say: "Ein Persilschein, so nennt man diese Gefälligkeitsbescheinigungen, mit denen einer dem anderen bestätigt, er sei nie ein richtiger Nazi gewesen. Asmussen also. Der Mann, der Kröger damit reingewaschen hat, ist derselbe, dem Speicher K gehört und der am Baumwall nichts von Brodersen wissen wollte. Kröger hat einen Herrn, und er hat ihn gerade genannt, ohne es zu merken. Wer den Arzt verboten hat, kann dir nur einer sagen, der dabei war: Jakob."
           - move: { object: bodenschluessel, to: inventory }
+          # Learned here, not in k_gestaendnis: the entry says where Jakob lies.
+          - learn: clue_gestaendnis
           - learn: clue_persilschein
         options:
           - id: k_g_zeuge
@@ -354,8 +358,6 @@ dialogues:
     nodes:
       a_w_start:
         say: "Unter dem Viadukt löst sich ein Mann aus dem Regen, als hätte er auf dich gewartet. Kamelhaarmantel, Siegelring, und sein Hut ist der einzige trockene in Hamburg. Er reicht dir eine Karte, bevor du ausweichen kannst. »Voss, nicht wahr? Asmussen, Kaffee-Import. Sie haben vor dem Krieg meine Ladungen versichert.« Er lächelt. »Und jetzt fragen Sie im Hafen herum, höre ich.«"
-        do:
-          - learn: clue_asmussen
         options:
           - id: a_w_wer
             text: "»Kennen Sie Jakob Brodersen?«"
@@ -369,6 +371,8 @@ dialogues:
               - move: { object: asmussen, to: kontor }
               - say: "Er lächelt, als kenne er den Witz schon. »Wie Sie meinen.« Der Mantel verschwindet Richtung Speicherstadt, und der Regen schließt sich hinter ihm."
               - say: Du siehst auf die Karte in deiner Hand. Nach Speicher K hatte ihn niemand gefragt, und trotzdem war es das Erste, was er abgestritten hat. Ein Mann, der fünfhundert Mark bietet, damit du aufhörst, hat Angst vor dem, was du findest, wenn du weitermachst.
+              # Learned last: the entry sums up the whole encounter.
+              - learn: clue_asmussen
 
   # -------------------------------------------------------------------------
   # P4b: the backyard. Default dialogue of lene (in hinterhof).
@@ -464,7 +468,6 @@ dialogues:
       t_heft:
         say: "Du erklärst es ihm: die Ware, die erst Donnerstagnacht an Land kam, und der Schlüssel, der seit Mittag zu Hause hing. Er hört zu, ohne zu nicken. Dann steht er auf, geht in die Wachbude und kommt mit einem Heft zurück, dessen Ecken vom vielen Blättern rund sind. »Von Jakob. Um halb zwei hat er es mir gegeben. ›Wenn ich bis morgen nicht zurück bin, gib es Anni.‹« Er hält es dir hin. »Ich habe es ihr nicht gegeben.«"
         do:
-          - learn: clue_zaehlheft
           - score: 1
           - say: "Du blätterst bis zur letzten beschriebenen Seite. Jakobs Schrift ist klein und ordentlich, Zahl unter Zahl: ›200 Kisten, letzte 01:20. Zählung 180?! K. lässt 20 Ki. in Elise 7. Geh hinterher.‹ Jakob hat gesehen, was du dir erst zusammenrechnen musstest, und er ist der Ware nachgegangen."
         options:
@@ -473,7 +476,9 @@ dialogues:
             goto: t_elise
       t_elise:
         say: "»Hinter dem Lastkahn ›Elise 7‹ her, am Kanal entlang, Richtung Speicherstadt. Ich habe ihm nachgesehen, bis der Regen ihn hatte.« Tadeusz schlägt das Register der Lastkähne in der Wachbude auf und legt den Finger auf eine Zeile. »Hier steht, wem sie gehört: A. & Co., Speicher K.«"
+        # Learned here, not in t_heft: the entry quotes the register.
         do:
+          - learn: clue_zaehlheft
           - if:
               when: { has: clue_asmussen }
               then:

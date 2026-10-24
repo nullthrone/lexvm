@@ -26,6 +26,12 @@ First release in preparation: v0.1 "Playable".
   unchanged mechanics, in plainer language (fewer harbour terms), pacing
   `narrative`, about 65 minutes.
 - *The Locked Study*: target play time 7 minutes (the recalibrated estimate).
+- Notebook entries may only say what the player has read when they are
+  learned: `lexvm transcript` shows each new entry with its text where it is
+  learned, the authoring guide, its checklist and the logic and review
+  prompts state the rule. *Die letzte Nacht der Reichsmark* 1.1.1 learns six
+  entries no earlier than their facts are told (»Der Fall Brodersen« named
+  Tadeusz before Anni did).
 
 ### Added
 
