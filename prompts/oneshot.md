@@ -217,6 +217,7 @@ which is what the player loads. The player can also import `.yaml` and
 | `policy` | `"forgiving"` | no | Default and currently the only policy: no losing endings, no dead ends. |
 | `generator` | `{pipeline?, notes?}` | no | Provenance, free text. |
 | `playtime` | int (minutes) | no | Target play time. `lexvm check` compares its play time estimate against it (section 17). |
+| `pacing` | `"narrative"` \| `"balanced"` \| `"puzzle"` | no | How the play time divides between reading and interaction (about 60%, 45% or 30% reading). Sizes the text budgets (section 4) and, when declared, is checked by the play time estimate (section 17). |
 | `maxScore` | int | no | Enables the score display. |
 | `start` | `{room, intro?}` | yes | Starting room and intro text. |
 | `verbs` | map id → Verb | no | Pack verbs and overrides for core verbs. |
@@ -252,9 +253,12 @@ Inside strings:
 - A blank line separates paragraphs; a single newline is a line break.
 - Nothing else is markup. Text is never interpreted as HTML.
 
-Keep texts short for phone screens: room descriptions ≤ 600 characters,
+Keep texts readable on phone screens: room descriptions ≤ 600 characters,
 object descriptions ≤ 400, dialogue lines ≤ 300, option texts ≤ 80, names ≤ 24.
-Longer texts produce warnings.
+A pack with `pacing: narrative` tells its scenes in full and gets room
+descriptions ≤ 1000, object descriptions ≤ 600 and dialogue lines ≤ 600; option
+texts and names keep their limits, because they are buttons. Longer texts
+produce warnings (`text.too-long`).
 
 ### 5. Rooms and exits
 
@@ -674,7 +678,7 @@ in `@lexvm/engine`.
 | `t_cmd` | 10 s | `secondsPerCommand` | Per command: perceive the scene, tap the object, pick the verb. |
 | `t_choice` | 6 s | `secondsPerChoice` | Per dialogue choice. |
 | `c` | 0.6 | `coverage` | Share of the optional content a typical player sees. |
-| `f` | 0.5 | `failedAttemptsPerCommand` | Unproductive attempts per productive command. |
+| `f` | 1 | `failedAttemptsPerCommand` | Unproductive attempts per productive command. |
 | tolerance | 0.25 | `tolerance` | Allowed relative deviation from the target. |
 | target | `playtime` | `targetMinutes`; CLI `--target-minutes` | The length the pack should have. |
 
@@ -687,12 +691,33 @@ per minute in German and 1234 in English; German words are longer, so German
 gets fewer words per minute. The defaults are deliberately below the lab
 values: the text is read on a phone screen, in a game, and partly re-read.
 
+The attempt rate `f` comes from the playtests of
+`packs/letzte-nacht-der-reichsmark` (74 walkthrough steps, 47 of them
+commands): a tap-only player made 180 commands, an adventure veteran 226.
+After the optional looks and dialogue options the model counts separately,
+that leaves about 0.9 and 1.8 unproductive attempts per productive command;
+`f = 1` is the cautious end. Earlier versions used 0.5, which underestimated
+the interaction time of real players and therefore pushed packs to cut text
+to meet their target ([ADR 0012](../adr/0012-narrative-pacing.md)).
+
+**Reading share and pacing.** `reading = (W_path + c · W_optional) / wpm` is
+the part of `minutes_expected` spent reading; the reading share is
+`reading / minutes_expected`. A pack declares how it means to divide its time
+with `pacing`: `narrative` 0.6, `balanced` 0.45, `puzzle` 0.3. When `pacing` is
+declared and the share is more than 0.1 away from its value, `lexvm check`
+warns (`playtime.pacing`): a narrative pack whose story is told too thinly for
+its mechanics, or a pack that reads much more than it plays. A pack without
+`pacing` is never warned and is sized as `balanced`.
+
 **Diagnostics** (path `playtime`; Appendix A):
 
 - `playtime.estimate` (info, always): "≈ 34 min expected (speedrun 21 min);
   target 35 min", followed by the counts the estimate is based on.
 - `playtime.no-target` (info): the pack has no `playtime`; suggests the
   rounded expected time.
+- `playtime.pacing` (warning, only when `pacing` is declared): the reading
+  share is outside the pacing's band; the message says how many words of scene
+  prose are missing, or what to trim.
 - `playtime.too-short` / `playtime.too-long` (warning): `|expected / target − 1|`
   is greater than the tolerance. The message gives concrete numbers derived
   from the pack's own proportions, e.g. "≈ 12 min short: add 1-2 puzzles, or ≈
@@ -700,20 +725,25 @@ values: the text is read on a phone screen, in a game, and partly re-read.
   "≈ 4 min too long: trim ≈ 1,100 words or ≈ 20 commands". They are left out
   while the walkthrough does not reach a winning ending.
 
-**Budget.** `budgetForMinutes(minutes, language)` inverts the model for a
-target length with typical ratios of a pack: `W_optional ≈ 0.6 · W_path`,
-`D_path ≈ 0.25 ·` all walkthrough steps, `W_path ≈ 20 · C_path` (words of new
-text per productive command), `L_unseen ≈ 0.5 · C_path` and
-`O_unchosen ≈ 0.25 · D_path`. The ratios are calibrated against the reference
-pack `packs/locked-study` (English) and the German test fixture
-`packages/engine/test/fixtures/runtime/hafen.yaml`, pooled over both
-walkthroughs: measured 0.34, 0.28, 20.7, 0.56 and 0.14. The optional-word
-ratio is set higher than measured because these two packs are tiny, and a
-full-length game carries more side content (custom responses to wrong
-attempts, dialogue branches); the unchosen-option ratio is rounded up for the
-same reason. The budget gives ranges of walkthrough steps and player-visible
-words of ±tolerance/2 around the target, so a pack that stays within both
-ranges lands within the tolerance under the model's assumptions.
+**Budget.** `budgetForMinutes(minutes, language, { pacing })` inverts the
+model for a target length. The reading share of the pacing (default
+`balanced`) splits the minutes: the interaction part sizes the walkthrough
+(steps × interaction minutes per step, with tapping, wrong attempts, side looks
+and unchosen options), the reading part sizes the text
+(`W_path + c · W_optional = reading minutes · wpm`). The other ratios are
+typical of a pack: `W_optional ≈ 0.6 · W_path`, `D_path ≈ 0.25 ·` all
+walkthrough steps, `L_unseen ≈ 0.5 · C_path` and `O_unchosen ≈ 0.25 · D_path`.
+They are calibrated against the reference pack `packs/locked-study` (English)
+and the German test fixture `packages/engine/test/fixtures/runtime/hafen.yaml`,
+pooled over both walkthroughs: measured 0.34, 0.28, 0.56 and 0.14. The
+optional-word ratio is set higher than measured because these two packs are
+tiny, and a full-length game carries more side content (custom responses to
+wrong attempts, dialogue branches); the unchosen-option ratio is rounded up
+for the same reason. Earlier versions fixed the words per command at 20 instead
+of deriving them from a reading share; that implied a reading share of about
+30% for every pack. The budget gives ranges of walkthrough steps and
+player-visible words of ±tolerance/2 around the target, so a pack that stays
+within both ranges lands within the tolerance under the model's assumptions.
 
 **Where it is used.**
 
@@ -724,15 +754,16 @@ ranges lands within the tolerance under the model's assumptions.
   catalog entry in `index.json` when the walkthrough reaches a win. The
   player's library shows `playtime` and falls back to `estimatedMinutes`;
   imported packs keep the estimate computed at import.
-- `lexvm generate --minutes <n>` writes the target to `playtime` in the
-  metadata (world) stage and keeps it there, puts the budget into the stage
-  prompts, and checks the estimate in its verification gate. Play time
-  warnings come right after the errors in repair prompts. A pack that passes
-  every gate but misses the target gets one more repair round for its length
-  (if `--max-repairs` allows); if that round breaks the pack and the
-  remaining rounds cannot fix it, the last passing version is restored. The
-  generic one-shot prompt contains a budget table for 15, 30, 45 and 60
-  minutes.
+- `lexvm generate --minutes <n> --pacing <pacing>` writes the target to
+  `playtime` and the pacing to `pacing` in the metadata (world) stage and
+  keeps them there, puts the budget into the stage prompts, and checks the
+  estimate in its verification gate. Play time warnings come right after the
+  errors in repair prompts. A pack that passes every gate but misses the
+  target or its pacing gets one more repair round for its length (if
+  `--max-repairs` allows); if that round breaks the pack and the remaining
+  rounds cannot fix it, the last passing version is restored. The generic
+  one-shot prompt contains a budget table for 15, 30, 45 and 60 minutes and
+  every pacing.
 
 ### Appendix A. Diagnostic codes
 
@@ -848,6 +879,7 @@ walkthrough, play time and exploration results.
 | `playtime.estimate` | info | The estimate and what it is based on. |
 | `playtime.no-target` | info | No `playtime`; suggests a value. |
 | `playtime.too-short`, `playtime.too-long` | warning | The expected time misses the target by more than the tolerance, with concrete advice. |
+| `playtime.pacing` | warning | The reading share misses the declared `pacing` by more than 0.1. |
 
 **Tools**
 
@@ -867,7 +899,7 @@ A complete short pack. Copy its structure and style, not its content.
 # It doubles as the reference example for authors and LLM prompts.
 format: lexvm-pack/1
 id: locked-study
-version: 1.0.1
+version: 1.0.2
 title: The Locked Study
 subtitle: A short LexVM demo
 description: Your uncle has vanished and his study is locked. A tiny tour of rooms, items, a locked door, a clue and a conversation.

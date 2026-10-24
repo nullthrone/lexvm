@@ -5,7 +5,7 @@
 # It doubles as the reference example for authors and LLM prompts.
 format: lexvm-pack/1
 id: locked-study
-version: 1.0.1
+version: 1.0.2
 title: The Locked Study
 subtitle: A short LexVM demo
 description: Your uncle has vanished and his study is locked. A tiny tour of rooms, items, a locked door, a clue and a conversation.

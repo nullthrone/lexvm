@@ -57,8 +57,8 @@ objects:
       - text: Eine Sturmlaterne, halb voll Petroleum. Kröger stellt sie wohl jeden Abend hierher.
 
   bodenschluessel:
-    name: Bodenschlüssel
-    synonyms: [Schlüssel, Schnur]
+    name: Krögers Schlüssel
+    synonyms: [Schlüssel, Bodenschlüssel, Schnur]
     location: nowhere
     portable: true
     description: Ein neuer Schlüssel an einer Schnur. Er riecht nach Krögers Hosentasche.
@@ -74,7 +74,7 @@ objects:
     dialogue: anni_huette
     roomText:
       - when: { at: detektei }
-        text: "{anni} wartet auf deinem {besucherstuhl}."
+        text: "{anni|Die Frau} wartet auf deinem {besucherstuhl}."
       - text: "{anni} sitzt am Ofen und flickt eine Hose, die keinem mehr passt."
     description:
       - when: { at: detektei }
@@ -92,7 +92,7 @@ objects:
         text: Am Ecktisch sitzt {kroeger} vor einem leeren Glas.
       - when: { has: clue_kroeger_version }
         text: Am Ecktisch sitzt {kroeger} und rührt seinen Köm nicht an.
-      - text: Am Ecktisch sitzt {kroeger} vor einem Köm, den er nicht anrührt.
+      - text: Am Ecktisch sitzt {kroeger} vor einem Köm, einem Kümmelschnaps, den er nicht anrührt.
     description:
       - when: { has: clue_gestaendnis }
         text: Willi Kröger, Vorarbeiter. Er sitzt da wie einer, der eine Last abgesetzt hat und nicht weiß, wohin mit den Händen. Das Glas ist leer.
@@ -101,7 +101,7 @@ objects:
   # Right after Kröger, so its roomText follows his.
   kolonne:
     name: Kolonne
-    synonyms: [Krögers Kolonne, Männer, Schauerleute, Kollegen, Arbeiter]
+    synonyms: [Krögers Kolonne, Männer, Hafenarbeiter, Kollegen, Arbeiter]
     location: kneipe
     roomText:
       - when: { has: clue_gestaendnis }
@@ -140,7 +140,7 @@ objects:
       - when: { flag: tadeusz_rudert }
         text: "{tadeusz} sitzt unten im Boot und wartet."
       - text: Auf einem Poller sitzt {tadeusz}.
-    description: Tadeusz Wrona, Schutenwächter. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
+    description: Tadeusz Wrona, Wachmann bei den Lastkähnen. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
 
   asmussen:
     name: Asmussen
@@ -165,8 +165,8 @@ objects:
     dialogue: jakob_gespraech
     description:
       - when: { has: clue_jakob_aussage }
-        text: Jakob Brodersen, Schauermann. Fiebrig, aber wach. Er zählt jetzt die Tropfen, die durchs Dach kommen.
-      - text: Jakob Brodersen, Schauermann. Unrasiert und fiebrig, das rechte Bein mit zwei Latten geschient. Er zählt leise vor sich hin.
+        text: Jakob Brodersen, Hafenarbeiter. Fiebrig, aber wach. Er zählt jetzt die Tropfen, die durchs Dach kommen.
+      - text: Jakob Brodersen, Hafenarbeiter. Unrasiert und fiebrig, das rechte Bein mit zwei Latten geschient. Er zählt leise vor sich hin.
 
   # A sleeping child: a character, so the action sheet offers no »Benutzen«.
   # Every talk, show and give is answered by rules (»Du lässt sie schlafen.«).
@@ -294,8 +294,8 @@ objects:
     location: kaischuppen
     description:
       - when: { has: clue_tally }
-        text: "›Tally – Elspeth Gray‹. Es hängt wieder hinter dem Spalt, ein wenig schief. Was draufsteht, steht jetzt auch in deinem Notizbuch."
-      - text: "›Tally – Elspeth Gray‹. Es hängt an einem Nagel hinter dem Spalt über der Tür. Dein Arm reicht nicht bis dorthin. Du bräuchtest etwas Langes mit einem Haken."
+        text: "›Zählung – Elspeth Gray‹. Es hängt wieder hinter dem Spalt, ein wenig schief. Was draufsteht, steht jetzt auch in deinem Notizbuch."
+      - text: "›Zählung – Elspeth Gray‹. Es hängt an einem Nagel hinter dem Spalt über der Tür. Dein Arm reicht nicht bis dorthin. Du bräuchtest etwas Langes mit einem Haken."
 
   # -------------------------------------------------------------------------
   # Zum Letzten Groschen, Hinterhof
@@ -349,10 +349,10 @@ objects:
       - when:
           - { has: clue_zaehlheft }
           - { flag: tadeusz_rudert }
-        text: "Eine Bretterbude mit Petroleumlampe. Das Schutenregister liegt offen, eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+        text: "Eine Bretterbude mit Petroleumlampe. Das Register der Lastkähne liegt offen, eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
       - when: { has: clue_zaehlheft }
-        text: "Eine Bretterbude mit Petroleumlampe. Tadeusz schiebt dir das Schutenregister hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
-      - text: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Schutenregister. Als du hineinsehen willst, legt Tadeusz die Hand darauf. »Das ist nicht für Fremde.«
+        text: "Eine Bretterbude mit Petroleumlampe. Tadeusz schiebt dir das Register der Lastkähne hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
+      - text: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Register der Lastkähne. Als du hineinsehen willst, legt Tadeusz die Hand darauf. »Das ist nicht für Fremde.«
 
   # After Tadeusz, so its roomText follows his.
   thermoskanne:
@@ -361,7 +361,7 @@ objects:
     location: zollkanal
     roomText:
       - when: { flag: tadeusz_rudert }
-        text: Die {thermoskanne} steht neben ihm auf der Ducht.
+        text: Die {thermoskanne} steht neben ihm auf der Sitzbank.
       - text: Er hält eine {thermoskanne} auf den Knien.
     description:
       - when: { has: clue_zaehlheft }
@@ -369,13 +369,13 @@ objects:
       - text: Eine verbeulte Thermoskanne, zugeschraubt. Muckefuck für zwei, seit Donnerstag für einen.
 
   schuten:
-    name: Schuten
-    synonyms: [Schute, Boote, Kähne, Bootshaken]
+    name: Lastkähne
+    synonyms: [Lastkahn, Kahn, Schuten, Schute, Boote, Kähne, Bootshaken]
     location: zollkanal
     description:
       - when: { in: { object: bootshaken, location: zollkanal } }
-        text: Leere Schuten, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken. An der Wachbude lehnt einer, der niemandem zu gehören scheint.
-      - text: Leere Schuten, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken.
+        text: Leere Lastkähne, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken. An der Wachbude lehnt einer, der niemandem zu gehören scheint.
+      - text: Leere Lastkähne, Bordwand an Bordwand. Fast an jeder lehnt ein Bootshaken.
 
   zollgitter:
     name: Zollgitter
@@ -388,20 +388,20 @@ objects:
     name: Speicher K
     synonyms: [Speicher, Speicherblock, Block K, Ruine, Speicherstadt, Luken]
     location: zollkanal
-    description: Speicherblock K, halb verbrannt, die oberen Fenster schwarz. Aber die Luken im vierten Boden sind frisch mit Brettern vernagelt. Wer vernagelt einen leeren Speicher?
+    description: Speicherblock K, halb verbrannt, die oberen Fenster schwarz. Aber die Luken im vierten Stock sind frisch mit Brettern vernagelt. Wer vernagelt einen leeren Speicher?
 
   # -------------------------------------------------------------------------
   # Speicher K
   # -------------------------------------------------------------------------
   schute_elise:
-    name: Schute »Elise 7«
-    synonyms: [Schute, Elise, Elise 7, Laderaum]
+    name: Lastkahn »Elise 7«
+    synonyms: [Lastkahn, Kahn, Schute, Elise, Elise 7, Laderaum]
     location: speicher_wasserseite
     description: "Die »Elise 7«, leer. Am Bug: ›A. & Co.‹. Im Laderaum Kaffeestaub und ein abgerissenes Stück NAAFI-Banderole."
 
   bodentuer:
-    name: Bodentür
-    synonyms: [Tür, Brandschutztür, Schloss]
+    name: Brandschutztür
+    synonyms: [Tür, Bodentür, Brandschutztür, Schloss]
     location: speicher_treppe
     alsoIn: [vierter_boden]
     openable: true
@@ -416,8 +416,8 @@ objects:
       - text: Die Brandschutztür ist aufgeschlossen.
 
   kontortuer:
-    name: Kontortür
-    synonyms: [Kontor, Lichtstreifen, Klinke]
+    name: Bürotür
+    synonyms: [Kontor, Bürotür, Büro, Lichtstreifen, Klinke]
     location: speicher_treppe
     verbs: [open]
     description: Unter der Tür ein Lichtstreifen. Dahinter klirrt eine Tasse.
@@ -482,7 +482,7 @@ objects:
     synonyms: [Fall, Auftrag]
     location: nowhere
     clue: true
-    description: "Jakob Brodersen, Schauermann in Krögers Kolonne, Kaischuppen 17. Verschwunden seit Donnerstagnacht. Zählt alles in ein Heft. Freitag früh: zwei Stangen englische Zigaretten in seinem verschlossenen Spind 23; Kröger schloss auf, Kommissar Petersen sah zu. Freund: Tadeusz am Zollkanal."
+    description: "Jakob Brodersen, Hafenarbeiter in Krögers Kolonne, Schuppen 17. Verschwunden seit Donnerstagnacht. Zählt alles in ein Heft. Freitag früh: zwei Stangen englische Zigaretten in seinem verschlossenen Spind 23; Kröger schloss auf, Kommissar Petersen sah zu. Freund: Tadeusz am Zollkanal."
 
   clue_schluessel:
     name: Der vergessene Schlüssel
@@ -511,11 +511,11 @@ objects:
     description: Konrad Asmussen, Kaffee-Import, Speicher K, Kehrwieder. Kennt angeblich keinen Brodersen. Speicher K sei seit 1943 eine Ruine. Bot dir 500 Reichsmark fürs Nachhausegehen. Nach Speicher K hatte ihn niemand gefragt.
 
   clue_loeschliste:
-    name: Löschliste (200 Kisten)
-    synonyms: [Löschliste, Liste]
+    name: Ladeliste (200 Kisten)
+    synonyms: [Ladeliste, Ladeliste, Liste]
     location: nowhere
     clue: true
-    description: "Kaischuppen 17, Donnerstag, 17. Juni, Nachtschicht: Dampfer »Elspeth Gray«, NAAFI-Ware Los 4471, 200 Kisten Zigaretten. Abtransport ins NAAFI-Depot Freitag, 5 Uhr, unter Bewachung."
+    description: "Schuppen 17, Donnerstag, 17. Juni, Nachtschicht: Dampfer »Elspeth Gray«, NAAFI-Ware Los 4471, 200 Kisten Zigaretten. Abtransport ins NAAFI-Depot Freitag, 5 Uhr, unter Bewachung."
 
   clue_zweitschluessel:
     name: Zweitschlüssel
@@ -549,17 +549,17 @@ objects:
     description: "Die Ware kam Donnerstagnacht an Land, als nur noch Kröger an Spind 23 konnte. Jakob kann sie nicht hineingelegt haben. Jemand hat sie ihm untergeschoben: Kröger."
 
   clue_tally:
-    name: Tallyzettel (180 Kisten)
-    synonyms: [Tallyzettel, Tally, Zählung]
+    name: Zählzettel (180 Kisten)
+    synonyms: [Zählzettel, Zählzettel, Tally, Zählung]
     location: nowhere
     clue: true
-    description: "Tallyzettel »Elspeth Gray«, Donnerstag, Nachtschicht: 180 Kisten in den Schuppen gezählt. Unterschrift: ›W. Kröger, i. V. Tallymann‹. Kröger hat selbst gezählt, in Vertretung des Tallymanns. Ausgerechnet er."
+    description: "Zählzettel »Elspeth Gray«, Donnerstag, Nachtschicht: 180 Kisten in den Schuppen gezählt. Unterschrift: ›W. Kröger, i. V. Kontrollzähler‹. Kröger hat selbst gezählt, in Vertretung des Kontrollzählers. Ausgerechnet er."
 
   clue_zwanzig_kisten:
     name: Zwanzig Kisten fehlen
     location: nowhere
     clue: true
-    description: 200 Kisten laut Löschliste, 180 auf Krögers Tallyzettel. Zwanzig Kisten sind zwischen Schiff und Schuppen verschwunden. Gezählt hat Kröger. Und wer verdient daran?
+    description: 200 Kisten laut Ladeliste, 180 auf Krögers Zählzettel. Zwanzig Kisten sind zwischen Schiff und Schuppen verschwunden. Gezählt hat Kröger. Und wer verdient daran?
 
   clue_lene:
     name: Lenes Aussage
@@ -579,7 +579,7 @@ objects:
     synonyms: [Zählheft, Heft]
     location: nowhere
     clue: true
-    description: "Jakobs Heft, von Tadeusz: ›200 Hieven, letzte 01:20. Tally 180?! K. lässt 20 Ki. in Elise 7. Geh hinterher.‹ Tadeusz sah Jakob um halb zwei der Schute folgen. Laut Register gehört die »Elise 7« A. & Co., Speicher K."
+    description: "Jakobs Heft, von Tadeusz: ›200 Kisten, letzte 01:20. Zählung 180?! K. lässt 20 Ki. in Elise 7. Geh hinterher.‹ Tadeusz sah Jakob um halb zwei dem Lastkahn folgen. Laut Register gehört die »Elise 7« A. & Co., Speicher K."
 
   clue_schweigegeld:
     name: Zweihundert Reichsmark
@@ -593,7 +593,7 @@ objects:
     synonyms: [Geständnis]
     location: nowhere
     clue: true
-    description: Kröger hat Jakob Donnerstagnacht in Speicher K erwischt. Jakob stürzte die Lukentreppe hinunter, das Bein gebrochen. Gestoßen hat er ihn nicht, sagt Kröger. Er wollte einen Arzt holen. Seitdem bringt er ihm jeden Abend Wasser. Jakob liegt auf dem vierten Boden.
+    description: Kröger hat Jakob Donnerstagnacht in Speicher K erwischt. Jakob stürzte an der Ladeluke die Treppe hinunter, das Bein gebrochen. Gestoßen hat er ihn nicht, sagt Kröger. Er wollte einen Arzt holen. Seitdem bringt er ihm jeden Abend Wasser. Jakob liegt auf dem vierten Stock.
 
   clue_persilschein:
     name: Krögers Persilschein

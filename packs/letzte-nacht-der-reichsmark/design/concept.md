@@ -12,7 +12,8 @@ in [style.md](style.md).
 | `subtitle` | Ein Hamburger Kriminalfall, Juni 1948 |
 | `language` | `de` |
 | `policy` | `forgiving` |
-| `playtime` | 45 (raised from 40 after playtests; estimate 47) |
+| `playtime` | 65 (45 before the narrative revision; see CHANGES.md) |
+| `pacing` | `narrative` (about 60% of the play time is reading) |
 | `maxScore` | 25 |
 | `license` | Recommended `CC0-1.0`, like the demo pack, so the pack can also serve as a reference example for the prompt kit. Final call: product owner. |
 | `start.room` | `detektei` |
@@ -132,9 +133,10 @@ Full ending drafts are in [puzzles.md](puzzles.md#endings).
 
 ## 5. Play time
 
-- **Estimated play time:** 35–50 minutes (`playtime: 40`; `lexvm check`
-  estimates about 47, a speedrun about 24). The game is heavy on reading and
-  dialogue.
+- **Estimated play time:** about 65 minutes (`playtime: 65`,
+  `pacing: narrative`; `lexvm check` estimates about 68 with 59% reading, a
+  speedrun about 39). Before the narrative revision the target was 45 and the
+  text was cut to meet it; see CHANGES.md, »Narrative revision«.
 - **Critical path:** 74 canonical commands (see the walkthrough in
   [puzzles.md](puzzles.md#walkthrough)). Typical sessions take 2–2.5 times
   as many taps, for looking around, wrong attempts and re-reading the

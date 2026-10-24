@@ -11,7 +11,25 @@ belong to (see the [specification](docs/spec/content-pack.md#16-versioning-of-th
 
 First release in preparation: v0.1 "Playable".
 
+### Changed
+
+- Narrative pacing ([ADR 0012](docs/adr/0012-narrative-pacing.md)): packs may
+  declare `pacing` (`narrative`, `balanced`, `puzzle`). The play time budget
+  splits the target by reading share, `lexvm check` reports the reading share
+  and warns (`playtime.pacing`) when a declared pacing is missed, and
+  narrative packs get longer text budgets. The attempt rate of the play time
+  model is recalibrated from 0.5 to 1 per command (from playtest logs).
+- `lexvm generate` and the prompt kit: a `story` stage before the puzzles and
+  an editorial `review` round on the walkthrough transcript; `--pacing`,
+  `--no-review`. The authoring guide gains a section "Story and scenes".
+- *Die letzte Nacht der Reichsmark* 1.1.0: rewritten scene by scene with
+  unchanged mechanics, in plainer language (fewer harbour terms), pacing
+  `narrative`, about 65 minutes.
+- *The Locked Study*: target play time 7 minutes (the recalibrated estimate).
+
 ### Added
+
+- `lexvm transcript`: the walkthrough as a reader sees it, as Markdown.
 
 - Content pack format `lexvm-pack/1`: normative
   [specification](docs/spec/content-pack.md), zod schema as the single source
