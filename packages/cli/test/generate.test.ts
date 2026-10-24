@@ -55,6 +55,7 @@ function fakeLlm(overrides: Partial<Record<string, (prompt: string) => string>> 
   const calls: Call[] = [];
   const answers: Record<string, (prompt: string) => string> = {
     concept: () => "# The Locked Study\n\nCONCEPT_MARKER: an uncle, a butler, a locked door.",
+    story: () => "# Story\n\nSTORY_MARKER: the uncle hid in the cellar.",
     puzzles: () =>
       [
         "Here is the puzzle design.",
@@ -185,7 +186,8 @@ beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), "lexvm-generate-"));
   const example = await readFile(join(REPO_ROOT, "packs/locked-study/pack.yaml"), "utf8");
   blocks = splitTopLevel(example);
-  topKeys = [...blocks.keys()];
+  // The pipeline adds pacing to pack.yaml (the example declares none).
+  topKeys = [...blocks.keys(), "pacing"];
 });
 
 afterAll(async () => {
@@ -206,7 +208,7 @@ describe("lexvm generate", () => {
     expect(code, log).toBe(0);
 
     // Stages ran in order; the repair loop ran once and terminated.
-    expect(llm.calls.map((c) => c.stage)).toEqual(["concept", "puzzles", "world", "logic", "repair"]);
+    expect(llm.calls.map((c) => c.stage)).toEqual(["concept", "story", "puzzles", "world", "logic", "repair"]);
     expect(verifier.seen).toHaveLength(2);
     expect(verifier.seen[0]).toEqual([
       "pack.yaml",
@@ -218,8 +220,10 @@ describe("lexvm generate", () => {
     ]);
 
     // Every stage sees the outputs of the previous stages; the system prompt is shared (cacheable).
-    const [concept, puzzles, world, logic, repair] = llm.calls;
+    const [concept, story, puzzles, world, logic, repair] = llm.calls;
     expect(concept!.prompt).toContain(IDEA);
+    expect(story!.prompt).toContain("CONCEPT_MARKER");
+    for (const call of [puzzles, world, logic, repair]) expect(call!.prompt).toContain("STORY_MARKER");
     expect(concept!.prompt).toContain("`locked-study`");
     expect(puzzles!.prompt).toContain("CONCEPT_MARKER");
     expect(world!.prompt).toContain("CONCEPT_MARKER");
@@ -257,6 +261,7 @@ describe("lexvm generate", () => {
     expect(run.params.idea).toBe(IDEA);
     expect(run.events.map((e) => (e.round === undefined ? e.stage : `${e.stage}#${e.round}`))).toEqual([
       "concept",
+      "story",
       "puzzles",
       "world",
       "logic",
@@ -264,17 +269,19 @@ describe("lexvm generate", () => {
       "repair#1",
       "verify#1",
     ]);
-    expect(run.events[2]!.files).toEqual(["pack.yaml", "rooms.yaml", "objects.yaml"]);
-    expect(run.events[4]!.diagnostics).toEqual({ errors: 1, warnings: 1, infos: 0 });
-    expect(run.events[6]!.gates?.every((g) => g.status === "passed")).toBe(true);
-    expect(run.totals.outputTokens).toBe(5 * 500);
+    expect(run.events[3]!.files).toEqual(["pack.yaml", "rooms.yaml", "objects.yaml"]);
+    expect(run.events[5]!.diagnostics).toEqual({ errors: 1, warnings: 1, infos: 0 });
+    expect(run.events[7]!.gates?.every((g) => g.status === "passed")).toBe(true);
+    expect(run.totals.outputTokens).toBe(6 * 500);
+    expect(await readFile(join(dir, "pack.yaml"), "utf8")).toMatch(/^pacing: balanced$/m);
+    expect(run.params.pacing).toBe("balanced");
     expect(run.runs).toHaveLength(1);
     expect(run.runs[0]!.result).toMatchObject({ ok: true, repairs: 1, errors: 0, warnings: 1 });
     expect(run.events[0]!.durationMs).toBeGreaterThan(0);
 
     // Progress went to the log; no secrets or model ids anywhere.
-    expect(log).toContain("[1/5] concept");
-    expect(log).toContain("[5/5] verify");
+    expect(log).toContain("[1/6] concept");
+    expect(log).toContain("[6/6] verify");
     expect(log).toContain("12k characters received");
     expect(log).toContain("OK:");
     const written = await allText(dir);
@@ -304,6 +311,67 @@ describe("lexvm generate", () => {
     expect(log).toContain("UNIQUE_DIAGNOSTIC");
     const run = JSON.parse(await readFile(join(dir, "design/run.json"), "utf8")) as RunLog;
     expect(run.runs[0]!.result).toMatchObject({ ok: false, repairs: 2, errors: 1 });
+  });
+
+  it("runs one editorial review round on the transcript once the pack passes, unless --no-review", async () => {
+    const reviewed = (files: { name: string; text: string }[]) =>
+      files.find((f) => f.name === "rules.yaml")!.text.includes("# reviewed");
+    const passing = (): { verify: VerifyFn; seen: number } => {
+      const state = { seen: 0 };
+      const verify: VerifyFn = (files) => {
+        state.seen++;
+        return {
+          ok: true,
+          diagnostics: [],
+          gates: [{ gate: "compile", status: "passed", errors: 0, warnings: 0 }],
+          transcript: reviewed(files) ? "# after review" : "# Locked Study\n\nTRANSCRIPT_MARKER",
+        };
+      };
+      return {
+        verify,
+        get seen() {
+          return state.seen;
+        },
+      };
+    };
+    const review = (prompt: string) => {
+      expect(prompt).toContain("TRANSCRIPT_MARKER");
+      expect(prompt).toContain("STORY_MARKER");
+      return fileBlock("rules.yaml", `# reviewed\n${blocks.get("rules")!}`);
+    };
+
+    const dir = join(root, "case-review", "reviewed-pack");
+    const llm = fakeLlm({ review });
+    const v = passing();
+    const code = await runGenerate(["--idea", IDEA, "--out", dir, "--pacing", "narrative"], {
+      complete: llm.complete,
+      verify: v.verify,
+      env: ENV,
+      log: () => {},
+      kit,
+    });
+    expect(code).toBe(0);
+    expect(llm.calls.map((c) => c.stage)).toEqual(["concept", "story", "puzzles", "world", "logic", "review"]);
+    expect(v.seen).toBe(2);
+    expect(await readFile(join(dir, "rules.yaml"), "utf8")).toMatch(/^# reviewed/);
+    expect(await readFile(join(dir, "pack.yaml"), "utf8")).toMatch(/^pacing: narrative$/m);
+    expect(llm.calls[1]!.prompt).toContain("pacing: `narrative`");
+    const run = JSON.parse(await readFile(join(dir, "design/run.json"), "utf8")) as RunLog;
+    expect(run.events.map((e) => e.stage).slice(-3)).toEqual(["verify", "review", "verify"]);
+    expect(run.params).toMatchObject({ pacing: "narrative", review: true });
+
+    const skipDir = join(root, "case-review", "unreviewed-pack");
+    const skip = fakeLlm({ review });
+    expect(
+      await runGenerate(["--idea", IDEA, "--out", skipDir, "--no-review"], {
+        complete: skip.complete,
+        verify: passing().verify,
+        env: ENV,
+        log: () => {},
+        kit,
+      }),
+    ).toBe(0);
+    expect(skip.calls.map((c) => c.stage)).not.toContain("review");
   });
 
   it("resumes from a stage, reusing earlier artifacts and the stored idea", async () => {
@@ -381,8 +449,8 @@ describe("lexvm generate", () => {
       kit,
     });
     expect(code).toBe(1);
-    expect(llm.calls.map((c) => c.stage)).toEqual(["concept", "puzzles", "world", "world"]);
-    expect(llm.calls[3]!.prompt).toContain("no usable file blocks");
+    expect(llm.calls.map((c) => c.stage)).toEqual(["concept", "story", "puzzles", "world", "world"]);
+    expect(llm.calls[4]!.prompt).toContain("no usable file blocks");
     expect(logs.join("\n")).toContain("produced no files");
     const run = JSON.parse(await readFile(join(dir, "design/run.json"), "utf8")) as RunLog;
     expect(run.runs[0]!.result?.failure).toContain("produced no files");

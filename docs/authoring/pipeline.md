@@ -13,7 +13,7 @@ and the same verification ([ADR 0007](../adr/0007-llm-pipeline-byo-prompt-kit-an
 
 Neither flow replaces playtesting. Verification proves that a pack is
 *winnable without dead ends*; whether it is *good* is decided by people. See
-the [authoring guide](guide.md) for what "good" means, and section 14 there
+the [authoring guide](guide.md) for what "good" means, and section 15 there
 for reviewing a pack.
 
 ## The prompt kit
@@ -39,11 +39,13 @@ The stages:
 | Stage | Template | Asks the model for |
 |---|---|---|
 | `oneshot` | `oneshot.md` | A short design (concept, puzzle dependency chart), one complete `pack.yaml`, a self-check against the checklist. |
-| `concept` | `concept.md` | `design/concept.md`: title, voice, premise, cast, chapters, locations, key items and clues. |
+| `concept` | `concept.md` | `design/concept.md`: title, voice, pacing, premise, cast, chapters, locations, key items and clues. |
+| `story` | `story.md` | `design/story.md`: the truth with every motive, the through-line, a scene plan (arrival, turn, way out), a revelation map and the key scenes in prose. |
 | `puzzles` | `puzzles.md` | `design/puzzles.md`: a Mermaid puzzle dependency chart and, per puzzle, signposting, solution, wrong attempts, hints, score. |
 | `world` | `world.md` | `pack.yaml` (metadata, start, verbs, flags), `rooms.yaml`, `objects.yaml`. |
 | `logic` | `logic.md` | `rules.yaml`, `dialogues.yaml`, `solution.yaml` (endings, hints, walkthrough last), plus any earlier file that must change. |
 | `repair` | `repair.md` | Only the changed files, complete, given the diagnostics and the current files. |
+| `review` | `review.md` | An editorial pass: given the walkthrough transcript, the story and the files, only the files whose text it improved. |
 
 The staged prompts share one system prompt (`system.md`: the guide, the
 checklist, the spec and the example). It contains nothing run-specific, so
@@ -54,22 +56,46 @@ the API can cache it across all calls of a run.
 Generated packs should roughly hit their target length, so every prompt
 gives the model a size budget up front. The budget comes from
 `budgetForMinutes` in the engine, the inverse of the play time estimate
-(spec section 17): for a target length and language it gives a range of
-walkthrough steps and of player-visible words, plus the typical proportions
-(about a quarter of the steps are dialogue choices, about 60% of the words
-appear along the walkthrough).
+(spec section 17): for a target length, language and pacing it gives a range
+of walkthrough steps and of player-visible words, plus the typical
+proportions (about a quarter of the steps are dialogue choices, about 60% of
+the words appear along the walkthrough).
 
-- The stage prompts (`concept`, `puzzles`, `world`, `logic`) contain the
-  budget for `--minutes` (`{{BUDGET}}`); without `--lang` they list it for
-  German and English packs.
+The pacing decides how the minutes are spent ([ADR 0012](../adr/0012-narrative-pacing.md)):
+`narrative` about 60% reading, `balanced` 45% (the default), `puzzle` 30%. A
+45-minute German pack is budgeted at about 70–90 walkthrough steps and
+4,200–5,350 words when balanced, and at about 50–65 steps and 5,600–7,100
+words when narrative: fewer puzzles, more story.
+
+- The stage prompts (`concept`, `story`, `puzzles`, `world`, `logic`,
+  `review`) contain the budget for `--minutes` and `--pacing` (`{{BUDGET}}`);
+  without `--lang` they list it for German and English packs.
 - The generic one-shot prompt contains a table for 15, 30, 45 and 60 minutes
-  (`{{BUDGET_TABLE}}`, plus the `--minutes` value if it is another one) and
-  tells the model to pick the row matching the requested length, 30 minutes
-  if the idea names none.
+  and every pacing (`{{BUDGET_TABLE}}`, plus the `--minutes` value if it is
+  another one) and tells the model to choose the pacing from the idea and
+  pick the matching row, 30 minutes if the idea names none.
 - `lexvm check` prints the estimate, and warns (`playtime.too-short`,
   `playtime.too-long`) when it misses `playtime` by more than 25%, with
   concrete numbers: how many puzzles, walkthrough commands or words to add or
-  cut. Paste these warnings back like any other diagnostic.
+  cut. When the pack declares a `pacing`, it also warns (`playtime.pacing`)
+  when the reading share is more than 10 points off. Paste these warnings
+  back like any other diagnostic.
+
+### Reading the story: `lexvm transcript`
+
+Verification proves a pack can be won; it cannot tell whether a reader can
+follow it. `lexvm transcript <pack>` replays the walkthrough and prints
+everything the player reads along it as Markdown (room titles as headings,
+commands as quotes; `--out <file>` writes it to a file). Read it from start to
+end, or have it reviewed:
+
+```sh
+npm run lexvm -- prompt --stage review --pack packs/<id> --out review.md
+```
+
+The review prompt contains the transcript, the story document and the pack
+files, and asks the model, as a story editor, to improve the text without
+touching the mechanics. Check the result like any repair.
 
 ## Flow A: bring your own LLM
 
@@ -155,9 +181,11 @@ to any file.
 | `--out <dir>` | — | Output directory. Its name is the pack id (kebab-case). |
 | `--lang de\|en` | language of the idea | Pack language. |
 | `--minutes <n>` | 30 | Target play time: written to `playtime`, sizes the budget in the prompts, checked by the play time estimate. |
+| `--pacing <pacing>` | `balanced` | `narrative`, `balanced` or `puzzle`: written to `pacing`, splits the budget between reading and interaction, checked by the estimate. |
+| `--no-review` | off | Skip the editorial review round after the pack passes. |
 | `--model <id>` | `LEXVM_MODEL` | Claude model id (required). |
 | `--max-repairs <n>` | 6 | Repair rounds after the first check. |
-| `--from-stage <stage>` | `concept` | Resume at `concept`, `puzzles`, `world`, `logic` or `verify`. |
+| `--from-stage <stage>` | `concept` | Resume at `concept`, `story`, `puzzles`, `world`, `logic` or `verify`. |
 | `--max-states <n>` | 200000 | State limit of the exploration gate. |
 | `--max-tokens <n>` | 64000 | Output token limit per request. |
 | `--effort <level>` | model default | `low`, `medium`, `high`, `xhigh` or `max`. |
@@ -177,13 +205,15 @@ packs/<id>/
   rules.yaml  dialogues.yaml  solution.yaml    # logic stage
   design/
     concept.md                                 # concept stage
+    story.md                                   # story stage
     puzzles.md                                 # puzzles stage
     run.json                                   # log of every run
 ```
 
-Each stage's prompt contains the outputs of the previous stages: the puzzle
-designer sees the concept, the world builder sees concept and puzzles, the
-logic writer sees both documents and the world files. Progress is printed per
+Each stage's prompt contains the outputs of the previous stages: the story
+writer sees the concept, the puzzle designer concept and story, the world
+builder all three documents, the logic writer the documents and the world
+files. Repair rounds see the story too. Progress is printed per
 stage to stderr. Every artifact is written as soon as it exists.
 
 The model returns files as fenced code blocks whose info string names the
@@ -232,11 +262,18 @@ twice in the same way (an engine bug, not a pack problem), the loop stops
 early.
 
 The length is the one warning the loop acts on by itself: when a pack passes
-every gate but its estimated play time misses the target by more than 25%
-(`playtime.too-short` / `playtime.too-long`), the pipeline spends one more
-repair round on the length, if `--max-repairs` leaves one. If that round
-breaks the pack and the remaining rounds cannot fix it, the last passing
-version is restored, so a length repair never costs a working pack.
+every gate but its estimated play time misses the target by more than 25%,
+or its reading share misses the pacing (`playtime.too-short`,
+`playtime.too-long`, `playtime.pacing`), the pipeline spends one more repair
+round on the length, if `--max-repairs` leaves one.
+
+Then, unless `--no-review` is given, the pipeline runs one **editorial
+review** round: the model gets the walkthrough transcript, the story and the
+files and returns the files whose text it improved. The result is verified
+like a repair and may take further repair rounds. Both extra rounds count
+against `--max-repairs`. If either breaks the pack and the remaining rounds
+cannot fix it, the last passing version is restored, so neither ever costs a
+working pack.
 
 On failure, look at the remaining diagnostics (`npm run lexvm -- check
 packs/<id>`), fix what you can by hand, and continue with
@@ -249,12 +286,13 @@ the artifacts of the earlier stages from disk:
 
 | Stage | Needs on disk |
 |---|---|
-| `puzzles` | `design/concept.md` |
-| `world` | `design/concept.md`, `design/puzzles.md` (the world stage replaces all existing `*.yaml` files) |
+| `story` | `design/concept.md` |
+| `puzzles` | `design/concept.md`, `design/story.md` |
+| `world` | the three design documents (the world stage replaces all existing `*.yaml` files) |
 | `logic` | the design documents and `pack.yaml` |
 | `verify` | the pack files |
 
-The idea, language, play time, author and license are taken from
+The idea, language, play time, pacing, review setting, author and license are taken from
 `design/run.json` unless given again on the command line. This makes a
 human-in-the-loop workflow easy: generate, read `design/puzzles.md`, improve
 the chart by hand, then `--from-stage world`. Without `--from-stage`, the
@@ -278,7 +316,7 @@ the pull request if you want to.
 
 ### Time and cost
 
-A run makes four stage calls plus one call per repair round. Every call
+A run makes five stage calls, one review call and one call per repair round. Every call
 sends the shared system prompt (the spec, guide and example — cached after
 the first call, which makes later calls cheaper) and the artifacts of the
 previous stages; repair rounds resend all pack files. Most of the output, and

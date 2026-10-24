@@ -5,7 +5,15 @@
  * first gate with errors, so a repair round focuses on the earliest problems
  * (as `lexvm check` does).
  */
-import { analyze, compile, type Diagnostic, estimatePlaytime, runWalkthrough, type SourceFile } from "@lexvm/engine";
+import {
+  analyze,
+  compile,
+  type Diagnostic,
+  estimatePlaytime,
+  runWalkthrough,
+  type SourceFile,
+  walkthroughTranscript,
+} from "@lexvm/engine";
 import { verifyExploration } from "../exploration.ts";
 import { walkthroughFallbacks } from "../fallbacks.ts";
 
@@ -25,6 +33,8 @@ export interface VerifyReport {
   ok: boolean;
   diagnostics: Diagnostic[];
   gates: GateResult[];
+  /** The walkthrough as the player reads it (lexvm transcript), once the walkthrough gate passed. */
+  transcript?: string;
 }
 
 export interface VerifyOptions {
@@ -106,6 +116,7 @@ export const engineVerify: VerifyFn = (files, options) => {
   }
 
   // Gate 2: walkthrough replay, then the play time estimate (it replays the walkthrough as well).
+  let transcript: string | undefined;
   try {
     const report = runWalkthrough(pack);
     diags = [...report.diagnostics, ...walkthroughFallbacks(pack, report, all)];
@@ -115,6 +126,7 @@ export const engineVerify: VerifyFn = (files, options) => {
         options.targetMinutes === undefined ? {} : { targetMinutes: options.targetMinutes },
       );
       diags.push(...estimate.diagnostics);
+      transcript = walkthroughTranscript(pack).markdown;
     }
   } catch (err) {
     diags = [crash("walkthrough", err)];
@@ -134,7 +146,12 @@ export const engineVerify: VerifyFn = (files, options) => {
   }
   all.push(...diags);
   gates.push(gateResult("exploration", diags));
-  return { ok: count(all, "error") === 0, diagnostics: all, gates };
+  return {
+    ok: count(all, "error") === 0,
+    diagnostics: all,
+    gates,
+    ...(transcript === undefined ? {} : { transcript }),
+  };
 };
 
 // ---------------------------------------------------------------------------

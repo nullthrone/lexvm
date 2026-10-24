@@ -1,12 +1,12 @@
-<!-- template: stage 3 (world). Output files: pack.yaml, rooms.yaml, objects.yaml. Placeholders: LANG MINUTES PACK_ID AUTHOR LICENSE GENERATOR BUDGET CONCEPT PUZZLES. -->
-# Stage 3 of 4: world
+<!-- template: stage 3 (world). Output files: pack.yaml, rooms.yaml, objects.yaml. Placeholders: LANG MINUTES PACING PACING_ID PACK_ID AUTHOR LICENSE GENERATOR BUDGET CONCEPT STORY PUZZLES. -->
+# Stage 4 of 5: world
 
-Build the **world** of the adventure from the concept and the puzzle design below: metadata, rooms, exits and objects. The next stage writes rules, dialogues, endings, hints and the walkthrough on top of it, so define every room, object and clue the puzzles need now.
+Build the **world** of the adventure from the concept, the story and the puzzle design below: metadata, rooms, exits and objects. The next stage writes rules, dialogues, endings, hints and the walkthrough on top of it, so define every room, object and clue the puzzles need now.
 
 Return exactly these three files:
 
 1. `pack.yaml` — metadata and global declarations:
-   - `format: lexvm-pack/1`, `version: 1.0.0`, `title`, optional `subtitle`, `description`, `playtime: {{MINUTES}}` (the target play time; keep it), `policy: forgiving`, `maxScore` (the total from the puzzle design);
+   - `format: lexvm-pack/1`, `version: 1.0.0`, `title`, optional `subtitle`, `description`, `playtime: {{MINUTES}}` (the target play time; keep it), `pacing: {{PACING_ID}}`, `policy: forgiving`, `maxScore` (the total from the puzzle design);
    - `id`: {{PACK_ID}};
    - `language`: {{LANG}};
    - `author`: {{AUTHOR}};
@@ -19,6 +19,7 @@ Return exactly these three files:
 Requirements:
 - Every interactable object is referenced as `{id}` in its room's description or has a `roomText`.
 - Object descriptions carry the signposting described in the puzzle design.
+- Derive room and object texts from the story's scenes: a first visit gets the arrival of its scene (where the player is, who is here, what is at stake), return visits a short variant. Use the key-scene prose of the story where it fits; cut it into paragraphs rather than into fragments.
 - Respect the text budgets and the language conventions of the guide.
 - Size the texts for the whole game: room and object texts are a large part of the word budget below; the next stage adds dialogue, responses and endings.
 
@@ -28,6 +29,10 @@ Requirements:
 # Concept
 
 {{CONCEPT}}
+
+# Story
+
+{{STORY}}
 
 # Puzzle design
 

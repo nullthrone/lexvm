@@ -11,7 +11,17 @@ import { fileURLToPath } from "node:url";
 /** Repository root, derived from this file's location (packages/cli/src/generate). */
 export const REPO_ROOT = resolve(fileURLToPath(new URL("../../../../", import.meta.url)));
 
-export const TEMPLATE_NAMES = ["oneshot", "system", "concept", "puzzles", "world", "logic", "repair"] as const;
+export const TEMPLATE_NAMES = [
+  "oneshot",
+  "system",
+  "concept",
+  "story",
+  "puzzles",
+  "world",
+  "logic",
+  "repair",
+  "review",
+] as const;
 export type TemplateName = (typeof TEMPLATE_NAMES)[number];
 
 export interface PromptKit {

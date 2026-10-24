@@ -7,10 +7,10 @@
 # dialogues are in the other YAML files of this directory.
 format: lexvm-pack/1
 id: letzte-nacht-der-reichsmark
-version: 1.0.0
+version: 1.1.0
 title: Die letzte Nacht der Reichsmark
 subtitle: Ein Hamburger Kriminalfall, Juni 1948
-description: "Hamburg, 19. Juni 1948: Morgen wird die Reichsmark zu Altpapier, und der Schauermann Jakob Brodersen ist verschwunden – angeblich mit gestohlenen Zigaretten. Ein Noir-Krimi aus Indizien und Verhören über Schwarzmarkt, Persilscheine und Schuld."
+description: "Hamburg, 19. Juni 1948: Morgen wird die Reichsmark zu Altpapier, und der Hafenarbeiter Jakob Brodersen ist verschwunden – angeblich mit gestohlenen Zigaretten. Ein Noir-Krimi aus Indizien und Verhören über Schwarzmarkt, Persilscheine und Schuld."
 language: de
 author: LexVM contributors
 license: CC-BY-4.0
@@ -18,15 +18,19 @@ policy: forgiving
 generator:
   pipeline: "LexVM staged design pipeline (three proposals, lead-designer synthesis, staged writing, automated verification, blind playtests)"
   notes: "Written with an LLM and reviewed by the maintainers. All persons, firms, ships and places in the plot are fictional."
-playtime: 45
+playtime: 65
+# Story first: about 60% of the play time is reading (spec section 17, design/story.md).
+pacing: narrative
 maxScore: 25
 
 start:
   room: detektei
   intro: |-
-    Hamburg, Sonnabend, 19. Juni 1948. Es regnet seit Tagen. Seit gestern Abend weiß es die ganze Stadt aus dem Radio: Am Sonntag gibt es neues Geld. Vierzig Mark pro Kopf. Was du in Reichsmark besitzt, ist ab morgen kaum noch das Papier wert.
+    Hamburg, Sonnabend, 19. Juni 1948. Es regnet seit Tagen, und seit gestern Abend weiß es die ganze Stadt aus dem Radio: Am Sonntag gibt es neues Geld, vierzig Mark pro Kopf. Was du in Reichsmark besitzt, ist ab morgen kaum noch das Papier wert, auf dem es gedruckt ist. Die Leute sind seit dem Morgen unterwegs, um ihre Schulden zu bezahlen, solange das alte Geld noch etwas gilt.
 
-    Auf deinem Besucherstuhl sitzt eine Frau in einem umgefärbten Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr wegnehmen.
+    Du gehörst nicht zu ihnen. Bis zum Sommer dreiundvierzig hast du für eine Seeversicherung Ladungen geprüft, dann brannte das Haus der Versicherung mitsamt den Akten, und seitdem nimmst du Fälle an, die sonst keiner will: verschwundene Männer, verschwundene Waren, manchmal beides.
+
+    Heute Abend sitzt eine Frau auf deinem Besucherstuhl. Sie trägt einen umgefärbten Wehrmachtsmantel und hält ihre Handtasche fest, als könnte jemand sie ihr wegnehmen. Sie hat noch nichts gesagt. Sie wartet, bis du sie ansprichst.
 
 # Documents are read with look: the parser maps »lies« to it, because the
 # pack has no verb of its own for reading (playtest round 1, CHANGES.md).
@@ -72,34 +76,42 @@ endings:
     text:
       - when: { flag: kroeger_zeuge }
         text: |-
-          Um halb sechs stehen zwei Jeeps der Militärpolizei am Kehrwieder. Ein Captain zählt die Kisten nach und schreibt ›Lot 4471 – complete‹. Asmussen steigt ohne Mantel in den Wagen. Vor einem britischen Gericht zählen seine Persilscheine nicht.
+          Um halb sechs stehen zwei Jeeps der Militärpolizei am Kehrwieder. Ein Captain lässt die Kisten auf dem vierten Stock nachzählen, zweimal, weil er es nicht glauben will, und schreibt dann ›Lot 4471 – complete‹ in sein Buch. Asmussen steigt ohne Mantel in den Wagen. Vor einem britischen Gericht zählen seine Persilscheine nicht, und das scheint er erst zu begreifen, als die Tür zuschlägt.
 
-          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Kröger redet drei Stunden lang, ohne Köm. Er bekommt zwei Jahre.
+          Jakob tragen sie auf einer ausgehängten Tür hinunter zum Boot. »Zweihundert«, sagt er zu jedem, der fragt, und zu einigen, die nicht fragen. Tadeusz rudert, dann sagt er aus, langsam und in ganzen Sätzen. Weggesehen hat er lange genug.
 
-          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
+          Kröger redet drei Stunden lang, ohne Köm. Er erzählt von der Luke, vom Arzt, den er holen wollte, und von dem Mann, der Nein gesagt hat. Er bekommt zwei Jahre, und du sagst für ihn aus, wie versprochen.
+
+          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle, und der Regen hat endlich aufgehört. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf, auch für den, der noch im Krankenhaus liegt. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
       - text: |-
-          Um halb sechs stehen zwei Jeeps der Militärpolizei am Kehrwieder. Ein Captain zählt die Kisten nach und schreibt ›Lot 4471 – complete‹. Asmussen steigt ohne Mantel in den Wagen. Vor einem britischen Gericht zählen seine Persilscheine nicht.
+          Um halb sechs stehen zwei Jeeps der Militärpolizei am Kehrwieder. Ein Captain lässt die Kisten auf dem vierten Stock nachzählen, zweimal, weil er es nicht glauben will, und schreibt dann ›Lot 4471 – complete‹ in sein Buch. Asmussen steigt ohne Mantel in den Wagen. Vor einem britischen Gericht zählen seine Persilscheine nicht, und das scheint er erst zu begreifen, als die Tür zuschlägt.
 
-          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Kröger ist am Morgen fort, nach Harburg, heißt es. Von da an kommt jeden Monat ein Kuvert ohne Absender nach Hütte 14.
+          Jakob tragen sie auf einer ausgehängten Tür hinunter zum Boot. »Zweihundert«, sagt er zu jedem, der fragt, und zu einigen, die nicht fragen. Tadeusz rudert, dann sagt er aus, langsam und in ganzen Sätzen. Weggesehen hat er lange genug.
 
-          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
+          Kröger ist am Morgen fort, nach Harburg, heißt es, oder weiter. Ohne ihn fehlt dem Gericht der Mann, der dabei war, als Asmussen den Arzt verbot. Von da an kommt jeden Monat ein Kuvert ohne Absender nach Hütte 14.
+
+          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle, und der Regen hat endlich aufgehört. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf, auch für den, der noch im Krankenhaus liegt. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
   ende_hamburger_regen:
     title: Hamburger Regen
     win: true
     text:
       - when: { flag: kroeger_zeuge }
         text: |-
-          Kommissar Petersen kommt selbst, im nassen Mantel. Am Freitag hat er zugesehen, wie Kröger Jakobs Spind aufschloss. Jetzt sieht er die Kisten an, dann dich, und schreibt lange. Asmussen will telefonieren; sein Anwalt bringt drei neue Persilscheine.
+          Kommissar Petersen kommt selbst, im nassen Mantel und ohne Eile. Am Freitag hat er zugesehen, wie Kröger Jakobs Spind aufschloss, und eine Akte angelegt, die schon fertig war, bevor sie begann. Jetzt steht er zwischen den Kisten, sieht sie an, dann dich, und schreibt lange. Asmussen will telefonieren. Um acht ist sein Anwalt da, mit drei neuen Persilscheinen.
 
-          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Und Kröger hat unterschrieben; diesmal zählt seine Unterschrift.
+          Jakob tragen sie auf einer ausgehängten Tür hinunter zum Boot. »Zweihundert«, sagt er zu jedem, der fragt, und zu einigen, die nicht fragen. Tadeusz rudert, dann sagt er aus, langsam und in ganzen Sätzen. Weggesehen hat er lange genug.
 
-          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
+          Und Kröger hat unterschrieben, Seite für Seite, mit einer Hand, die nicht zittert. Gegen diese Unterschrift kommt auch Asmussens Anwalt nicht an. Diesmal zählt sie.
+
+          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle, und der Regen hat endlich aufgehört. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf, auch für den, der noch im Krankenhaus liegt. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
       - text: |-
-          Kommissar Petersen kommt selbst, im nassen Mantel. Am Freitag hat er zugesehen, wie Kröger Jakobs Spind aufschloss. Jetzt sieht er die Kisten an, dann dich, und schreibt lange. Asmussen will telefonieren; sein Anwalt bringt drei neue Persilscheine.
+          Kommissar Petersen kommt selbst, im nassen Mantel und ohne Eile. Am Freitag hat er zugesehen, wie Kröger Jakobs Spind aufschloss, und eine Akte angelegt, die schon fertig war, bevor sie begann. Jetzt steht er zwischen den Kisten, sieht sie an, dann dich, und schreibt lange. Asmussen will telefonieren. Um acht ist sein Anwalt da, mit drei neuen Persilscheinen.
 
-          Jakob tragen sie auf einer Tür zum Boot. »Zweihundert«, sagt er zu jedem, der fragt. Tadeusz rudert, dann sagt er aus. Weggesehen hat er lange genug. Kröger ist am Morgen fort und mit ihm der beste Zeuge. Von da an kommt jeden Monat ein Kuvert ohne Absender nach Hütte 14.
+          Jakob tragen sie auf einer ausgehängten Tür hinunter zum Boot. »Zweihundert«, sagt er zu jedem, der fragt, und zu einigen, die nicht fragen. Tadeusz rudert, dann sagt er aus, langsam und in ganzen Sätzen. Weggesehen hat er lange genug.
 
-          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
+          Kröger ist am Morgen fort und mit ihm der beste Zeuge. Was bleibt, sind ein Zettel ohne Unterschrift, ein Persilschein und das Wort eines Mannes mit Fieber gegen das Wort eines Kaufmanns. Von da an kommt jeden Monat ein Kuvert ohne Absender nach Hütte 14.
+
+          Sonntagmorgen. Anni und Lotte stehen in der Schlange vor der Kartenstelle, und der Regen hat endlich aufgehört. Anni legt drei Lebensmittelkarten auf den Tisch und hundertzwanzig Reichsmark: vierzig für jeden Kopf, auch für den, der noch im Krankenhaus liegt. Am Montag sind die Schaufenster voll, als hätte jemand sie über Nacht gefüllt. Hat ja auch jemand.
 
 # In solving order: the first hint whose `until` does not hold is shown.
 # Combining notebook entries is »Kombinieren mit …« in the action sheet and
@@ -114,15 +126,15 @@ hints:
   - id: h_aushang
     until: { has: clue_loeschliste }
     steps:
-      - Im Kaischuppen hängt etwas am Tor.
-      - Der Aushang verrät, was Donnerstagnacht gelöscht wurde.
-      - Lies den Aushang im Kaischuppen.
+      - In Schuppen 17 hängt etwas am Tor.
+      - Der Aushang verrät, was Donnerstagnacht entladen wurde.
+      - Lies den Aushang in Schuppen 17.
   - id: h_spind
     until: { has: clue_zweitschluessel }
     steps:
       - Anni hat dir Jakobs Spindschlüssel gegeben.
-      - Kaischuppen 17 liegt südlich vom Baumwall. Such dort Spind 23.
-      - Geh nach Süden in den Kaischuppen und öffne Spind 23.
+      - Schuppen 17 liegt südlich vom Baumwall. Such dort Spind 23.
+      - Geh nach Süden in Schuppen 17 und öffne Spind 23.
   - id: h_paeckchen
     until: { has: clue_los4471 }
     steps:
@@ -139,8 +151,8 @@ hints:
     until: { has: clue_frisch_an_land }
     steps:
       - Losnummern verraten das Schiff. Wann kam dieses Los an Land?
-      - Vergleiche das Los mit der Löschliste.
-      - "Im Notizbuch: Kombiniere »Los 4471« mit »Löschliste (200 Kisten)«."
+      - Vergleiche das Los mit der Ladeliste.
+      - "Im Notizbuch: Kombiniere »Los 4471« mit »Ladeliste (200 Kisten)«."
   - id: h_untergeschoben
     until: { has: clue_untergeschoben }
     steps:
@@ -162,15 +174,15 @@ hints:
   - id: h_tally
     until: { has: clue_tally }
     steps:
-      - Im Kaischuppen hängt hinter Glas, was Kröger gezählt hat.
+      - In Schuppen 17 hängt hinter Glas, was Kröger gezählt hat.
       - Durch den Spalt über der Glaskabine reicht dein Arm nicht. Am Zollkanal liegen Boote – und was man an Booten so braucht.
-      - Nimm den Bootshaken am Zollkanal und benutze ihn im Kaischuppen mit dem Klemmbrett.
+      - Nimm den Bootshaken am Zollkanal und benutze ihn in Schuppen 17 mit dem Klemmbrett.
   - id: h_zwanzig
     until: { has: clue_zwanzig_kisten }
     steps:
-      - Zweihundert laut Löschliste. Und laut Kröger?
+      - Zweihundert laut Ladeliste. Und laut Kröger?
       - Leg die beiden Zahlen nebeneinander. Beide stehen in deinem Notizbuch.
-      - "Im Notizbuch: Kombiniere »Tallyzettel (180 Kisten)« mit »Löschliste (200 Kisten)«."
+      - "Im Notizbuch: Kombiniere »Zählzettel (180 Kisten)« mit »Ladeliste (200 Kisten)«."
   - id: h_hintertuer
     until: { flag: hintertuer_frei }
     steps:
@@ -206,7 +218,7 @@ hints:
     steps:
       - Jakob ist in Speicher K. Die Zollbrücke ist nachts zu.
       - Kröger hat gesagt, wessen Boot er nimmt.
-      - "Sprich am Zollkanal mit Tadeusz: »Jakob lebt. Speicher K, vierter Boden.«"
+      - "Sprich am Zollkanal mit Tadeusz: »Jakob lebt. Speicher K, vierter Stock.«"
   - id: h_laterne
     until: { flag: laterne_an }
     steps:
@@ -218,7 +230,7 @@ hints:
     steps:
       - Kröger hat dir einen Schlüssel gegeben.
       - Mit Licht findest du auch das Schloss.
-      - Öffne die Bodentür und geh hinauf.
+      - Öffne die Brandschutztür und geh hinauf.
   - id: h_jakob
     until: { has: clue_jakob_aussage }
     steps:

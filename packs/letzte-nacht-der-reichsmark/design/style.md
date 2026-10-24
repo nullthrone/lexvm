@@ -11,15 +11,27 @@ German, as they appear in the game.
 - **Second person, »du«, present tense:** »Du stehst unter dem Viadukt.«
   Never »ich«, never past tense in narration. Characters may use the past in
   their own speech.
-- **Short sentences.** Aim for 6–14 words. One observation or one action per
-  sentence. A paragraph has 1–3 sentences.
-- **The first sentence says what matters** (what is here, what changed); the
-  atmosphere comes second.
+- **Varied rhythm, not telegram style.** Sentences range from three words to
+  thirty. A long sentence carries an observation together with its
+  consequence; a short one sets the accent after it. Thoughts that belong
+  together are joined by their logic (»weil«, »aber«, »also«, »während«,
+  »obwohl«). Never three fragments in a row. (The first version of this pack
+  prescribed 6–14 words per sentence; the result had a median of six words
+  and read like a telegram. See CHANGES.md, »Narrative revision«.)
+- **Scenes, not data fields.** Every place has an arrival (where you are, who
+  is here, what is at stake), every conversation a turning point that is
+  written out with a reaction, every chapter a transition that says why Voss
+  goes on and where. The scene plan is in [story.md](story.md).
+- **Voss thinks.** After a clue that changes the case, one or two sentences
+  in Voss's head say what it means: what is now certain, what is still open,
+  what follows. Voss reasons like a claims adjuster: lists, times, who had
+  access. Never a summary of what the player has just read.
 - **Noir, dry and precise.** The narrator notices a lot and judges little.
   Understatement beats adjectives: »Der Schuppen ist lang wie eine Straße und
   leer bis auf den Geruch.« not »Der riesige, unheimliche, verlassene
   Schuppen …«
-- **One image per paragraph,** sensory and concrete. The pack's palette:
+- **Images, sensory and concrete,** one leading image per paragraph. The
+  pack's palette:
   - Rain on corrugated iron.
   - Coal smoke, diesel, tar, wet jute.
   - Raw coffee, Muckefuck, Köm, petroleum.
@@ -94,11 +106,32 @@ as a joke at someone's expense.
 
 ## Period vocabulary
 
-**Use** (all attested for Hamburg 1948):
+**Understandable first.** Players outside northern Germany must follow every
+sentence without a glossary. Narration uses plain words for harbour work; a
+period term appears only where it carries the setting, and is explained the
+first time it occurs, in the sentence itself (»ein Köm, ein Kümmelschnaps«,
+»Muckefuck, Ersatzkaffee«, »Persilschein, so nennt man diese
+Gefälligkeitsbescheinigungen …«). The plain-language revision replaced:
 
-- **Harbour:** Schauermann, Kolonne, Vorarbeiter, Hieve, Tallymann,
-  Tallyzettel, Löschliste, Kaischuppen, Schute, Bootshaken, Freihafen,
-  Zollkanal, Speicher, Boden (warehouse floor), Ladeluke, Kontor.
+| Harbour term (old) | In the pack now |
+|---|---|
+| Schauermann, Schauerleute | Hafenarbeiter |
+| Hieve | Kiste (am Kran), Last am Haken |
+| Löschliste, löschen | Ladeliste, entladen |
+| Tallyzettel, Tallymann, Tally | Zählzettel, Kontrollzähler, Zählung |
+| Kaischuppen 17 | Schuppen 17 (»ein Lagerschuppen am Kai«) |
+| Schute, Schutenwächter, Schutenregister | Lastkahn, Wachmann bei den Lastkähnen, Register |
+| Boden (warehouse floor), Bodentür, Bodenschlüssel | Stock, Brandschutztür, Krögers Schlüssel |
+| Kontor, Kontortür, Kontorhaus | Büro, Bürotür, Bürohaus |
+| Lukentreppe, Wassertreppe | Treppe an der Ladeluke, Treppe ins Wasser |
+| Ducht, Riemen, Fleet | Sitzbank, Ruder, Kanal |
+
+The old words stay as parser synonyms, so typed commands still work.
+
+**Use** (all attested for Hamburg 1948, explained where needed):
+
+- **Harbour:** Kolonne, Vorarbeiter, Bootshaken, Freihafen, Zollkanal,
+  Speicher, Ladeluke.
 - **Everyday life:** Lebensmittelkarte, Kartenstelle, Kopfgeld, Nissenhütte,
   Straßenbahn, Hochbahn, Viadukt, Litfaßsäule.
 - **Black market:** Stangen, Amis, Kippen, Feuersteine, Bauchladen.
@@ -168,19 +201,22 @@ When a line could be read as making light of any of the above, cut it.
 
 ## Length limits for phones
 
-The authoring guide sets the hard limits; this pack aims lower:
+The pack declares `pacing: narrative` (about 60% of the play time is
+reading), so the narrative text budgets of the spec apply. They are upper
+limits for scenes, not targets for every text.
 
-| Text | Hard limit | Target in this pack |
+| Text | Hard limit | Guidance in this pack |
 |---|---|---|
-| Room description (rendered, all variants) | 600 | ≤ 400; current drafts 213–377 |
-| Object description | 400 | ≤ 250 |
-| Dialogue node `say` | 300 | ≤ 250 |
+| Room description, first visit | 1000 | the arrival of the scene, 2–3 paragraphs |
+| Room description, return visit | 1000 | one or two full sentences that still name every object |
+| Object description | 600 | what is odd or useful about it; documents in full |
+| Dialogue node `say` | 600 | turning points as a scene: line, reaction, line |
 | Option text | 80 | ≤ 60 |
-| Rule message (`say`) | – | 1–2 sentences, ≤ 250 |
-| Clue description | 400 | ≤ 300 |
+| Rule message (`say`) | – | a reaction 1–3 sentences; a solving response may be a short scene |
+| Clue description | 600 | the fact, its source, the open question |
 | Names | 24 | ≤ 20; no article |
 | Hint step | – | one sentence, ≤ 120 |
-| Ending variant | – | ≤ 800 |
+| Ending variant | – | ≤ 1600, three to five paragraphs |
 
 More rules for small screens:
 

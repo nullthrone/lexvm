@@ -1,6 +1,6 @@
 # Write a LexVM text adventure
 
-You are an experienced adventure game designer in the tradition of the classic LucasArts and Infocom games, and a precise technical writer. Your task: turn the idea at the very end of this prompt into a complete, playable **LexVM content pack** — one `pack.yaml` file.
+You are an experienced adventure game designer in the tradition of the classic LucasArts and Infocom games, a writer of fiction who can carry a story through scenes, and a precise technical writer. Your task: turn the idea at the very end of this prompt into a complete, playable **LexVM content pack** — one `pack.yaml` file.
 
 LexVM is an offline text-adventure player for phones and tablets. Players mostly tap: they tap an object, pick a verb from its action sheet, and for two-object verbs pick a second object; a text parser is optional. A pack is pure data in the YAML format specified below; it contains no code. Every pack is checked by `lexvm check`: schema, references, a replay of the walkthrough, and an exhaustive exploration of all reachable game states that proves the game can always still be won.
 
@@ -8,14 +8,23 @@ LexVM is an offline text-adventure player for phones and tablets. Players mostly
 
 - **Pack language:** the language the idea is written in — `de` for German, `en` for English. LexVM supports these two pack languages; if the idea is written in another language, use English (`en`) unless the user asks for German.
 - **Target play time:** the length the idea asks for; if it names none, about 30 minutes. Write it into `playtime`.
-- **Size budget:** LexVM estimates the play time from the walkthrough and the texts, and `lexvm check` warns when the estimate misses `playtime` by more than 25%. Pick the row that matches the requested length (no length requested: 30 minutes; between two rows: interpolate) and keep the walkthrough and the player-visible text of the whole pack within it. About a quarter of the walkthrough steps are dialogue choices, and about 60% of the words appear along the walkthrough.
+- **Pacing:** `narrative` if the idea is story-driven (a mystery, a drama, a character story: about 60% of the play time is reading), `puzzle` for a puzzle box or escape room (about 30%), otherwise `balanced` (about 45%). Write it into `pacing`.
+- **Size budget:** LexVM estimates the play time from the walkthrough and the texts, and `lexvm check` warns when the estimate misses `playtime` by more than 25%, or when the reading share misses the pacing. Pick the row that matches the requested length and the pacing (no length requested: 30 minutes; between two rows: interpolate) and keep the walkthrough and the player-visible text of the whole pack within it. About a quarter of the walkthrough steps are dialogue choices, and about 60% of the words appear along the walkthrough.
 
-| Play time | `de`: walkthrough steps | `de`: words of text | `en`: walkthrough steps | `en`: words of text |
-|---|---|---|---|---|
-| 15 min | 37–47 | 890–1,130 | 39–49 | 920–1,180 |
-| 30 min | 74–94 | 1,800–2,250 | 77–98 | 1,850–2,350 |
-| 45 min | 111–142 | 2,700–3,400 | 115–147 | 2,800–3,500 |
-| 60 min | 148–189 | 3,550–4,550 | 154–197 | 3,700–4,700 |
+| Play time | Pacing | `de`: walkthrough steps | `de`: words of text | `en`: walkthrough steps | `en`: words of text |
+|---|---|---|---|---|---|
+| 15 min | narrative | 17–21 | 1,900–2,350 | 17–21 | 2,150–2,700 |
+| 15 min | balanced | 23–29 | 1,390–1,780 | 23–29 | 1,600–2,050 |
+| 15 min | puzzle | 30–37 | 930–1,190 | 30–37 | 1,070–1,360 |
+| 30 min | narrative | 34–42 | 3,750–4,750 | 34–42 | 4,300–5,450 |
+| 30 min | balanced | 46–58 | 2,800–3,550 | 46–58 | 3,200–4,100 |
+| 30 min | puzzle | 59–74 | 1,900–2,350 | 59–74 | 2,150–2,700 |
+| 45 min | narrative | 50–64 | 5,600–7,100 | 50–64 | 6,400–8,200 |
+| 45 min | balanced | 69–88 | 4,200–5,350 | 69–88 | 4,800–6,150 |
+| 45 min | puzzle | 88–112 | 2,800–3,550 | 88–112 | 3,200–4,100 |
+| 60 min | narrative | 67–85 | 7,450–9,500 | 67–85 | 8,550–10,950 |
+| 60 min | balanced | 92–117 | 5,600–7,100 | 92–117 | 6,400–8,200 |
+| 60 min | puzzle | 117–149 | 3,750–4,750 | 117–149 | 4,300–5,450 |
 
 - **Policy:** `forgiving` — no deaths, no losing endings, no dead ends.
 
@@ -30,10 +39,20 @@ Everything below up to "How to answer" is reference material: first the authorin
 - End with a climax that uses what the player learned (a confrontation, a deduction), then a winning ending.
 - Score is a progress signal: usually 1 point per solved puzzle, 2 for a major deduction. Award each point exactly once (guard with a flag, a `not: { has: … }` condition or a `once` rule). `maxScore` equals the total score collected by the walkthrough.
 
-## Length budget
-- LexVM estimates the play time of a pack: reading the text the walkthrough shows (German 200, English 230 words per minute), about 10 seconds per walkthrough command and 6 per dialogue choice, plus part of the optional content (descriptions the walkthrough never examines, unchosen dialogue options, custom responses) and of the wrong attempts a player makes. `lexvm check` warns when the estimate misses `playtime` by more than 25%; set `playtime` to the target length.
-- Typical proportions: about 20 words of new text per walkthrough command; about a quarter of the walkthrough steps are dialogue choices; optional text about 60% of the walkthrough's text; about one described object for every two walkthrough commands that the walkthrough never examines.
-- Follow the size budget the prompt gives for the target length (walkthrough steps and words of player-visible text). Length comes from content, not padding: add a puzzle, a character to question, custom responses and side dialogue rather than longer descriptions (the text budgets for phone screens still apply). To shorten, cut a side puzzle or trim descriptions.
+## Story and scenes
+- Write the story before the data: the truth in causal order (who did what, and why), the player character's goal and how their understanding changes, and a scene plan in play order. Then derive room, object, dialogue and rule texts from the scenes.
+- Everything the ending relies on reaches the player in game text. Motives, relationships and backstory that only live in the design notes do not exist for the player.
+- Every scene has an arrival (where am I, who is here, what is at stake), a turn (something learned or changed) and a way out (why the player goes on, and where). Write the transitions: the first entry to a room, the moment after a key clue, the move from one chapter to the next (a `once` rule on `enter`, or the response that solves the puzzle).
+- Give the player character an inner voice in moderation: after a key clue or deduction, one or two sentences on what it means and what follows from it. That is how a reader keeps track of a case.
+- Characters want something the player can see, and speak like themselves. A conversation has a turning point; write it out as a scene, not as one line of information.
+- Prose rhythm: vary sentence length. Short sentences are accents, not the default; join thoughts that belong together with their logic (because, but, so, while). No telegram style, no chains of fragments, no adjective padding.
+- Review the transcript of the walkthrough (`lexvm transcript`): it must read as a story a reader can follow from start to end.
+
+## Length budget and pacing
+- LexVM estimates the play time of a pack: reading the text the walkthrough shows (German 200, English 230 words per minute), about 10 seconds per walkthrough command and 6 per dialogue choice, plus part of the optional content (descriptions the walkthrough never examines, unchosen dialogue options, custom responses) and about one wrong attempt per productive command. `lexvm check` warns when the estimate misses `playtime` by more than 25%; set `playtime` to the target length.
+- `pacing` says how that time divides between reading and acting: `narrative` (about 60% reading: mysteries, dramas, character stories), `balanced` (about 45%, the default), `puzzle` (about 30%: puzzle boxes, escape rooms). Declare it in the metadata; `lexvm check` then warns when the reading share leaves the band (±10 points). A narrative pack with the same play time has fewer puzzles and more story.
+- Follow the size budget the prompt gives for the target length and pacing (walkthrough steps and words of player-visible text). About a quarter of the walkthrough steps are dialogue choices; optional text is about 60% of the walkthrough's text.
+- Length comes from content, never from padding. Content is both mechanics (a puzzle, a character to question, custom responses) and story (an arrival, a turning point, what a clue means, a transition between acts). Padding is adjectives, repeated atmosphere and summaries of what the player just saw. To shorten a narrative pack, cut a side puzzle before you cut a scene.
 
 ## Puzzle dependency chart
 - Design the puzzles as a dependency chart (Ron Gilbert): start from the winning ending and work backwards — what must be true right before it, and what before that. Nodes are puzzles, events, items and clues; an arrow means "is needed for".
@@ -96,12 +115,13 @@ Everything below up to "How to answer" is reference material: first the authorin
 - The first hint whose `when` holds and whose `until` does not is shown, so order hints in the usual solving order, and make sure some hint applies at every point until the ending.
 
 ## Text for phone screens
-- Budgets: room descriptions ≤ 600 characters, object descriptions ≤ 400, dialogue lines ≤ 300, option texts ≤ 80, names ≤ 24. Aim well below.
-- Short paragraphs of 1–3 sentences. The first sentence says what matters; atmosphere second.
+- Budgets: room descriptions ≤ 600 characters, object descriptions ≤ 400, dialogue lines ≤ 300 (`pacing: narrative`: 1,000, 600 and 600); option texts ≤ 80, names ≤ 24 for every pacing. The player scrolls like a book; a long text needs paragraphs, not cuts.
+- Paragraphs of 1–4 sentences, separated by a blank line. In descriptions the first sentence says what matters; atmosphere second.
+- First visits get the full scene; return visits to a room get one or two sentences (a text variant with `visited`).
 - Mention exits naturally in the room description ("The library lies to the west.").
 - Every interactable object appears as `{id}` (or `{id|inflected text}`) in its room's description or in its own `roomText`. Portable objects without `roomText` are listed automatically.
 - Names are short, without articles, and distinct: "brass key", not "the small brass key".
-- Rule messages (`say`) are 1–2 sentences.
+- Rule messages (`say`) are 1–3 sentences; the response that solves a puzzle or reveals a clue may be a short scene.
 
 ## Language conventions
 - All player-facing text is in the pack `language`. Ids are ASCII `lower_snake_case` (English ids are fine for any language).
@@ -197,6 +217,7 @@ which is what the player loads. The player can also import `.yaml` and
 | `policy` | `"forgiving"` | no | Default and currently the only policy: no losing endings, no dead ends. |
 | `generator` | `{pipeline?, notes?}` | no | Provenance, free text. |
 | `playtime` | int (minutes) | no | Target play time. `lexvm check` compares its play time estimate against it (section 17). |
+| `pacing` | `"narrative"` \| `"balanced"` \| `"puzzle"` | no | How the play time divides between reading and interaction (about 60%, 45% or 30% reading). Sizes the text budgets (section 4) and, when declared, is checked by the play time estimate (section 17). |
 | `maxScore` | int | no | Enables the score display. |
 | `start` | `{room, intro?}` | yes | Starting room and intro text. |
 | `verbs` | map id → Verb | no | Pack verbs and overrides for core verbs. |
@@ -232,9 +253,12 @@ Inside strings:
 - A blank line separates paragraphs; a single newline is a line break.
 - Nothing else is markup. Text is never interpreted as HTML.
 
-Keep texts short for phone screens: room descriptions ≤ 600 characters,
+Keep texts readable on phone screens: room descriptions ≤ 600 characters,
 object descriptions ≤ 400, dialogue lines ≤ 300, option texts ≤ 80, names ≤ 24.
-Longer texts produce warnings.
+A pack with `pacing: narrative` tells its scenes in full and gets room
+descriptions ≤ 1000, object descriptions ≤ 600 and dialogue lines ≤ 600; option
+texts and names keep their limits, because they are buttons. Longer texts
+produce warnings (`text.too-long`).
 
 ### 5. Rooms and exits
 
@@ -654,7 +678,7 @@ in `@lexvm/engine`.
 | `t_cmd` | 10 s | `secondsPerCommand` | Per command: perceive the scene, tap the object, pick the verb. |
 | `t_choice` | 6 s | `secondsPerChoice` | Per dialogue choice. |
 | `c` | 0.6 | `coverage` | Share of the optional content a typical player sees. |
-| `f` | 0.5 | `failedAttemptsPerCommand` | Unproductive attempts per productive command. |
+| `f` | 1 | `failedAttemptsPerCommand` | Unproductive attempts per productive command. |
 | tolerance | 0.25 | `tolerance` | Allowed relative deviation from the target. |
 | target | `playtime` | `targetMinutes`; CLI `--target-minutes` | The length the pack should have. |
 
@@ -667,12 +691,33 @@ per minute in German and 1234 in English; German words are longer, so German
 gets fewer words per minute. The defaults are deliberately below the lab
 values: the text is read on a phone screen, in a game, and partly re-read.
 
+The attempt rate `f` comes from the playtests of
+`packs/letzte-nacht-der-reichsmark` (74 walkthrough steps, 47 of them
+commands): a tap-only player made 180 commands, an adventure veteran 226.
+After the optional looks and dialogue options the model counts separately,
+that leaves about 0.9 and 1.8 unproductive attempts per productive command;
+`f = 1` is the cautious end. Earlier versions used 0.5, which underestimated
+the interaction time of real players and therefore pushed packs to cut text
+to meet their target ([ADR 0012](../adr/0012-narrative-pacing.md)).
+
+**Reading share and pacing.** `reading = (W_path + c · W_optional) / wpm` is
+the part of `minutes_expected` spent reading; the reading share is
+`reading / minutes_expected`. A pack declares how it means to divide its time
+with `pacing`: `narrative` 0.6, `balanced` 0.45, `puzzle` 0.3. When `pacing` is
+declared and the share is more than 0.1 away from its value, `lexvm check`
+warns (`playtime.pacing`): a narrative pack whose story is told too thinly for
+its mechanics, or a pack that reads much more than it plays. A pack without
+`pacing` is never warned and is sized as `balanced`.
+
 **Diagnostics** (path `playtime`; Appendix A):
 
 - `playtime.estimate` (info, always): "≈ 34 min expected (speedrun 21 min);
   target 35 min", followed by the counts the estimate is based on.
 - `playtime.no-target` (info): the pack has no `playtime`; suggests the
   rounded expected time.
+- `playtime.pacing` (warning, only when `pacing` is declared): the reading
+  share is outside the pacing's band; the message says how many words of scene
+  prose are missing, or what to trim.
 - `playtime.too-short` / `playtime.too-long` (warning): `|expected / target − 1|`
   is greater than the tolerance. The message gives concrete numbers derived
   from the pack's own proportions, e.g. "≈ 12 min short: add 1-2 puzzles, or ≈
@@ -680,20 +725,25 @@ values: the text is read on a phone screen, in a game, and partly re-read.
   "≈ 4 min too long: trim ≈ 1,100 words or ≈ 20 commands". They are left out
   while the walkthrough does not reach a winning ending.
 
-**Budget.** `budgetForMinutes(minutes, language)` inverts the model for a
-target length with typical ratios of a pack: `W_optional ≈ 0.6 · W_path`,
-`D_path ≈ 0.25 ·` all walkthrough steps, `W_path ≈ 20 · C_path` (words of new
-text per productive command), `L_unseen ≈ 0.5 · C_path` and
-`O_unchosen ≈ 0.25 · D_path`. The ratios are calibrated against the reference
-pack `packs/locked-study` (English) and the German test fixture
-`packages/engine/test/fixtures/runtime/hafen.yaml`, pooled over both
-walkthroughs: measured 0.34, 0.28, 20.7, 0.56 and 0.14. The optional-word
-ratio is set higher than measured because these two packs are tiny, and a
-full-length game carries more side content (custom responses to wrong
-attempts, dialogue branches); the unchosen-option ratio is rounded up for the
-same reason. The budget gives ranges of walkthrough steps and player-visible
-words of ±tolerance/2 around the target, so a pack that stays within both
-ranges lands within the tolerance under the model's assumptions.
+**Budget.** `budgetForMinutes(minutes, language, { pacing })` inverts the
+model for a target length. The reading share of the pacing (default
+`balanced`) splits the minutes: the interaction part sizes the walkthrough
+(steps × interaction minutes per step, with tapping, wrong attempts, side looks
+and unchosen options), the reading part sizes the text
+(`W_path + c · W_optional = reading minutes · wpm`). The other ratios are
+typical of a pack: `W_optional ≈ 0.6 · W_path`, `D_path ≈ 0.25 ·` all
+walkthrough steps, `L_unseen ≈ 0.5 · C_path` and `O_unchosen ≈ 0.25 · D_path`.
+They are calibrated against the reference pack `packs/locked-study` (English)
+and the German test fixture `packages/engine/test/fixtures/runtime/hafen.yaml`,
+pooled over both walkthroughs: measured 0.34, 0.28, 0.56 and 0.14. The
+optional-word ratio is set higher than measured because these two packs are
+tiny, and a full-length game carries more side content (custom responses to
+wrong attempts, dialogue branches); the unchosen-option ratio is rounded up
+for the same reason. Earlier versions fixed the words per command at 20 instead
+of deriving them from a reading share; that implied a reading share of about
+30% for every pack. The budget gives ranges of walkthrough steps and
+player-visible words of ±tolerance/2 around the target, so a pack that stays
+within both ranges lands within the tolerance under the model's assumptions.
 
 **Where it is used.**
 
@@ -704,15 +754,16 @@ ranges lands within the tolerance under the model's assumptions.
   catalog entry in `index.json` when the walkthrough reaches a win. The
   player's library shows `playtime` and falls back to `estimatedMinutes`;
   imported packs keep the estimate computed at import.
-- `lexvm generate --minutes <n>` writes the target to `playtime` in the
-  metadata (world) stage and keeps it there, puts the budget into the stage
-  prompts, and checks the estimate in its verification gate. Play time
-  warnings come right after the errors in repair prompts. A pack that passes
-  every gate but misses the target gets one more repair round for its length
-  (if `--max-repairs` allows); if that round breaks the pack and the
-  remaining rounds cannot fix it, the last passing version is restored. The
-  generic one-shot prompt contains a budget table for 15, 30, 45 and 60
-  minutes.
+- `lexvm generate --minutes <n> --pacing <pacing>` writes the target to
+  `playtime` and the pacing to `pacing` in the metadata (world) stage and
+  keeps them there, puts the budget into the stage prompts, and checks the
+  estimate in its verification gate. Play time warnings come right after the
+  errors in repair prompts. A pack that passes every gate but misses the
+  target or its pacing gets one more repair round for its length (if
+  `--max-repairs` allows); if that round breaks the pack and the remaining
+  rounds cannot fix it, the last passing version is restored. The generic
+  one-shot prompt contains a budget table for 15, 30, 45 and 60 minutes and
+  every pacing.
 
 ### Appendix A. Diagnostic codes
 
@@ -828,6 +879,7 @@ walkthrough, play time and exploration results.
 | `playtime.estimate` | info | The estimate and what it is based on. |
 | `playtime.no-target` | info | No `playtime`; suggests a value. |
 | `playtime.too-short`, `playtime.too-long` | warning | The expected time misses the target by more than the tolerance, with concrete advice. |
+| `playtime.pacing` | warning | The reading share misses the declared `pacing` by more than 0.1. |
 
 **Tools**
 
@@ -839,22 +891,22 @@ walkthrough, play time and exploration results.
 
 # Worked example
 
-A complete five-minute pack. Copy its structure and style, not its content.
+A complete short pack. Copy its structure and style, not its content.
 
 ```yaml
-# A five-minute demo that exercises most of the format: a locked door, a hidden
+# A short demo that exercises most of the format: a locked door, a hidden
 # item, a container, a pack verb, a clue, a conversation, hints and a score.
 # It doubles as the reference example for authors and LLM prompts.
 format: lexvm-pack/1
 id: locked-study
-version: 1.0.1
+version: 1.0.2
 title: The Locked Study
-subtitle: A five-minute LexVM demo
+subtitle: A short LexVM demo
 description: Your uncle has vanished and his study is locked. A tiny tour of rooms, items, a locked door, a clue and a conversation.
 language: en
 author: LexVM contributors
 license: CC0-1.0
-playtime: 5
+playtime: 7
 maxScore: 3
 
 start:
@@ -1084,17 +1136,19 @@ walkthrough:
 
 Answer in exactly three parts, in this order.
 
-**Part 1 — Design** (short: at most about 400 words, in the pack language or in English):
-- premise, player character, goal, tone and narrative voice;
+**Part 1 — Design** (at most about 700 words, in the pack language or in English):
+- premise, player character, goal, tone, narrative voice and pacing;
+- the truth: what really happened, in causal order, with every motive — and for each fact the ending relies on, where the player learns it in the game text;
+- the scene plan: the scenes in play order, each with its arrival, its turn and why the player goes on;
 - the cast: who knows what, who hides what;
 - the rooms with their ids and how they connect;
 - the **puzzle dependency chart** as a Mermaid `flowchart` (or an indented list): every puzzle with the items, clues and flags it needs and what it unlocks, down to the winning ending. Check that it branches — the player should almost always have two or three things to work on;
 - for each puzzle, one line: where it is signposted in the text, and its solution in canonical commands.
 
-**Part 2 — The pack:** ONE complete `pack.yaml` in a single fenced code block that starts with ```` ```yaml ````. Everything goes into this one file. Write the top-level keys in this order: metadata, `start`, `verbs`, `flags`, `counters`, `rooms`, `objects`, `rules`, `dialogues`, `endings`, `hints`, and **`walkthrough` last** — write it after everything else, replaying the game step by step, so it only uses ids that exist. Never abbreviate: no "…", no "and so on", no comments standing in for content.
+**Part 2 — The pack:** ONE complete `pack.yaml` in a single fenced code block that starts with ```` ```yaml ````. Everything goes into this one file. Write the top-level keys in this order: metadata, `start`, `verbs`, `flags`, `counters`, `rooms`, `objects`, `rules`, `dialogues`, `endings`, `hints`, and **`walkthrough` last** — write it after everything else, replaying the game step by step, so it only uses ids that exist. Never abbreviate: no "…", no "and so on", no comments standing in for content. Write the texts scene by scene, as the player will read them (see "Story and scenes" in the guide), not one field at a time.
 
 Metadata:
-- `format: lexvm-pack/1`, a kebab-case `id` derived from the title, `version: 1.0.0`, `title`, optional `subtitle`, a one- or two-sentence `description`, `language`, `playtime` (the target play time in minutes), `maxScore` (the walkthrough's total score), `policy: forgiving`;
+- `format: lexvm-pack/1`, a kebab-case `id` derived from the title, `version: 1.0.0`, `title`, optional `subtitle`, a one- or two-sentence `description`, `language`, `playtime` (the target play time in minutes), `pacing`, `maxScore` (the walkthrough's total score), `policy: forgiving`;
 - `author`: the user's name or handle if they gave one, otherwise `Anonymous`, followed by ` (written with an LLM)`;
 - `license`: `CC-BY-4.0` unless the user asks for another SPDX license id;
 - `generator`: `{ pipeline: "lexvm one-shot prompt", notes: "Drafted by an LLM chat assistant from the LexVM one-shot prompt." }`.

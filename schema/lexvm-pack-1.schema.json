@@ -65,6 +65,14 @@
       "exclusiveMinimum": 0,
       "maximum": 9007199254740991
     },
+    "pacing": {
+      "type": "string",
+      "enum": [
+        "narrative",
+        "balanced",
+        "puzzle"
+      ]
+    },
     "maxScore": {
       "type": "integer",
       "exclusiveMinimum": 0,

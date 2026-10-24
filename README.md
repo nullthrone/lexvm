@@ -34,8 +34,8 @@ way, type commands in German or English.
 
 | | Adventure | Language | Length | |
 |---|---|---|---|---|
-| 🕵️ | **Die letzte Nacht der Reichsmark**<br/>*Ein Hamburger Kriminalfall, Juni 1948.* The night before the currency reform, a dock worker vanishes, accused of stealing cigarettes. Clues, interrogations and a city full of hoarded goods. | 🇩🇪 Deutsch | ~45 min | Noir |
-| 🔑 | **The Locked Study**<br/>*A five-minute LexVM demo.* Your uncle has vanished and his study is locked. | 🇬🇧 English | ~5 min | Demo |
+| 🕵️ | **Die letzte Nacht der Reichsmark**<br/>*Ein Hamburger Kriminalfall, Juni 1948.* The night before the currency reform, a dock worker vanishes, accused of stealing cigarettes. Clues, interrogations and a city full of hoarded goods. | 🇩🇪 Deutsch | ~65 min | Noir |
+| 🔑 | **The Locked Study**<br/>*A short LexVM demo.* Your uncle has vanished and his study is locked. | 🇬🇧 English | ~7 min | Demo |
 
 Want more? [Write your own](#-create-your-own-adventure) or
 [propose one](https://github.com/nullthrone/lexvm/issues/new?template=content_pack_proposal.yml).

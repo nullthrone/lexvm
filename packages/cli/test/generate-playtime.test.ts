@@ -47,6 +47,7 @@ function fakeLlm() {
   const calls: Array<{ stage: string; prompt: string }> = [];
   const answers: Record<string, () => string> = {
     concept: () => "# The Locked Study\n\nA concept.",
+    story: () => "# Story\n\nThe truth.",
     puzzles: () => "# Puzzles\n\nA chart.",
     world: () => block("pack.yaml", example.replace(/^playtime: \d+\n/m, "")),
     logic: () => block("notes.yaml", "# nothing to add\n"),
@@ -111,7 +112,7 @@ describe("lexvm generate: play time", () => {
     expect(seen).toHaveLength(1);
     expect(seen[0]!.options).toMatchObject({ targetMinutes: 12 });
     expect(seen[0]!.pack).toContain("playtime: 12");
-    expect(logs.join("\n")).toContain("set playtime: 12 in pack.yaml");
+    expect(logs.join("\n")).toContain("set playtime: 12 and pacing: balanced in pack.yaml");
     // The stage prompts carry the budget for the target.
     expect(llm.calls.find((c) => c.stage === "world")!.prompt).toContain("Size budget for about 12 minutes");
   });
@@ -188,7 +189,9 @@ describe("lexvm generate: play time", () => {
     expect(await readFile(join(dir, "notes.yaml"), "utf8")).toBe("# nothing to add\n");
     const run = JSON.parse(await readFile(join(dir, "design/run.json"), "utf8")) as RunLog;
     expect(run.runs[0]!.result).toMatchObject({ ok: true, warnings: 1 });
-    expect(run.events.at(-1)!.notes).toEqual(["restored the last passing version after an unsuccessful length repair"]);
+    expect(run.events.at(-1)!.notes).toEqual([
+      "restored the last passing version after an unsuccessful length or review round",
+    ]);
   });
 });
 

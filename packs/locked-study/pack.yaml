@@ -1,18 +1,18 @@
 # yaml-language-server: $schema=../../schema/lexvm-pack-1.schema.json
 #
-# A five-minute demo that exercises most of the format: a locked door, a hidden
+# A short demo that exercises most of the format: a locked door, a hidden
 # item, a container, a pack verb, a clue, a conversation, hints and a score.
 # It doubles as the reference example for authors and LLM prompts.
 format: lexvm-pack/1
 id: locked-study
-version: 1.0.1
+version: 1.0.2
 title: The Locked Study
-subtitle: A five-minute LexVM demo
+subtitle: A short LexVM demo
 description: Your uncle has vanished and his study is locked. A tiny tour of rooms, items, a locked door, a clue and a conversation.
 language: en
 author: LexVM contributors
 license: CC0-1.0
-playtime: 5
+playtime: 7
 maxScore: 3
 
 start:

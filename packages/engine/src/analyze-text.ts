@@ -4,9 +4,9 @@
  */
 import { markupRefs, type PackIndex, renderedText, textStrings, walkPack } from "./analyze-walk.ts";
 import type { DiagnosticList } from "./diagnostics.ts";
-import type { Id, Text } from "./schema.ts";
+import type { Id, Pacing, Text } from "./schema.ts";
 
-/** Character budgets from spec section 4. */
+/** Character budgets from spec section 4 (packs with pacing 'balanced' or 'puzzle', or none). */
 export const TEXT_LIMITS = {
   roomDescription: 600,
   objectDescription: 400,
@@ -14,6 +14,24 @@ export const TEXT_LIMITS = {
   optionText: 80,
   name: 24,
 } as const;
+
+/**
+ * A narrative pack tells its scenes in full: a first arrival, a confession, a
+ * turning point need more room than one phone screen of 300 characters. The
+ * player scrolls like a book; options and names stay short for the buttons.
+ */
+const NARRATIVE_LIMITS: Record<keyof typeof TEXT_LIMITS, number> = {
+  roomDescription: 1000,
+  objectDescription: 600,
+  dialogueSay: 600,
+  optionText: 80,
+  name: 24,
+};
+
+/** The character budgets for a pack's pacing (spec section 4). */
+export function textLimits(pacing: Pacing | undefined): Readonly<Record<keyof typeof TEXT_LIMITS, number>> {
+  return pacing === "narrative" ? NARRATIVE_LIMITS : TEXT_LIMITS;
+}
 
 function length(text: string, ix: PackIndex): number {
   return [...renderedText(text, ix.pack)].length;
@@ -44,27 +62,28 @@ function checkLength(
 
 function checkLengths(ix: PackIndex, out: DiagnosticList): void {
   const { pack } = ix;
+  const limits = textLimits(pack.pacing);
   for (const [id, room] of Object.entries(pack.rooms)) {
-    checkLength(ix, out, room.name, `rooms.${id}.name`, "Room name", TEXT_LIMITS.name);
-    checkLength(ix, out, room.description, `rooms.${id}.description`, "Room description", TEXT_LIMITS.roomDescription);
+    checkLength(ix, out, room.name, `rooms.${id}.name`, "Room name", limits.name);
+    checkLength(ix, out, room.description, `rooms.${id}.description`, "Room description", limits.roomDescription);
   }
   for (const [id, object] of Object.entries(pack.objects)) {
-    checkLength(ix, out, object.name, `objects.${id}.name`, "Object name", TEXT_LIMITS.name);
+    checkLength(ix, out, object.name, `objects.${id}.name`, "Object name", limits.name);
     checkLength(
       ix,
       out,
       object.description,
       `objects.${id}.description`,
       "Object description",
-      TEXT_LIMITS.objectDescription,
+      limits.objectDescription,
     );
   }
   for (const [id, dialogue] of Object.entries(pack.dialogues)) {
     for (const [nodeId, node] of Object.entries(dialogue.nodes)) {
       const p = `dialogues.${id}.nodes.${nodeId}`;
-      checkLength(ix, out, node.say, `${p}.say`, "Dialogue line", TEXT_LIMITS.dialogueSay);
+      checkLength(ix, out, node.say, `${p}.say`, "Dialogue line", limits.dialogueSay);
       (node.options ?? []).forEach((option, i) => {
-        checkLength(ix, out, option.text, `${p}.options[${i}].text`, "Option text", TEXT_LIMITS.optionText);
+        checkLength(ix, out, option.text, `${p}.options[${i}].text`, "Option text", limits.optionText);
       });
     }
   }

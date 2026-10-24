@@ -357,3 +357,76 @@ answers players asked for; the merged dialogue steps save about half a
 minute. Text: every hard limit holds; above style.md's soft targets are
 only `h_verhoer` step 2 (122 characters) and the names from world.md
 listed above.
+
+## Narrative revision
+
+Input: a review of the playtested pack. The mechanics and the puzzles were
+sound, but the story was hard to follow: telegram-style sentences, scenes
+without arrivals or transitions, characters reduced to the facts a puzzle
+needs. The truth, the motives and the backstory lived in these design files
+and reached the player only in fragments. A second note asked for fewer
+harbour terms that readers outside northern Germany do not know.
+
+### Diagnosis
+
+Measured on the pack before this revision: median sentence length six words,
+78% of all sentences eight words or shorter; about 6,000 player-visible words
+against about 20,000 words of design documents. Three rules had pushed the
+text there: style.md's »6–14 words, one observation per sentence«, the
+authoring guide's advice to grow a game through mechanics rather than text,
+and the play time model, which priced a command at 18 seconds of tapping but
+only 8 of reading and therefore made every added sentence a cost. The
+integration pass and playtest round 1 both cut text to meet the 45-minute
+target. The engine and prompt changes that address the cause are recorded in
+[ADR 0012](../../../docs/adr/0012-narrative-pacing.md).
+
+### Decisions
+
+1. **Pacing `narrative`, `playtime: 65`.** The mechanics stay exactly as they
+   were (same ids, conditions, effects, walkthrough, score and state space:
+   6,869 states). Keeping 45 minutes with a 60% reading share would have
+   meant cutting about a third of the puzzles. With the recalibrated model
+   the estimate is about 68 minutes, 59% of it reading (before: 51 minutes
+   with the new model, 46% reading).
+2. **New [story.md](story.md):** the truth with every motive, the
+   through-line, a scene plan with arrival, turn and way out per scene, and a
+   revelation map that names, for every fact the ending relies on, where the
+   player learns it.
+3. **style.md:** varied rhythm instead of 6–14 words; Voss thinks (one or two
+   sentences after a clue that changes the case); scenes instead of data
+   fields; narrative text budgets; the plain-language glossary.
+4. **Texts rewritten scene by scene** (rooms, dialogues, solving responses,
+   deductions, intro, endings). Notable additions, all text only:
+   - the intro sets up Voss's past as Asmussen's insurer, which the finale
+     pays off;
+   - Anni's scene ends with Voss ordering the three leads;
+   - Kröger's first talk ends with Voss noting that he had his four claims
+     ready, which teaches the interrogation as a checklist;
+   - Asmussen's warning ends with Voss's conclusion (he denied Speicher K
+     before anyone asked);
+   - every deduction says what it changes; D4 turns the case from »where is
+     Jakob« to »who wants him gone«;
+   - Tadeusz's scene points to the tally sheet (or confirms it) and links
+     Speicher K to Asmussen's card;
+   - the confession is a scene: the fall, the doctor Kröger wanted, the
+     water every evening; the Persilschein is explained in one sentence;
+   - the crossing is told on arrival at the water side, not before the
+     player boards;
+   - the finale gives each proof a reaction; the endings name what happens
+     to every character.
+   New conditional lines use `if` effects that only print text.
+5. **Plain language.** Harbour terms replaced or explained on first use; the
+   table is in style.md. Display names changed: Ladeliste (200 Kisten),
+   Zählzettel (180 Kisten), Schuppen 17, Vierter Stock, Brandschutztür,
+   Krögers Schlüssel, Bürotür, Asmussens Büro, Lastkähne, Lastkahn »Elise 7«.
+   The old words stay as synonyms. Hints use the new names.
+6. **Version 1.1.0.**
+
+### Verification
+
+`lexvm check`: 0 errors, 0 warnings; walkthrough 74 steps, 25/25;
+exploration complete, 6,869 states, 0 dead ends. A comparison of the
+compiled pack before and after, with every text field, name, synonym and
+hint step removed, is identical: the revision changes no mechanics. Both
+tap-walkthrough end-to-end tests pass. `lexvm transcript` prints the text a
+player reads along the walkthrough (about 5,800 words, before about 3,000).

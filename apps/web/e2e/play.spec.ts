@@ -150,7 +150,7 @@ test("plays the demo with typed commands", async ({ page }) => {
 });
 
 test("the menu offers waiting", async ({ page }) => {
-  await expect(packCard(page)).toContainText("about 5 min");
+  await expect(packCard(page)).toContainText("about 7 min");
   await startNewGame(page);
   await page.getByRole("button", { name: "Menu" }).tap();
   await sheet(page).getByRole("button", { name: "Wait" }).tap();

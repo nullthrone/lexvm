@@ -10,6 +10,7 @@ import { runCheck } from "./commands/check.ts";
 import { runNew } from "./commands/new.ts";
 import { runPlay } from "./commands/play.ts";
 import { runSchema } from "./commands/schema.ts";
+import { runTranscript } from "./commands/transcript.ts";
 import { runValidate } from "./commands/validate.ts";
 import { err, out } from "./term.ts";
 
@@ -22,6 +23,7 @@ Commands:
   build      Compile content packs to .lexpack.json plus index.json
   check      validate + walkthrough replay + state-space exploration
   play       Play a content pack in the terminal
+  transcript Print the walkthrough as a reader sees it (for story review)
   new        Scaffold a new content pack
   schema     Write the JSON Schema of the content pack format
   prompt     Assemble the prompt kit for any LLM
@@ -43,6 +45,7 @@ const COMMANDS: Record<string, Runner> = {
   build: runBuild,
   check: runCheck,
   play: runPlay,
+  transcript: runTranscript,
   new: runNew,
   schema: runSchema,
   // Owned by the generation pipeline; loaded lazily so the other commands never need the API client.
