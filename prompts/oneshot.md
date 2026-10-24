@@ -105,6 +105,7 @@ Everything below up to "How to answer" is reference material: first the authorin
 ## Clues and deductions
 - A clue is a piece of knowledge: an object with `clue: true` and `location: nowhere`, acquired with the `learn` effect (reading a document, examining something, a dialogue). Clues sit in the notebook and cannot be dropped or lost.
 - Clue names are short and telling (≤ 24 characters: "Torn ticket", "Alibi gap"); the description states the fact.
+- A clue says only what the player has read by the time it is learned: the notebook can be opened in the middle of a conversation, so an entry must not name a person, place or fact that a later line introduces. Put the `learn` after the last line the entry sums up (in a dialogue: in the node or option that says it), or cut the entry down. The exception is a document whose entry is the document itself (a letter, a list): there the notebook is where it is read.
 - Deductions combine two clues: a rule `on: { verb: use, object: clue_a, with: clue_b }` with `when: { not: { has: clue_c } }` that `learn`s the conclusion `clue_c` (rules are tried in both orders). Only ask for deductions a player can reasonably see; answer plausible wrong combinations gently.
 - Players tap a clue and choose "Combine with …" ("Kombinieren mit …"), which sends `use`; typed, "combine X with Y" / "kombiniere X mit Y" / "vergleiche X mit Y" work. If the story depends on deductions, teach combining once early (a line of inner voice or the first hint step).
 - Interrogations and confrontations use clues as evidence (see dialogue).
@@ -1171,6 +1172,7 @@ Metadata:
 12. **Invisible verbs.** Every pack verb is declared under `verbs:` and listed in the `verbs` of each object it applies to.
 13. **One key per condition and effect.** `{ set: a, score: 1 }` is two effects; two conditions go in a list or `all: […]`.
 14. **Score.** Each point is awarded once; `maxScore` equals the walkthrough's total.
+15. **Notebook entries ahead of the story.** Every clue description states only what the player has read when its `learn` runs. A dialogue that `learn`s a summary in an early node and says the rest later gives the game away; move the `learn` to the node that says the last fact.
 
 # When the user sends diagnostics
 

@@ -7,7 +7,8 @@ import { clean, err, formatDiagnostic } from "../term.ts";
 export const TRANSCRIPT_HELP = `Usage: lexvm transcript <packDir|file.yaml|file.lexpack.json> [options]
 
 Replay the pack's walkthrough and print everything a player reads along it,
-as Markdown: room titles as headings, the player's commands as quotes. This is
+as Markdown: room titles as headings, the player's commands as quotes, new
+notebook entries with their text where they are learned. This is
 the text to read (or give to an editor) when reviewing the story: can a reader
 follow what happens, and why?
 

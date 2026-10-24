@@ -2,16 +2,19 @@
  * The walkthrough as a reader sees it: the whole game text of one winning
  * play, in order, as Markdown. It is the artifact for reviewing the story
  * (authoring guide, "Story and scenes"): verification proves that a pack can
- * be won, the transcript shows whether it can be followed.
+ * be won, the transcript shows whether it can be followed. New notebook
+ * entries are shown where they are learned, with their text, because the
+ * player can read them there: an entry must not be ahead of the story.
  */
 
 import { parseCanonical } from "./commands.ts";
 import { newGame, step } from "./runtime.ts";
-import type { Pack } from "./schema.ts";
-import type { OutputBlock } from "./types.ts";
+import { INVENTORY, type Pack } from "./schema.ts";
+import { objectDescription } from "./text.ts";
+import type { GameState, OutputBlock } from "./types.ts";
 
 export interface Transcript {
-  /** Markdown: room titles as headings, the player's commands as quotes, system lines left out. */
+  /** Markdown: room titles as headings, the player's commands as quotes, new notebook entries with their text, other system lines left out. */
   markdown: string;
   /** Accepted walkthrough steps. */
   steps: number;
@@ -19,7 +22,30 @@ export interface Transcript {
   ok: boolean;
 }
 
-function blocksToMarkdown(blocks: OutputBlock[], out: string[]): void {
+/** Clues that are in the notebook in `after` but were not in `before`. */
+function newClues(pack: Pack, before: GameState | null, after: GameState): Set<string> {
+  const known = (st: GameState | null, id: string) => {
+    const os = st?.objects[id];
+    return os !== undefined && os.location === INVENTORY && !os.hidden;
+  };
+  const ids = new Set<string>();
+  for (const [id, def] of Object.entries(pack.objects))
+    if (def.clue && known(after, id) && !known(before, id)) ids.add(id);
+  return ids;
+}
+
+/**
+ * Render the blocks of one step. A system block naming a clue learned in this
+ * step becomes a notebook line with the clue's text (resolved against the state
+ * after the step); every other system block is left out.
+ */
+function blocksToMarkdown(
+  pack: Pack,
+  state: GameState,
+  learned: Set<string>,
+  blocks: OutputBlock[],
+  out: string[],
+): void {
   let prev: OutputBlock["kind"] | null = null;
   for (const block of blocks) {
     const text = block.spans
@@ -34,8 +60,14 @@ function blocksToMarkdown(blocks: OutputBlock[], out: string[]): void {
       case "room-title":
         out.push(`## ${text}`);
         break;
-      case "system":
+      case "system": {
+        const id = block.spans.find((s) => s.ref !== undefined && learned.has(s.ref))?.ref;
+        if (id === undefined) break;
+        learned.delete(id);
+        const name = pack.objects[id]?.name ?? id;
+        out.push(`*Notebook: ${name}.* ${objectDescription(pack, state, id).join(" ")}`.trim());
         break;
+      }
       case "ending":
         out.push(prev === "ending" ? text : `### ${text}`);
         break;
@@ -51,7 +83,7 @@ export function walkthroughTranscript(pack: Pack): Transcript {
   const out: string[] = [`# ${pack.title}`];
   if (pack.subtitle !== undefined) out.push(`*${pack.subtitle}*`);
   const game = newGame(pack);
-  blocksToMarkdown(game.output, out);
+  blocksToMarkdown(pack, game.state, newClues(pack, null, game.state), game.output, out);
   let state = game.state;
   let steps = 0;
   let failed = false;
@@ -67,7 +99,7 @@ export function walkthroughTranscript(pack: Pack): Transcript {
       break;
     }
     steps++;
-    blocksToMarkdown(result.output, out);
+    blocksToMarkdown(pack, result.state, newClues(pack, state, result.state), result.output, out);
     state = result.state;
   }
   const ok = !failed && state.ended !== null && pack.endings[state.ended]?.win === true;

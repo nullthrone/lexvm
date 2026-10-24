@@ -375,9 +375,8 @@ rules.
 - **Prerequisites:** `clue_untergeschoben` (P3).
 - **Solution:** `talk tadeusz` (or `show clue_untergeschoben tadeusz`, which
   opens the same conversation), then:
-  1. `choose t_kein_dieb` → node `t_heft` learns `clue_zaehlheft`.
-     1 point.
-  2. `choose t_wohin`.
+  1. `choose t_kein_dieb` → node `t_heft`, 1 point.
+  2. `choose t_wohin` → node `t_elise` learns `clue_zaehlheft`.
   3. `choose t_angst`. His answer ends the conversation.
 - Showing only one half of the frame-up proof (`clue_frisch_an_land` or
   `clue_nur_kroeger`) gets »Ein halber Beweis, Voss. Für Ihre Polizei ist
@@ -406,9 +405,9 @@ rules.
 - **Goal:** get the truth about the envelope.
 - **Prerequisites:** `clue_lene` (P4b).
 - **Solution:** `talk anni` (or `show clue_lene anni`), then:
-  1. `choose ah_kuvert` → node `ah_kuvert` learns `clue_schweigegeld`.
-     1 point.
-  2. `choose ah_warum`. Her answer ends the conversation.
+  1. `choose ah_kuvert` → node `ah_kuvert`, 1 point.
+  2. `choose ah_warum` → node `ah_warum` learns `clue_schweigegeld`. Her
+     answer ends the conversation.
 - **Signposting:**
   - Lene: »Am Abend is er bei den Brodersens rein. Mit ’nem Kuvert.«
   - `look blechdose`: Anni sits between you and the shelf.
@@ -643,9 +642,9 @@ pass dropped `take sturmlaterne`, see [CHANGES.md](CHANGES.md).)
 **Act I: Der Auftrag (`detektei`)**
 
 1. `talk anni`
-2. `choose an_frag_jakob` (Anni tells about Jakob and the police; learn `clue_auftrag`)
+2. `choose an_frag_jakob` (Anni tells about Jakob and the police)
 3. `choose an_frag_schluessel` (learn `clue_schluessel`, get `spindschluessel`; the notebook habit)
-4. `choose an_annehmen` (get `reichsmark`, set `auftrag_angenommen`; Anni goes home, the dialogue ends)
+4. `choose an_annehmen` (get `reichsmark`, learn `clue_auftrag` after she names Tadeusz, set `auftrag_angenommen`; Anni goes home, the dialogue ends)
 
 **Act II: Drei Spuren**
 
@@ -662,13 +661,13 @@ pass dropped `take sturmlaterne`, see [CHANGES.md](CHANGES.md).)
 15. `talk kroeger` (`clue_kroeger_version`)
 16. `choose k_tschuess`
 17. `go east` (`baumwall`; the ambush starts `asmussen_warnung`)
-18. `choose a_w_wer` (`clue_asmussen`)
-19. `choose a_w_ablehnen` (Asmussen goes to `kontor`)
+18. `choose a_w_wer`
+19. `choose a_w_ablehnen` (`clue_asmussen`; Asmussen goes to `kontor`)
 20. `go east` (`zollkanal`)
 21. `take bootshaken`
 22. `talk tadeusz`
-23. `choose t_kein_dieb` (`clue_zaehlheft`, +1)
-24. `choose t_wohin`
+23. `choose t_kein_dieb` (+1)
+24. `choose t_wohin` (`clue_zaehlheft`)
 25. `choose t_angst` (his answer ends the conversation)
 26. `go west` (`baumwall`)
 27. `go south` (`kaischuppen`)
@@ -684,8 +683,8 @@ pass dropped `take sturmlaterne`, see [CHANGES.md](CHANGES.md).)
 37. `go east` (`baumwall`)
 38. `go strassenbahn` (`nissenhuette`)
 39. `talk anni`
-40. `choose ah_kuvert` (`clue_schweigegeld`, +1)
-41. `choose ah_warum` (her answer ends the conversation)
+40. `choose ah_kuvert` (+1)
+41. `choose ah_warum` (`clue_schweigegeld`; her answer ends the conversation)
 42. `go stadt` (`baumwall`)
 43. `go west` (`kneipe`)
 44. `talk kroeger`
@@ -693,8 +692,8 @@ pass dropped `take sturmlaterne`, see [CHANGES.md](CHANGES.md).)
 46. `choose k_s1_kein_schwund` (stage 1, +1)
 47. `choose k_s2_heft` (stage 2, +1)
 48. `choose k_s3_untergeschoben` (stage 3, +1)
-49. `choose k_s4_kuvert` (confession: `clue_gestaendnis`, +2)
-50. `choose k_g_wo` (`bodenschluessel`, `clue_persilschein`, the way across)
+49. `choose k_s4_kuvert` (confession, +2)
+50. `choose k_g_wo` (`clue_gestaendnis`, `bodenschluessel`, `clue_persilschein`, the way across)
 51. `choose k_g_zeuge` (set `kroeger_zeuge`)
 
 **Act III: Über das Wasser**
