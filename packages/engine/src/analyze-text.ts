@@ -112,12 +112,14 @@ function checkUnmentioned(ix: PackIndex, out: DiagnosticList): void {
     // Portable objects without roomText are listed automatically; clues live in the notebook.
     if (object.portable || object.clue || object.roomText !== undefined) continue;
     const rooms = [...(pack.rooms[object.location] ? [object.location] : []), ...(object.alsoIn ?? [])];
-    const name = object.name.toLowerCase();
+    const names = (typeof object.name === "string" ? [object.name] : object.name.map((v) => v.text)).map((n) =>
+      n.toLowerCase(),
+    );
     for (const roomId of rooms) {
       const room = pack.rooms[roomId];
       if (room === undefined) continue;
       const mentioned = textStrings(room.description).some(
-        (s) => markupRefs(s).some((r) => r.id === id) || s.toLowerCase().includes(name),
+        (s) => markupRefs(s).some((r) => r.id === id) || names.some((name) => s.toLowerCase().includes(name)),
       );
       if (!mentioned) {
         out.info(

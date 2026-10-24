@@ -91,7 +91,7 @@ function take(ctx: Ctx, id: string): void {
     return;
   }
   setObj(ctx, id, { location: INVENTORY });
-  emitMsg(ctx, "text", ctx.m.taken, { obj: objectSpan(ctx.pack, id) });
+  emitMsg(ctx, "text", ctx.m.taken, { obj: objectSpan(ctx.pack, ctx.state, id) });
 }
 
 function drop(ctx: Ctx, id: string): void {
@@ -106,7 +106,7 @@ function drop(ctx: Ctx, id: string): void {
     return;
   }
   setObj(ctx, id, { location: ctx.state.room });
-  emitMsg(ctx, "text", ctx.m.dropped, { obj: objectSpan(ctx.pack, id) });
+  emitMsg(ctx, "text", ctx.m.dropped, { obj: objectSpan(ctx.pack, ctx.state, id) });
 }
 
 function open(ctx: Ctx, id: string): void {
@@ -129,10 +129,13 @@ function open(ctx: Ctx, id: string): void {
       return;
     }
     setObj(ctx, id, { locked: false, open: true });
-    emitMsg(ctx, "text", m.unlockedAndOpened, { obj: objectSpan(pack, id), key: objectSpan(pack, key) });
+    emitMsg(ctx, "text", m.unlockedAndOpened, {
+      obj: objectSpan(pack, ctx.state, id),
+      key: objectSpan(pack, ctx.state, key),
+    });
   } else {
     setObj(ctx, id, { open: true });
-    emitMsg(ctx, "text", m.opened, { obj: objectSpan(pack, id) });
+    emitMsg(ctx, "text", m.opened, { obj: objectSpan(pack, ctx.state, id) });
   }
   if (def.container && !ctx.quiet) {
     const line = contentsLine(pack, ctx.ix, ctx.state, id);
@@ -153,7 +156,7 @@ function close(ctx: Ctx, id: string): void {
     return;
   }
   setObj(ctx, id, { open: false });
-  emitMsg(ctx, "text", ctx.m.closed, { obj: objectSpan(ctx.pack, id) });
+  emitMsg(ctx, "text", ctx.m.closed, { obj: objectSpan(ctx.pack, ctx.state, id) });
 }
 
 /** `use a with b`: unlock when one is the other's `unlockedBy` (both orders are tried). */
@@ -166,7 +169,10 @@ function useWith(ctx: Ctx, a: string, b: string): void {
     if (!ctx.state.objects[lock]?.locked) emitMsg(ctx, "text", ctx.m.alreadyUnlocked);
     else {
       setObj(ctx, lock, { locked: false });
-      emitMsg(ctx, "text", ctx.m.unlocked, { obj: objectSpan(ctx.pack, lock), key: objectSpan(ctx.pack, key) });
+      emitMsg(ctx, "text", ctx.m.unlocked, {
+        obj: objectSpan(ctx.pack, ctx.state, lock),
+        key: objectSpan(ctx.pack, ctx.state, key),
+      });
     }
     return;
   }
@@ -189,7 +195,7 @@ function giveOrShow(ctx: Ctx, verb: "give" | "show", a: string, b: string): void
     return;
   }
   if (pack.objects[b]?.npc) {
-    emitMsg(ctx, "text", m.notInterested, { npc: objectSpan(pack, b) });
+    emitMsg(ctx, "text", m.notInterested, { npc: objectSpan(pack, ctx.state, b) });
     return;
   }
   emitMsg(ctx, "text", m.doesNotWork);

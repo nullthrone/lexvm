@@ -32,6 +32,14 @@ First release in preparation: v0.1 "Playable".
   prompts state the rule. *Die letzte Nacht der Reichsmark* 1.1.1 learns six
   entries no earlier than their facts are told (»Der Fall Brodersen« named
   Tadeusz before Anni did).
+- Characters are called by name only once the player knows it
+  ([ADR 0013](docs/adr/0013-names-the-player-knows.md)): an object's `name`
+  may be a text with variants (additive in `lexvm-pack/1`), resolved against
+  the state wherever a name is shown; the parser accepts every variant.
+  `lexvm check` warns (`text.name-before-reveal`) when the walkthrough calls a
+  present character by a name not yet revealed. *Die letzte Nacht der
+  Reichsmark* 1.2.0 introduces Anni, Kröger, Lene and Tadeusz by appearance
+  first.
 
 ### Added
 

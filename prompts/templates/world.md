@@ -14,7 +14,7 @@ Return exactly these three files:
    - `generator`: {{GENERATOR}};
    - `start` (room and intro), `verbs` (pack verbs with label and synonyms), `flags` (every flag from the puzzle design, with its initial value) and `counters` (if any).
 2. `rooms.yaml` — the `rooms` map: every room with name, description (text variants where the state changes the room) and exits. Every exit has its reverse in the destination room; doors are named in both exits.
-3. `objects.yaml` — the `objects` map: items, scenery, characters (with `npc: true` and `dialogue: <npc_id>_talk`; the next stage writes these dialogues), containers, doors, and every clue (`clue: true`, `location: nowhere`).
+3. `objects.yaml` — the `objects` map: items, scenery, characters (with `npc: true` and `dialogue: <npc_id>_talk`; the next stage writes these dialogues), containers, doors, and every clue (`clue: true`, `location: nowhere`). A character the player meets as a stranger gets a `name` with variants, the real name first and the description the player starts with last (`[{ when: { flag: knows_x }, text: <Name> }, { text: <role> }]`, the flag declared in `pack.yaml`); its description and `roomText` and every room text that mentions it use the name only in a variant for after the reveal.
 
 Requirements:
 - Every interactable object is referenced as `{id}` in its room's description or has a `roomText`.

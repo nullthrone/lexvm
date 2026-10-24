@@ -14,7 +14,7 @@ import {
   type Pack,
   type Text,
 } from "./schema.ts";
-import { objectDef } from "./text.ts";
+import { objectDef, objectName } from "./text.ts";
 
 /** Where a piece of logic lives; lets checks treat e.g. turn rules specially. */
 export type Site =
@@ -108,6 +108,7 @@ export function walkPack(pack: Pack, v: Visitor): void {
   }
   for (const [id, object] of Object.entries(pack.objects)) {
     const site: Site = { kind: "object", object: id };
+    visitText(object.name, `objects.${id}.name`, site, v);
     visitText(object.description, `objects.${id}.description`, site, v);
     visitText(object.roomText, `objects.${id}.roomText`, site, v);
   }
@@ -196,7 +197,8 @@ export function markupRefs(text: string): Array<{ id: string; display?: string; 
 export function renderedText(text: string, pack: Pack): string {
   return text.replace(
     /\{([^{}|]*)(?:\|([^{}]*))?\}/g,
-    (_, id: string, display?: string) => display ?? objectDef(pack, id.trim())?.name ?? id,
+    (_, id: string, display?: string) =>
+      display ?? (objectDef(pack, id.trim()) ? objectName(pack, null, id.trim()) : id),
   );
 }
 

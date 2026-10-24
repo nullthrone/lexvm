@@ -331,8 +331,12 @@ export const RoomSchema = z.strictObject({
 export type Room = z.output<typeof RoomSchema>;
 
 export const ObjectSchema = z.strictObject({
-  /** Display name (nominative, without article), shown on chips and in default messages. */
-  name: z.string().min(1),
+  /**
+   * Display name (nominative, without article), shown on chips and in default
+   * messages. Text variants let a character go by a description until the
+   * player learns the name; the parser recognises the words of every variant.
+   */
+  name: TextSchema,
   /** Extra parser words. The name's words are always recognised. */
   synonyms: z.array(z.string().min(1)).optional(),
   /** Printed when the player examines the object. */

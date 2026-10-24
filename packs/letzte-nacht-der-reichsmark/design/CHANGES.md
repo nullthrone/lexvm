@@ -466,3 +466,37 @@ conversation changes. Left as they are: `clue_persilschein`,
 
 `lexvm check`: 0 errors, 0 warnings; walkthrough 74 steps, 25/25;
 exploration complete, 6,869 states (unchanged), 0 dead ends.
+
+## Names the player knows
+
+A playtest found characters named before the player could know them: the
+first command read »Sprich mit Anni« while the text said »die Frau«, the
+watchman was »Tadeusz« on his chip before he said a word, and nobody ever
+told Voss that the dealer is called Lene. The format allowed only one static
+name per object; ADR 0013 makes `name` a text with variants, and `lexvm
+check` now warns (`text.name-before-reveal`) when the walkthrough calls a
+present character by a name not yet revealed.
+
+| Character | Before | Name from | Condition |
+|---|---|---|---|
+| Anni | Frau | »Ich heiße Anni« (`an_start`) | flag `kennt_anni` |
+| Kröger | Mann am Ecktisch | first talk; he now says »Kröger, Vorarbeiter« (`k_hub`) | `has: clue_kroeger_version` |
+| Lene | Händlerin | her greeting »Lene. …« (`l_hub`), or her handshake after the evidence (`show_paeckchen_lene`, `show_los_lene`) | flag `kennt_lene` |
+| Tadeusz | Wächter | first talk; he now says »Tadeusz Wrona. Den haben Sie gefunden.« (`t_hub`) | flag `kennt_tadeusz` |
+| Asmussen, Jakob, Lotte | – | at once | Asmussen introduces himself; Jakob is where Kröger's confession said he lies; Anni now calls Lotte »unsere Tochter«, so the sleeping child in her hut is Lotte |
+
+Every text that mentions one of the four while present and before the reveal
+got a variant without the name: room texts, descriptions (Anni, Kröger, the
+column, the counter, Lene, Tadeusz, the watch hut, the visitor's chair), the
+rules for the boat hook, paying and showing Kröger, the backyard, and showing
+evidence to Tadeusz. Kröger's description drops »Willi«, which nobody says.
+Hints name the woman, the man at the corner table and the dealer by role.
+Lotte's description says »vielleicht elf«. Version 1.2.0.
+
+Tadeusz is named from the first conversation, not on arrival: Anni's hint
+makes it likely that the watchman is her husband's friend, but not certain.
+
+### Verification
+
+`lexvm check`: 0 errors, 0 warnings (including `text.name-before-reveal`);
+walkthrough 74 steps, 25/25; exploration complete, 6,869 states, 0 dead ends.

@@ -3,8 +3,8 @@ import { exitLabelAnywhere } from "./affordances.ts";
 import { fill, type StandardExit } from "./messages/index.ts";
 import { indexPack, isCoreVerb } from "./pack-index.ts";
 import type { Pack } from "./schema.ts";
-import { objectDef, plainText } from "./text.ts";
-import type { Command } from "./types.ts";
+import { objectName, plainText } from "./text.ts";
+import type { Command, GameState } from "./types.ts";
 
 /** Canonical string form: "verb [object [with]]". */
 export function formatCommand(command: Command): string {
@@ -52,20 +52,25 @@ const COMPASS: ReadonlySet<string> = new Set([
  * "<Label> <object> [<prep> <object>]". For `choose` the option text is
  * returned.
  */
-export function commandLabel(pack: Pack, command: Command): string {
-  return commandLabelIn(pack, command, undefined);
+export function commandLabel(pack: Pack, command: Command, state?: GameState): string {
+  return commandLabelIn(pack, command, undefined, state ?? null);
 }
 
 /** commandLabel with the current room known, so `go` uses that room's exit label. */
-export function commandLabelIn(pack: Pack, command: Command, room: string | undefined): string {
+export function commandLabelIn(
+  pack: Pack,
+  command: Command,
+  room: string | undefined,
+  state: GameState | null,
+): string {
   const ix = indexPack(pack);
   const m = ix.m;
   const { verb } = command;
-  const name = (id: string | undefined) => (id === undefined ? "" : (objectDef(pack, id)?.name ?? id));
+  const name = (id: string | undefined) => (id === undefined ? "" : objectName(pack, state, id));
   const obj = name(command.object);
   const withName = name(command.with);
 
-  if (verb === "choose") return optionText(pack, command.object) ?? command.object ?? verb;
+  if (verb === "choose") return optionText(pack, state, command.object) ?? command.object ?? verb;
   if (verb === "go") {
     const id = command.object ?? "";
     const roomLabel = room !== undefined ? pack.rooms[room]?.exits?.[id]?.label : undefined;
@@ -111,12 +116,12 @@ export function commandLabelIn(pack: Pack, command: Command, room: string | unde
 }
 
 /** Text of a dialogue option by id (first dialogue in pack order that defines it). */
-function optionText(pack: Pack, optionId: string | undefined): string | undefined {
+function optionText(pack: Pack, state: GameState | null, optionId: string | undefined): string | undefined {
   if (optionId === undefined) return undefined;
   for (const d of Object.values(pack.dialogues)) {
     for (const node of Object.values(d.nodes)) {
       const o = node.options?.find((x) => x.id === optionId);
-      if (o) return plainText(pack, o.text);
+      if (o) return plainText(pack, state, o.text);
     }
   }
   return undefined;

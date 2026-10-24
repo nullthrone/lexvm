@@ -7,7 +7,7 @@
 # dialogues are in the other YAML files of this directory.
 format: lexvm-pack/1
 id: letzte-nacht-der-reichsmark
-version: 1.1.1
+version: 1.2.0
 title: Die letzte Nacht der Reichsmark
 subtitle: Ein Hamburger Kriminalfall, Juni 1948
 description: "Hamburg, 19. Juni 1948: Morgen wird die Reichsmark zu Altpapier, und der Hafenarbeiter Jakob Brodersen ist verschwunden – angeblich mit gestohlenen Zigaretten. Ein Noir-Krimi aus Indizien und Verhören über Schwarzmarkt, Persilscheine und Schuld."
@@ -65,6 +65,11 @@ flags:
   tadeusz_rudert: false # option t_ueberfahrt (dialogue tadeusz_gespraech)
   laterne_an: false # rule laterne_anzuenden
   kroeger_zeuge: false # option k_g_zeuge (dialogue kroeger_verhoer)
+  # Names the player knows (ADR 0013): set where the name falls. Kröger's
+  # name variant uses clue_kroeger_version, learned when he introduces himself.
+  kennt_anni: false # node an_start (dialogue anni_auftrag)
+  kennt_lene: false # node l_hub, node l_redet, rules show_paeckchen_lene, show_los_lene
+  kennt_tadeusz: false # node t_hub (dialogue tadeusz_gespraech)
 
 counters:
   kroeger_stufe: 0 # interrogation stage 0–4, set only by options of kroeger_verhoer
@@ -121,8 +126,8 @@ hints:
     until: { flag: auftrag_angenommen }
     steps:
       - Die Frau auf deinem Besucherstuhl ist deine Klientin.
-      - Sprich mit Anni Brodersen.
-      - Sprich mit Anni und hör ihr bis zum Ende zu.
+      - Sprich mit ihr.
+      - Sprich mit der Frau und hör ihr bis zum Ende zu.
   - id: h_aushang
     until: { has: clue_loeschliste }
     steps:
@@ -164,7 +169,7 @@ hints:
     steps:
       - Jakobs Vorarbeiter heißt Kröger. Er trinkt in St. Pauli.
       - Westlich vom Baumwall liegt die Kneipe »Zum Letzten Groschen«.
-      - Geh in die Kneipe und sprich mit Kröger.
+      - Geh in die Kneipe und sprich mit dem Mann am Ecktisch.
   - id: h_tadeusz
     until: { has: clue_zaehlheft }
     steps:
@@ -192,9 +197,9 @@ hints:
   - id: h_lene
     until: { has: clue_lene }
     steps:
-      - Lene sagt, sie raucht nicht. Ihr Bauchladen sagt etwas anderes.
+      - Die Händlerin im Hinterhof sagt, sie raucht nicht. Ihr Bauchladen sagt etwas anderes.
       - Zeig ihr, was du aus Jakobs Spind hast.
-      - Zeig Lene das Zigarettenpäckchen.
+      - Zeig der Händlerin das Zigarettenpäckchen.
   - id: h_kein_schwund
     until: { has: clue_kein_schwund }
     steps:

@@ -67,7 +67,10 @@ objects:
   # Characters
   # -------------------------------------------------------------------------
   anni:
-    name: Anni
+    name:
+      - when: { flag: kennt_anni }
+        text: Anni
+      - text: Frau
     synonyms: [Anni Brodersen, Frau Brodersen, Frau, Klientin, Handtasche]
     location: detektei
     npc: true
@@ -77,12 +80,17 @@ objects:
         text: "{anni|Die Frau} wartet auf deinem {besucherstuhl}."
       - text: "{anni} sitzt am Ofen und flickt eine Hose, die keinem mehr passt."
     description:
-      - when: { at: detektei }
+      - when: [{ at: detektei }, { flag: kennt_anni }]
         text: Anni Brodersen, Mitte dreißig. Der Mantel ist umgefärbt, die Hände sind rau vom Nähen. Die Handtasche lässt sie nicht los. Sie sieht dich an, als hätte sie schon zu viele Leute gefragt.
+      - when: { at: detektei }
+        text: Eine Frau, Mitte dreißig. Der Mantel ist umgefärbt, die Hände sind rau vom Nähen. Die Handtasche lässt sie nicht los. Sie sieht dich an, als hätte sie schon zu viele Leute gefragt.
       - text: Anni Brodersen, Mitte dreißig. Der Mantel ist umgefärbt, die Hände sind rau vom Nähen. Sie sieht dich an, als hätte sie schon zu viele Leute gefragt.
 
   kroeger:
-    name: Kröger
+    name:
+      - when: { has: clue_kroeger_version }
+        text: Kröger
+      - text: Mann am Ecktisch
     synonyms: [Willi Kröger, Willi, Vorarbeiter]
     location: kneipe
     npc: true
@@ -92,11 +100,13 @@ objects:
         text: Am Ecktisch sitzt {kroeger} vor einem leeren Glas.
       - when: { has: clue_kroeger_version }
         text: Am Ecktisch sitzt {kroeger} und rührt seinen Köm nicht an.
-      - text: Am Ecktisch sitzt {kroeger} vor einem Köm, einem Kümmelschnaps, den er nicht anrührt.
+      - text: Am Ecktisch sitzt {kroeger|ein Mann} vor einem Köm, einem Kümmelschnaps, den er nicht anrührt.
     description:
       - when: { has: clue_gestaendnis }
-        text: Willi Kröger, Vorarbeiter. Er sitzt da wie einer, der eine Last abgesetzt hat und nicht weiß, wohin mit den Händen. Das Glas ist leer.
-      - text: Willi Kröger, Vorarbeiter. Breite Schultern, ein Gesicht wie ein Kai bei Ebbe. Er hat seit einer Stunde denselben Köm vor sich.
+        text: Kröger, Vorarbeiter. Er sitzt da wie einer, der eine Last abgesetzt hat und nicht weiß, wohin mit den Händen. Das Glas ist leer.
+      - when: { has: clue_kroeger_version }
+        text: Kröger, Vorarbeiter. Breite Schultern, ein Gesicht wie ein Kai bei Ebbe. Er hat seit einer Stunde denselben Köm vor sich.
+      - text: Breite Schultern, ein Gesicht wie ein Kai bei Ebbe. Er hat seit einer Stunde denselben Köm vor sich, und die Männer zwei Tische weiter sehen immer wieder zu ihm herüber, als warteten sie auf ein Zeichen.
 
   # Right after Kröger, so its roomText follows his.
   kolonne:
@@ -112,7 +122,9 @@ objects:
     description:
       - when: { has: clue_gestaendnis }
         text: Die Kolonne ist gegangen. Sechs leere Gläser bleiben stehen.
-      - text: Sechs Männer, sechs Dünnbiere. Sie reden leise und sehen auf Krögers Rücken, nicht auf dich.
+      - when: { has: clue_kroeger_version }
+        text: Sechs Männer, sechs Dünnbiere. Sie reden leise und sehen auf Krögers Rücken, nicht auf dich.
+      - text: Sechs Männer, sechs Dünnbiere. Sie reden leise und sehen auf den Rücken des Mannes am Ecktisch, nicht auf dich.
 
   wirt:
     name: Wirt
@@ -123,24 +135,38 @@ objects:
     description: Ein Wirt mit Schürze und Bleistift hinter dem Ohr. Er sieht immer zur Hintertür, wenn jemand Geld erwähnt.
 
   lene:
-    name: Lene
+    name:
+      - when: { flag: kennt_lene }
+        text: Lene
+      - text: Händlerin
     synonyms: [Lene Harms, Händlerin, Harms]
     location: hinterhof
     npc: true
     dialogue: lene_gespraech
-    description: Lene Harms, früher Schaffnerin bei der Straßenbahn. Die Mütze trägt sie noch. Hinter ihrer Stirn laufen ständig Preise mit. Sie duzt jeden, der nichts kauft.
+    description:
+      - when: { flag: kennt_lene }
+        text: Lene, früher Schaffnerin bei der Straßenbahn. Die Mütze trägt sie noch. Hinter ihrer Stirn laufen ständig Preise mit. Sie duzt jeden, der nichts kauft.
+      - text: Eine Frau mit Bauchladen und einer Schaffnermütze, die sie wohl von der Straßenbahn behalten hat. Hinter ihrer Stirn laufen ständig Preise mit.
 
   tadeusz:
-    name: Tadeusz
-    synonyms: [Tadeusz Wrona, Wrona, Wächter, Schutenwächter]
+    name:
+      - when: { flag: kennt_tadeusz }
+        text: Tadeusz
+      - text: Wächter
+    synonyms: [Tadeusz Wrona, Wrona, Wachmann, Schutenwächter]
     location: zollkanal
     npc: true
     dialogue: tadeusz_gespraech
     roomText:
       - when: { flag: tadeusz_rudert }
         text: "{tadeusz} sitzt unten im Boot und wartet."
-      - text: Auf einem Poller sitzt {tadeusz}.
-    description: Tadeusz Wrona, Wachmann bei den Lastkähnen. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
+      - when: { flag: kennt_tadeusz }
+        text: Auf einem Poller sitzt {tadeusz}.
+      - text: Auf einem Poller sitzt {tadeusz|ein Wächter}.
+    description:
+      - when: { flag: kennt_tadeusz }
+        text: Tadeusz Wrona, Wachmann bei den Lastkähnen. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
+      - text: Der Wachmann bei den Lastkähnen. Ein Mantel, der einmal einem größeren Mann gehört hat, und Augen, die alles sehen und nichts zeigen.
 
   asmussen:
     name: Asmussen
@@ -175,7 +201,7 @@ objects:
     synonyms: [Mädchen, Tochter, Kind]
     location: nissenhuette
     npc: true
-    description: Lotte, elf, schläft unter zwei Mänteln. Ihre Schuhe stehen ordentlich nebeneinander, eine Nummer zu klein.
+    description: Lotte, vielleicht elf, schläft unter zwei Mänteln. Ihre Schuhe stehen ordentlich nebeneinander, eine Nummer zu klein.
 
   # -------------------------------------------------------------------------
   # Detektei
@@ -199,7 +225,9 @@ objects:
     description:
       - when: { flag: auftrag_angenommen }
         text: Ein Wiener Stuhl mit geflickter Sitzfläche. Wo Anni saß, trocknet ein nasser Fleck.
-      - text: Ein Wiener Stuhl mit geflickter Sitzfläche. Anni sitzt auf der vorderen Kante, als wollte sie gleich wieder gehen.
+      - when: { flag: kennt_anni }
+        text: Ein Wiener Stuhl mit geflickter Sitzfläche. Anni sitzt auf der vorderen Kante, als wollte sie gleich wieder gehen.
+      - text: Ein Wiener Stuhl mit geflickter Sitzfläche. Die Frau sitzt auf der vorderen Kante, als wollte sie gleich wieder gehen.
 
   # -------------------------------------------------------------------------
   # Baumwall
@@ -314,7 +342,9 @@ objects:
     description:
       - when: { has: clue_gestaendnis }
         text: Dünnbier vom Fass, Köm aus der Flasche. Krögers Glas ist inzwischen leer.
-      - text: Dünnbier vom Fass, mehr Wasser als Malz, und Köm aus der Flasche. Krögers Glas ist randvoll, seit einer Stunde. Er trinkt nicht. Er wartet.
+      - when: { has: clue_kroeger_version }
+        text: Dünnbier vom Fass, mehr Wasser als Malz, und Köm aus der Flasche. Krögers Glas ist randvoll, seit einer Stunde. Er trinkt nicht. Er wartet.
+      - text: Dünnbier vom Fass, mehr Wasser als Malz, und Köm aus der Flasche. Das Glas des Mannes am Ecktisch ist randvoll, seit einer Stunde. Er trinkt nicht. Er wartet.
 
   hoftuer:
     name: Hintertür
@@ -352,7 +382,9 @@ objects:
         text: "Eine Bretterbude mit Petroleumlampe. Das Register der Lastkähne liegt offen, eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
       - when: { has: clue_zaehlheft }
         text: "Eine Bretterbude mit Petroleumlampe. Tadeusz schiebt dir das Register der Lastkähne hin. Eine Zeile ist unterstrichen: ›Elise 7 – A. & Co., Speicher K‹."
-      - text: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Register der Lastkähne. Als du hineinsehen willst, legt Tadeusz die Hand darauf. »Das ist nicht für Fremde.«
+      - when: { flag: kennt_tadeusz }
+        text: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Register der Lastkähne. Als du hineinsehen willst, legt Tadeusz die Hand darauf. »Das ist nicht für Fremde.«
+      - text: Eine Bretterbude mit Petroleumlampe. Auf dem Tisch liegt das Register der Lastkähne. Als du hineinsehen willst, legt der Wächter die Hand darauf. »Das ist nicht für Fremde.«
 
   # After Tadeusz, so its roomText follows his.
   thermoskanne:

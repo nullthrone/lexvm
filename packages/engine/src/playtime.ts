@@ -127,7 +127,7 @@ function blockText(block: OutputBlock): string {
 /** A pack text string as the player sees it: one plain string per paragraph, markup resolved. */
 function renderedParagraphs(pack: Pack, text: string): string[] {
   return paragraphs(text).map((p) =>
-    markup(pack, p)
+    markup(pack, null, p)
       .map((s) => s.text)
       .join(""),
   );

@@ -9,6 +9,8 @@ The walkthrough length and the texts of rules, dialogues and endings decide whet
 
 The dialogues and rule messages carry most of the story. Write the conversations' turning points, the responses that solve puzzles, the deductions and the endings from the story's scenes and key-scene prose: what the player learns, how the character reacts, and in a sentence or two of the player character's voice what it means. Write the transitions between chapters (a `once` rule on `enter`, or the solving response). Follow the voice and rhythm of the story document.
 
+You decide where each character's name falls: `set` the flag of its name variant in the node or rule where the player learns the name, and call the present character by name in no text before that.
+
 You decide when each clue is learned, so you own its timing: put every `learn` after the last line its clue description sums up (in a dialogue, in the node or option that says it), because the player can open the notebook at once. If an earlier `learn` is needed, cut the clue description in `objects.yaml` down to what has been said and return that file.
 
 Return these files:

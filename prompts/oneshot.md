@@ -100,6 +100,7 @@ Everything below up to "How to answer" is reference material: first the authorin
 - Interrogations progress by knowledge: options with `when: { has: clue_x }` appear once the player knows something. `once: true` hides an option after use.
 - Confrontations: let the player show evidence — a rule `on: { verb: show, object: clue_x, with: npc_id }` — or offer a dialogue option gated by `has: clue_x`. Give characters a reaction to every clue that plausibly concerns them, and one generic reaction (`on: { verb: show, with: npc_id }`) placed after the specific rules.
 - Characters remember: change greetings and descriptions with flags after key events.
+- Names the player knows: call a character by name only once the player knows the name and that this person has it — it falls in conversation, or it follows compellingly from what the player knows (the missing man found where the confession said he lies). Before that, describe the character by appearance or role. Give such a character a `name` with variants, the real name first: `name: [{ when: { flag: knows_graves }, text: Graves }, { text: porter }]`; `set` the flag in the node or rule where the name falls, and give every text that mentions the present character before that a variant without the name. Hearing a name ("ask Graves at the gate") is not meeting its owner.
 - Node `say` ≤ 300 characters, option text ≤ 80. Options are the player's words; narration belongs in `say` or `do`.
 
 ## Clues and deductions
@@ -248,7 +249,7 @@ holds and should come last.
 
 Inside strings:
 
-- `{object_id}` renders the object's `name` as a tappable reference.
+- `{object_id}` renders the object's current `name` as a tappable reference.
 - `{object_id|display text}` renders custom text (for inflected forms such as
   German cases: `{logbook|des Logbuchs}`) as a reference to `object_id`.
 - A blank line separates paragraphs; a single newline is a line break.
@@ -299,8 +300,8 @@ Everything the player can refer to is an object.
 
 | Key | Meaning |
 |---|---|
-| `name` | Display name without article, e.g. `Logbuch`, `brass key`. |
-| `synonyms` | Extra parser words. The words of `name` always work. |
+| `name` | Display name without article, e.g. `Logbuch`, `brass key`. A `Text` (section 4): variants let a character go by a description until the player learns the name (see below). |
+| `synonyms` | Extra parser words. The words of every `name` variant always work. |
 | `description` | Text printed on *look*. |
 | `roomText` | Sentence appended to the room description while the object lies directly in the current room (or the current room is listed in its `alsoIn`). Objects without `roomText` that are portable are listed automatically ("You see here: …"). Scenery without `roomText` must be mentioned in the room description. |
 | `location` | **Required.** Room id, container object id, `inventory` or `nowhere` (not in play yet). |
@@ -314,6 +315,28 @@ Everything the player can refer to is an object.
 | `unlockedBy` | Key object for the default *use key with this* behaviour. |
 | `hidden` | Absent until revealed with `reveal`. |
 | `verbs` | Extra verbs offered in the action sheet (e.g. `read`, `push`). |
+
+**Names the player knows.** A character is called by name only once the
+player knows the name and that this person has it ([ADR 0013](../adr/0013-names-the-player-knows.md)).
+Write the name the character ends up with as the first variant and the
+description the player starts with last:
+
+```yaml
+tadeusz:
+  name:
+    - when: { flag: kennt_tadeusz }
+      text: Tadeusz
+    - text: Wächter
+  synonyms: [Wachmann]
+```
+
+Every place that shows the name uses the current variant: chips, command
+labels and echoes, the conversation heading, default messages, `{id}` markup
+and hints. The parser accepts the words of every variant. Set the condition
+where the name falls (a `set` in the dialogue node), and give texts that
+mention the present character before that a variant without the name;
+`lexvm check` warns (`text.name-before-reveal`) when the walkthrough does
+otherwise.
 
 **Presence.** An object is *present* when it is not hidden and either its
 location chain leads to the current room or to `inventory` (through containers
@@ -860,6 +883,7 @@ walkthrough, play time and exploration results.
 | `walkthrough.ended-early` | error | The game ended before the last step. |
 | `walkthrough.not-won` | error | The walkthrough does not end in a winning ending. |
 | `walkthrough.not-offered` | warning | A step works only as a typed command: no action sheet offers it. |
+| `text.name-before-reveal` | warning | A step prints a character's name while the character is present and still shown by an earlier description (its name variant does not hold yet, also not after the step). |
 | `walkthrough.score-mismatch` | warning | The walkthrough's final score differs from `maxScore` (not reported again when `score.maxScore-unreachable` already explains it). |
 
 **Exploration** (`lexvm check`)
@@ -1173,6 +1197,7 @@ Metadata:
 13. **One key per condition and effect.** `{ set: a, score: 1 }` is two effects; two conditions go in a list or `all: […]`.
 14. **Score.** Each point is awarded once; `maxScore` equals the walkthrough's total.
 15. **Notebook entries ahead of the story.** Every clue description states only what the player has read when its `learn` runs. A dialogue that `learn`s a summary in an early node and says the rest later gives the game away; move the `learn` to the node that says the last fact.
+16. **Names before introductions.** A character the player meets as a stranger has a `name` with variants (real name first, the description last) and a flag set where the name falls; no text calls the present character by name before that.
 
 # When the user sends diagnostics
 

@@ -202,6 +202,7 @@ options that appear when the player holds a clue.
 - Interrogations progress by knowledge: options with `when: { has: clue_x }` appear once the player knows something. `once: true` hides an option after use.
 - Confrontations: let the player show evidence — a rule `on: { verb: show, object: clue_x, with: npc_id }` — or offer a dialogue option gated by `has: clue_x`. Give characters a reaction to every clue that plausibly concerns them, and one generic reaction (`on: { verb: show, with: npc_id }`) placed after the specific rules.
 - Characters remember: change greetings and descriptions with flags after key events.
+- Names the player knows: call a character by name only once the player knows the name and that this person has it — it falls in conversation, or it follows compellingly from what the player knows (the missing man found where the confession said he lies). Before that, describe the character by appearance or role. Give such a character a `name` with variants, the real name first: `name: [{ when: { flag: knows_graves }, text: Graves }, { text: porter }]`; `set` the flag in the node or rule where the name falls, and give every text that mentions the present character before that a variant without the name. Hearing a name ("ask Graves at the gate") is not meeting its owner.
 - Node `say` ≤ 300 characters, option text ≤ 80. Options are the player's words; narration belongs in `say` or `do`.
 <!-- prompt:end guide -->
 
@@ -319,6 +320,7 @@ anyway. The LLM prompts ask the model to go through the same list.
 13. **One key per condition and effect.** `{ set: a, score: 1 }` is two effects; two conditions go in a list or `all: […]`.
 14. **Score.** Each point is awarded once; `maxScore` equals the walkthrough's total.
 15. **Notebook entries ahead of the story.** Every clue description states only what the player has read when its `learn` runs. A dialogue that `learn`s a summary in an early node and says the rest later gives the game away; move the `learn` to the node that says the last fact.
+16. **Names before introductions.** A character the player meets as a stranger has a `name` with variants (real name first, the description last) and a flag set where the name falls; no text calls the present character by name before that.
 <!-- prompt:end checklist -->
 
 ## 15. Reviewing a pack (human or generated)
@@ -335,6 +337,9 @@ you. Before you publish, play it on a phone and ask:
   they went? Is there a moment where something happens without a reason?
 - Does any notebook entry run ahead of the story? The transcript shows each
   entry where it is learned; it may only say what the text above it has said.
+- Is any character called by name before the player could know it? Read the
+  commands in the transcript too: "Talk to Graves" before Graves has said who
+  he is gives the name away.
 - Does the text read well on a small screen, in the chosen narrative voice,
   with consistent quotes? Does the rhythm vary, or is it a chain of fragments?
 - Are there plausible actions that get a bland default answer where a custom

@@ -6,6 +6,9 @@
  * - `{id}` becomes a span with the object's name and `ref: id`;
  *   `{id|custom}` a span with the custom text and `ref: id`. References to
  *   unknown objects are left as raw text so the mistake stays visible.
+ * - An object's name is a Text too (a character is "Wächter" until the player
+ *   knows he is "Tadeusz"). Functions that render names take the state to
+ *   resolve it against; `null` means no state, and the first variant is used.
  * - A blank line separates paragraphs (one OutputBlock each); single newlines
  *   stay inside the span text.
  */
@@ -39,19 +42,35 @@ export function objectDef(pack: Pack, id: string): GameObject | undefined {
   return Object.hasOwn(pack.objects, id) ? pack.objects[id] : undefined;
 }
 
-/** Convert one paragraph with inline references into spans. */
-export function markup(pack: Pack, text: string): Span[] {
+/**
+ * An object's display name in this state: the first name variant whose `when`
+ * holds. Without a state (null), or when no variant holds, the first variant.
+ * The id for unknown objects.
+ */
+export function objectName(pack: Pack, state: GameState | null, id: string): string {
+  const name = objectDef(pack, id)?.name;
+  if (name === undefined) return id;
+  if (typeof name === "string") return name;
+  return (state !== null ? resolveText(pack, state, name) : null) ?? name[0]?.text ?? id;
+}
+
+/** Every text an object's name can show, first variant first. */
+export function nameVariants(name: Text): string[] {
+  return typeof name === "string" ? [name] : name.map((v) => v.text);
+}
+
+/** Convert one paragraph with inline references into spans; names are resolved against the state. */
+export function markup(pack: Pack, state: GameState | null, text: string): Span[] {
   const spans: Span[] = [];
   let plain = "";
   let last = 0;
   for (const m of text.matchAll(MARKUP)) {
     const id = m[1] ?? "";
-    const obj = objectDef(pack, id);
-    if (!obj) continue;
+    if (!objectDef(pack, id)) continue;
     plain += text.slice(last, m.index);
     if (plain) spans.push({ text: plain });
     plain = "";
-    spans.push({ text: m[2] ?? obj.name, ref: id });
+    spans.push({ text: m[2] ?? objectName(pack, state, id), ref: id });
     last = m.index + m[0].length;
   }
   plain += text.slice(last);
@@ -60,21 +79,21 @@ export function markup(pack: Pack, text: string): Span[] {
 }
 
 /** Text → one block per paragraph. */
-export function textBlocks(pack: Pack, kind: OutputKind, text: string): OutputBlock[] {
-  return paragraphs(text).map((p) => ({ kind, spans: markup(pack, p) }));
+export function textBlocks(pack: Pack, state: GameState | null, kind: OutputKind, text: string): OutputBlock[] {
+  return paragraphs(text).map((p) => ({ kind, spans: markup(pack, state, p) }));
 }
 
 /** Text → spans of a single paragraph (paragraph breaks become spaces). Used for roomText. */
-export function inlineSpans(pack: Pack, text: string): Span[] {
-  return markup(pack, paragraphs(text).join(" "));
+export function inlineSpans(pack: Pack, state: GameState | null, text: string): Span[] {
+  return markup(pack, state, paragraphs(text).join(" "));
 }
 
 /**
  * A one-line string as plain text, markup resolved (`{id}` → the object's
  * name, `{id|text}` → text). For buttons and hints, which show no references.
  */
-export function plainText(pack: Pack, text: string): string {
-  return inlineSpans(pack, text)
+export function plainText(pack: Pack, state: GameState | null, text: string): string {
+  return inlineSpans(pack, state, text)
     .map((s) => s.text)
     .join("");
 }
@@ -87,12 +106,12 @@ export function plainText(pack: Pack, text: string): string {
  */
 export function objectDescription(pack: Pack, state: GameState, id: string): string[] {
   const text = resolveText(pack, state, objectDef(pack, id)?.description);
-  return text === null ? [] : paragraphs(text).map((p) => plainText(pack, p));
+  return text === null ? [] : paragraphs(text).map((p) => plainText(pack, state, p));
 }
 
-/** A tappable reference to an object, showing its name. */
-export function objectSpan(pack: Pack, id: string): Span[] {
-  return [{ text: objectDef(pack, id)?.name ?? id, ref: id }];
+/** A tappable reference to an object, showing its name in this state. */
+export function objectSpan(pack: Pack, state: GameState | null, id: string): Span[] {
+  return [{ text: objectName(pack, state, id), ref: id }];
 }
 
 /**

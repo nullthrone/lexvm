@@ -20,6 +20,8 @@ dialogues:
     nodes:
       an_start:
         say: "Die Frau sieht dich an, als müsste sie erst entscheiden, ob du es wert bist. Dann sagt sie es, ohne Umweg: »Mein Mann ist weg. Jakob Brodersen, Hafenarbeiter. Seit Donnerstagnacht.« Sie sagt es wie eine Adresse, die sie in den letzten zwei Tagen zu oft aufschreiben musste. »Ich heiße Anni. Die Polizei sucht ihn auch. Nur aus einem anderen Grund.«"
+        do:
+          - set: kennt_anni
         options:
           - id: an_frag_jakob
             text: "»Erzählen Sie mir von ihm.«"
@@ -43,7 +45,7 @@ dialogues:
             text: "»Ich übernehme den Fall. Ich finde ihn.«"
             goto: an_bezahlung
       an_bezahlung:
-        say: "Sie nickt, als hätte sie nichts anderes erwartet, und schiebt dir ein Bündel Scheine über den Tisch. »Zweihundert Reichsmark. Ab morgen ist es Papier, also nehmen Sie es heute. Den Rest brauch ich Sonntag an der Kartenstelle: vierzig für mich, vierzig für Lotte, vierzig für Jakob.« Sie sagt den letzten Namen genauso fest wie die anderen."
+        say: "Sie nickt, als hätte sie nichts anderes erwartet, und schiebt dir ein Bündel Scheine über den Tisch. »Zweihundert Reichsmark. Ab morgen ist es Papier, also nehmen Sie es heute. Den Rest brauch ich Sonntag an der Kartenstelle: vierzig für mich, vierzig für unsere Tochter Lotte, vierzig für Jakob.« Sie sagt den letzten Namen genauso fest wie die anderen."
         do:
           - say: "»Fragen Sie Tadeusz am Zollkanal. Er ist Jakobs Freund, sie trinken nachts zusammen Muckefuck, Ersatzkaffee aus der Thermoskanne. Ich bin in der Siedlung, Hütte 14.« Dann ist sie fort, so schnell, wie man geht, wenn man nicht weinen will. Auf dem Besucherstuhl bleibt ein nasser Fleck."
           - say: Du ordnest, was du hast. Ein Spind, zu dem Jakob seit Donnerstagmittag keinen Schlüssel mehr hatte, und in dem trotzdem Diebesgut lag. Ein Freund am Zollkanal. Ein Vorarbeiter, der beim Aufschließen dabei war. Das ist nicht viel. Aber es ist mehr, als der Kommissar aufgeschrieben hat.
@@ -136,7 +138,7 @@ dialogues:
             text: "Kröger sieht dich kommen und dreht das Glas weg, als könnte er so auch sich selbst wegdrehen. »Se geben wohl nie auf, Voss.«"
           - when: { has: clue_kroeger_version }
             text: "»Na, Voss. Noch ’ne Runde?« Kröger schiebt dir keinen Stuhl hin, und seine Kolonne zwei Tische weiter hört auf zu reden."
-          - text: "Kröger mustert dich über seinen Köm hinweg, bevor du etwas gesagt hast. »Die Spürnase von der Brodersen. Hab schon gehört.« Dann zählt er es dir auf, Punkt für Punkt, wie einer, der es geübt hat: »Hundertachtzig Kisten, sauber gezählt, der Rest is Schwund. Brodersen hat um Mitternacht Schluss gemacht. Im Spind lag die Ware. Und mit seiner Frau hab ich nix zu schaffen.«"
+          - text: "Der Mann am Ecktisch mustert dich über seinen Köm hinweg, bevor du etwas gesagt hast. »Die Spürnase von der Brodersen. Hab schon gehört. Kröger, Vorarbeiter, falls Se das noch nich wussten.« Dann zählt er es dir auf, Punkt für Punkt, wie einer, der es geübt hat: »Hundertachtzig Kisten, sauber gezählt, der Rest is Schwund. Brodersen hat um Mitternacht Schluss gemacht. Im Spind lag die Ware. Und mit seiner Frau hab ich nix zu schaffen.«"
         do:
           - if:
               when: { not: { has: clue_kroeger_version } }
@@ -387,7 +389,11 @@ dialogues:
         say:
           - when: { has: clue_lene }
             text: "»Ich hab dir alles gesagt. Und ’n bisschen mehr.« Lene zählt Feuersteine ab, als wärst du schon weg."
-          - text: "Lene lässt dich herankommen und sieht dabei nicht dich an, sondern deine Taschen. »Feuersteine, Nähnadeln, gute Ratschläge, Schätzchen. Die Ratschläge kosten extra.«"
+          - when: { flag: kennt_lene }
+            text: "Lene lässt dich herankommen und sieht dabei nicht dich an, sondern deine Taschen. »Feuersteine, Nähnadeln, gute Ratschläge, Schätzchen. Die Ratschläge kosten extra.«"
+          - text: "Die Händlerin lässt dich herankommen und sieht dabei nicht dich an, sondern deine Taschen. »Lene. Feuersteine, Nähnadeln, gute Ratschläge, Schätzchen. Die Ratschläge kosten extra.«"
+        do:
+          - set: kennt_lene
         options:
           - id: l_zigaretten
             text: "»Haben Sie auch Zigaretten?«"
@@ -411,7 +417,7 @@ dialogues:
             text: "»Natürlich nicht.«"
             goto: l_hub
       l_redet:
-        say: "Du hältst ihr das Päckchen hin, die Banderole nach oben. Lene sieht es an, dann dich, und zum ersten Mal hört sie auf zu rechnen. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer, für einen Preis, der zu gut war.« Sie spricht leise. »›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt. Als ob ich das wissen wollte.«"
+        say: "Du hältst ihr das Päckchen hin, die Banderole nach oben. Sie sieht es an, dann dich, und zum ersten Mal hört sie auf zu rechnen. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer, für einen Preis, der zu gut war.« Sie spricht leise. »›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt. Als ob ich das wissen wollte.«"
         do:
           - say: "»Und am Abend is er bei den Brodersens rein. Mit ’nem Kuvert in der Hand und ’nem Gesicht wie zur Beerdigung. Ich wohn drei Hütten weiter, ich seh so was.« Sie tippt an ihre Schaffnermütze. »Der Ratschlag war umsonst, Schätzchen. Wegen Jakob. Der hat mir mal beim Ofen geholfen.«"
           - learn: clue_lene
@@ -437,7 +443,11 @@ dialogues:
             text: "Tadeusz hält das Boot an der Kaimauer fest und sieht hinüber zur Speicherstadt. »Wann immer Sie so weit sind, Voss.«"
           - when: { has: clue_zaehlheft }
             text: "Die Thermoskanne steht offen, und Tadeusz hat dir einen Becher eingeschenkt. Er sieht aufs Wasser, wenn er spricht, als wäre das leichter."
-          - text: "Tadeusz sieht dich kommen und schraubt die Thermoskanne fester zu, als wäre das Gespräch damit schon beendet. Er ist schmal und älter, als er sein dürfte, und er wartet darauf, dass du zuerst etwas sagst."
+          - when: { flag: kennt_tadeusz }
+            text: "Tadeusz sieht dich kommen und schraubt die Thermoskanne fester zu, als wäre das Gespräch damit schon beendet. Er ist schmal und älter, als er sein dürfte, und er wartet darauf, dass du zuerst etwas sagst."
+          - text: "Der Wächter sieht dich kommen und schraubt die Thermoskanne fester zu, als wäre das Gespräch damit schon beendet. Er ist schmal und älter, als er sein dürfte. »Sie suchen Tadeusz«, sagt er, und es ist keine Frage. »Tadeusz Wrona. Den haben Sie gefunden.« Dann wartet er darauf, dass du etwas sagst."
+        do:
+          - set: kennt_tadeusz
         options:
           - id: t_jakob
             text: "»Sie sind Jakobs Freund.«"

@@ -8,6 +8,7 @@ import {
   type MetaCommand,
   type OutputBlock,
   objectDescription,
+  objectName,
   PackError,
   parseCommand,
   type SaveGame,
@@ -397,7 +398,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
   function safeLabel(command: Command): string {
     if (!game) return command.verb;
     try {
-      return commandLabel(game.session.pack, command);
+      return commandLabel(game.session.pack, command, game.session.state);
     } catch {
       return [command.verb, command.object, command.with].filter(Boolean).join(" ");
     }
@@ -506,7 +507,7 @@ export function createGameScreen(key: string, fresh: boolean): Screen {
       lang: lang(),
       stepText: (step) =>
         stripMarkup(step, (id) =>
-          Object.hasOwn(session.pack.objects, id) ? session.pack.objects[id]?.name : undefined,
+          Object.hasOwn(session.pack.objects, id) ? objectName(session.pack, session.state, id) : undefined,
         ),
       onReveal: (id, count) => {
         session.setRevealed(id, count);
