@@ -26,7 +26,7 @@ export {
 } from "./playtime.ts";
 export { hint, newGame, step, view } from "./runtime.ts";
 export * from "./schema.ts";
-export { objectDescription, plainText, renderPlain } from "./text.ts";
+export { objectDescription, objectName, plainText, renderPlain } from "./text.ts";
 export { type Transcript, walkthroughTranscript } from "./transcript.ts";
 export * from "./types.ts";
 export { validateState } from "./validate-state.ts";

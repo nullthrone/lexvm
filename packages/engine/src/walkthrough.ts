@@ -7,7 +7,7 @@ import { indexPack } from "./pack-index.ts";
 import { isHeld, presentObjects } from "./presence.ts";
 import { newGame, step } from "./runtime.ts";
 import type { Pack } from "./schema.ts";
-import { renderPlain } from "./text.ts";
+import { objectName, renderPlain, resolveText } from "./text.ts";
 import type { Command, Diagnostic, GameState, OutputBlock, Span, WalkthroughReport, WalkthroughStep } from "./types.ts";
 
 /**
@@ -20,7 +20,8 @@ export const STEP_OUTPUT_MAX = 4000;
 /**
  * Replay pack.walkthrough from a new game. ok = all steps accepted and a
  * winning ending reached at the last step. Accepted steps that no action
- * sheet offers get a warning: tap players cannot perform them.
+ * sheet offers get a warning: tap players cannot perform them; so do steps
+ * whose text calls a character by a name the player has not learned yet.
  */
 export function runWalkthrough(pack: Pack): WalkthroughReport {
   const diagnostics: Diagnostic[] = [];
@@ -68,6 +69,19 @@ export function runWalkthrough(pack: Pack): WalkthroughReport {
           `cannot do it. ${offerHint(pack, state, cmd)}`,
       });
     }
+    if (result.status === "ok") {
+      for (const d of namesBeforeReveal(pack, state, result.state, result.output)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "text.name-before-reveal",
+          path,
+          message:
+            `Step ${i + 1} "${text}" prints "${d.name}" while objects.${d.id} is present and still shown as ` +
+            `"${d.shown}": the player has not learned that this is ${d.name}. Call the character "${d.shown}" ` +
+            `here (a text variant), or make the condition of the name variant "${d.name}" hold before this text.`,
+        });
+      }
+    }
     steps.push({ command: formatCommand(cmd), status: result.status, output: clippedPlain(result.output) });
     if (result.status === "rejected") {
       const reason = result.output.map((b) => b.spans.map((s) => s.text).join("")).join(" ");
@@ -98,6 +112,50 @@ export function runWalkthrough(pack: Pack): WalkthroughReport {
     });
   }
   return { ok: !failed && won, steps, ending, score: state.score, diagnostics };
+}
+
+/**
+ * Characters called by a name the player does not know yet. A character with
+ * name variants is unrevealed while a later variant is shown (the first
+ * variant is the name it ends up with). A step that prints an earlier
+ * variant's text while the character is present (in the room or the partner
+ * of the conversation), and after which it is still unrevealed, uses a name
+ * too early. Lines of the step that reveals the name are not checked: the
+ * reveal usually comes with them.
+ */
+function namesBeforeReveal(
+  pack: Pack,
+  before: GameState,
+  after: GameState,
+  output: OutputBlock[],
+): Array<{ id: string; name: string; shown: string }> {
+  const text = output
+    .filter((b) => b.kind !== "system" && b.kind !== "echo")
+    .map((b) => b.spans.map((s) => s.text).join(""))
+    .join("\n");
+  const ix = indexPack(pack);
+  const present = (st: GameState) => [
+    ...presentObjects(pack, st, ix.objectIds).room,
+    ...(st.dialogue ? [pack.dialogues[st.dialogue.id]?.with] : []),
+  ];
+  const near = new Set([...present(before), ...present(after)]);
+  const found: Array<{ id: string; name: string; shown: string }> = [];
+  for (const id of near) {
+    const def = id !== undefined ? pack.objects[id] : undefined;
+    if (id === undefined || !def || typeof def.name === "string") continue;
+    const shown = objectName(pack, after, id);
+    const current = def.name.findIndex((v) => resolveText(pack, after, [v]) !== null);
+    for (const v of def.name.slice(0, Math.max(current, 0))) {
+      if (v.text !== shown && wordIn(text, v.text)) found.push({ id, name: v.text, shown });
+    }
+  }
+  return found;
+}
+
+/** The phrase as a word of the text, also with a genitive "s" or apostrophe ("Krögers", "Tadeusz'"). */
+function wordIn(text: string, phrase: string): boolean {
+  const esc = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<!\\p{L})${esc}(?:s|')?(?!\\p{L})`, "u").test(text);
 }
 
 /** renderPlain of the first STEP_OUTPUT_MAX characters of span text, with " …" when cut. */

@@ -163,6 +163,7 @@ function warningRank(code: string): number {
   if (/^playtime\./.test(code)) return -1; // the pack misses its target length
   if (/^explore\./.test(code)) return 0; // exploration findings (incomplete with --allow-incomplete)
   if (/^walkthrough\./.test(code)) return 1;
+  if (code === "text.name-before-reveal") return 1; // the story calls a character by a name not yet learned
   if (/shadow|unreach|unused|unreferenced|score/i.test(code)) return 2;
   if (/^(ref|semantic|dialogue|rule|exit|hint)/.test(code)) return 3;
   if (/text|length|budget|style/i.test(code)) return 5;

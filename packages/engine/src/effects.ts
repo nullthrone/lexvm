@@ -52,7 +52,7 @@ export function learn(ctx: Ctx, id: string): void {
   const os = ctx.state.objects[id];
   if (!os || (os.location === INVENTORY && !os.hidden)) return;
   setObj(ctx, id, { location: INVENTORY, hidden: false });
-  emitMsg(ctx, "system", ctx.m.learned, { obj: objectSpan(ctx.pack, id) });
+  emitMsg(ctx, "system", ctx.m.learned, { obj: objectSpan(ctx.pack, ctx.state, id) });
 }
 
 function addScore(ctx: Ctx, n: number): void {

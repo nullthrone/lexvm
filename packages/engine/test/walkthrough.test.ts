@@ -20,6 +20,45 @@ const base = {
 };
 
 describe("runWalkthrough", () => {
+  describe("names before they are revealed", () => {
+    const porter = (sayAtStart: string, talk: string) =>
+      makePack({
+        ...base,
+        flags: { met: false },
+        objects: {
+          ...base.objects,
+          porter: {
+            name: [{ when: { flag: "met" }, text: "Graves" }, { text: "porter" }],
+            location: "hall",
+            npc: true,
+            roomText: "A porter waits.",
+          },
+        },
+        rules: [
+          ...base.rules,
+          { on: { verb: "wait" }, do: { say: sayAtStart } },
+          { on: { verb: "talk", object: "porter" }, do: [{ say: talk }, { set: "met" }] },
+        ],
+        walkthrough: ["wait", "talk porter", "wait", "push button"],
+      });
+    const codes = (pack: ReturnType<typeof makePack>) =>
+      runWalkthrough(pack).diagnostics.filter((d) => d.code === "text.name-before-reveal");
+
+    it("warns when a present character is called by a name the player has not learned", () => {
+      const found = codes(porter("Graves yawns.", "»I am Graves.«"));
+      expect(found).toHaveLength(1);
+      expect(found[0]).toMatchObject({ severity: "warning", path: "walkthrough[0]" });
+      expect(found[0]?.message).toContain('"Graves"');
+      expect(found[0]?.message).toContain('"porter"');
+    });
+
+    it("accepts the name in the step that reveals it and afterwards, and its genitive only when known", () => {
+      expect(codes(porter("The porter yawns.", "»I am Graves.«"))).toEqual([]);
+      expect(codes(porter("Graves's keys jingle.", "»I am Graves.«"))).toHaveLength(1);
+      expect(codes(porter("Gravesend is far.", "»I am Graves.«"))).toEqual([]);
+    });
+  });
+
   it("accepts the locked-study walkthrough", () => {
     const report = runWalkthrough(loadLockedStudy());
     expect(report.diagnostics).toEqual([]);

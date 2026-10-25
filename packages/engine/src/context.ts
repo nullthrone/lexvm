@@ -110,7 +110,7 @@ export function emitMsg(ctx: Ctx, kind: OutputKind, template: string, args?: Rec
 export function emitText(ctx: Ctx, kind: OutputKind, text: Text | undefined): void {
   if (ctx.quiet || text === undefined) return;
   const str = resolveText(ctx.pack, ctx.state, text);
-  if (str !== null) ctx.out.push(...textBlocks(ctx.pack, kind, str));
+  if (str !== null) ctx.out.push(...textBlocks(ctx.pack, ctx.state, kind, str));
 }
 
 export function emitBlocks(ctx: Ctx, blocks: OutputBlock[]): void {

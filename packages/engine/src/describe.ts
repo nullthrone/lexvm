@@ -22,7 +22,7 @@ export function roomBlocks(pack: Pack, ix: PackIndex, state: GameState): OutputB
   const blocks: OutputBlock[] = [{ kind: "room-title", spans: [{ text: room?.name ?? roomId }] }];
   if (room) {
     const desc = resolveText(pack, state, room.description);
-    if (desc !== null) blocks.push(...textBlocks(pack, "text", desc));
+    if (desc !== null) blocks.push(...textBlocks(pack, state, "text", desc));
   }
 
   const roomTexts: Span[][] = [];
@@ -35,9 +35,9 @@ export function roomBlocks(pack: Pack, ix: PackIndex, state: GameState): OutputB
     const direct = os.location === roomId;
     if (def.roomText !== undefined && (direct || def.alsoIn?.includes(roomId))) {
       const text = resolveText(pack, state, def.roomText);
-      if (text !== null) roomTexts.push(inlineSpans(pack, text));
+      if (text !== null) roomTexts.push(inlineSpans(pack, state, text));
     } else if (direct && (def.portable || def.clue)) {
-      loose.push(objectSpan(pack, id));
+      loose.push(objectSpan(pack, state, id));
     }
     if (direct && def.container) containers.push(id);
   }
@@ -76,8 +76,8 @@ export function contentsLine(pack: Pack, ix: PackIndex, state: GameState, contai
   return {
     kind: "text",
     spans: fmt(ix.m.contents, {
-      obj: objectSpan(pack, containerId),
-      list: joinSpans(contents.map((id) => objectSpan(pack, id))),
+      obj: objectSpan(pack, state, containerId),
+      list: joinSpans(contents.map((id) => objectSpan(pack, state, id))),
     }),
   };
 }
@@ -88,7 +88,7 @@ export function examineBlocks(pack: Pack, ix: PackIndex, state: GameState, id: s
   const def = pack.objects[id];
   const blocks: OutputBlock[] = [];
   const desc = resolveText(pack, state, def?.description);
-  if (desc !== null) blocks.push(...textBlocks(pack, "text", desc));
+  if (desc !== null) blocks.push(...textBlocks(pack, state, "text", desc));
   else blocks.push({ kind: "text", spans: fmt(m.nothingSpecial) });
   if (def?.container) {
     if (def.openable && !state.objects[id]?.open) blocks.push({ kind: "text", spans: fmt(m.isClosed) });
@@ -107,9 +107,9 @@ export function inventoryBlocks(pack: Pack, ix: PackIndex, state: GameState): Ou
     const def = pack.objects[id];
     const os = state.objects[id];
     if (!def || !os || os.hidden || os.location !== INVENTORY) continue;
-    if (def.clue) clues.push(objectSpan(pack, id));
+    if (def.clue) clues.push(objectSpan(pack, state, id));
     else {
-      items.push(objectSpan(pack, id));
+      items.push(objectSpan(pack, state, id));
       if (def.container) containers.push(id);
     }
   }

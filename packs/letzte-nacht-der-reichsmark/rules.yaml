@@ -140,16 +140,25 @@ rules:
     when: { not: { has: bootshaken } }
     do:
       - move: { object: bootshaken, to: inventory }
-      - say: "»Nehmen Sie«, sagt Tadeusz, ohne aufzusehen. »Er gehört mir sowieso nicht. Hier gehört mir gar nichts.«"
+      - say:
+          - when: { flag: kennt_tadeusz }
+            text: "»Nehmen Sie«, sagt Tadeusz, ohne aufzusehen. »Er gehört mir sowieso nicht. Hier gehört mir gar nichts.«"
+          - text: "»Nehmen Sie«, sagt der Wächter, ohne aufzusehen. »Er gehört mir sowieso nicht. Hier gehört mir gar nichts.«"
 
   - id: angeln_klemmbrett
     on: { verb: use, object: bootshaken, with: klemmbrett }
     when: { not: { has: clue_tally } }
     do:
-      - say: |-
-          Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
+      - say:
+          - when: { flag: kennt_tadeusz }
+            text: |-
+              Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
 
-          Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+              Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+          - text: |-
+              Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
+
+              Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte dem Wächter ja sowieso nicht.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
@@ -158,10 +167,16 @@ rules:
     on: { verb: use, object: bootshaken, with: glaskabine }
     when: { not: { has: clue_tally } }
     do:
-      - say: |-
-          Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
+      - say:
+          - when: { flag: kennt_tadeusz }
+            text: |-
+              Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
 
-          Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+              Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+          - text: |-
+              Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
+
+              Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte dem Wächter ja sowieso nicht.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
@@ -176,10 +191,16 @@ rules:
     on: { verb: take, object: klemmbrett }
     when: { has: bootshaken }
     do:
-      - say: |-
-          Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
+      - say:
+          - when: { flag: kennt_tadeusz }
+            text: |-
+              Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
 
-          Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+              Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte Tadeusz ja sowieso nicht.
+          - text: |-
+              Du schiebst den Bootshaken durch den Spalt und angelst nach dem Nagel. Zweimal rutscht das Brett ab, beim dritten Mal kommt es mit, und du hältst den Zählzettel der Donnerstagnacht in der Hand: ›Elspeth Gray, Do. Nachtschicht: 180 Kisten. W. Kröger, i. V. Kontrollzähler.‹
+
+              Kröger hat also selbst gezählt, ausgerechnet in dieser Nacht, in Vertretung des Kontrollzählers. Du schreibst die Zahl ab und hängst das Brett zurück. Dabei rutscht dir der Haken aus der Hand und poltert in die Kabine. Er gehörte dem Wächter ja sowieso nicht.
       - move: { object: bootshaken, to: nowhere }
       - learn: clue_tally
       - score: 1
@@ -466,7 +487,10 @@ rules:
   - id: bezahlen_kroeger
     on: { verb: bezahlen, object: kroeger }
     do:
-      - say: "»Mein Köm is bezahlt.« Kröger schiebt das Glas ein Stück von dir weg."
+      - say:
+          - when: { has: clue_kroeger_version }
+            text: "»Mein Köm is bezahlt.« Kröger schiebt das Glas ein Stück von dir weg."
+          - text: "»Mein Köm is bezahlt.« Der Mann schiebt das Glas ein Stück von dir weg."
 
   - id: bezahlen_wirt
     on: { verb: bezahlen, object: wirt }
@@ -522,7 +546,9 @@ rules:
       - say:
           - when: { has: clue_lene }
             text: "»Ich verkauf dir nix, Schätzchen. Dein Geld hat der Wirt.«"
-          - text: "»Womit denn? Deine Reichsmark hat der Wirt.« Lene mustert dich. »Zeig mir lieber, was du in der Tasche hast.«"
+          - when: { flag: kennt_lene }
+            text: "»Womit denn? Deine Reichsmark hat der Wirt.« Lene mustert dich. »Zeig mir lieber, was du in der Tasche hast.«"
+          - text: "»Womit denn? Deine Reichsmark hat der Wirt.« Die Händlerin mustert dich. »Zeig mir lieber, was du in der Tasche hast.«"
 
   - id: show_reichsmark_wirt
     on: { verb: show, object: reichsmark, with: wirt }
@@ -579,8 +605,13 @@ rules:
     on: { verb: show, object: zigarettenpaeckchen, with: lene }
     when: { not: { has: clue_lene } }
     do:
-      - say: Du hältst ihr das Päckchen hin, die Banderole nach oben. Lene sieht es an, dann dich, und zum ersten Mal hört sie auf zu rechnen. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer, für einen Preis, der zu gut war.« Sie spricht leise. »›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt. Als ob ich das wissen wollte.«
+      - say: Du hältst ihr das Päckchen hin, die Banderole nach oben. Sie sieht es an, dann dich, und zum ersten Mal hört sie auf zu rechnen. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer, für einen Preis, der zu gut war.« Sie spricht leise. »›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt. Als ob ich das wissen wollte.«
       - say: "»Und am Abend is er bei den Brodersens rein. Mit ’nem Kuvert in der Hand und ’nem Gesicht wie zur Beerdigung. Ich wohn drei Hütten weiter, ich seh so was.« Sie tippt an ihre Schaffnermütze. »Der Ratschlag war umsonst, Schätzchen. Wegen Jakob. Der hat mir mal beim Ofen geholfen.«"
+      - if:
+          when: { not: { flag: kennt_lene } }
+          then:
+            - say: "Sie streckt dir die Hand hin, als wäre damit ein Geschäft besiegelt. »Lene. Falls du noch mal was brauchst.«"
+            - set: kennt_lene
       - say: Fünf Stangen für Lene, der Rest für einen Kaffeemann. Kröger hat die Ware nicht verloren, er hat sie verteilt. Und hinterher ist er mit einem Kuvert zu der Frau gegangen, deren Mann er zum Dieb gemacht hat. Davon hat Anni dir nichts erzählt.
       - learn: clue_lene
       - score: 1
@@ -589,8 +620,13 @@ rules:
     on: { verb: show, object: clue_los4471, with: lene }
     when: { not: { has: clue_lene } }
     do:
-      - say: Lene liest die Nummer in deinem Notizbuch, dann sieht sie dich an, und zum ersten Mal hört sie auf zu rechnen. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer, für einen Preis, der zu gut war.« Sie spricht leise. »›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt. Als ob ich das wissen wollte.«
+      - say: Sie liest die Nummer in deinem Notizbuch, dann sieht sie dich an, und zum ersten Mal hört sie auf zu rechnen. »Freitag, sechs Uhr früh. Kröger. Fünf Stangen, dieselbe Nummer, für einen Preis, der zu gut war.« Sie spricht leise. »›Der Rest gehört dem Kaffeemann aus der Speicherstadt‹, hat er gesagt. Als ob ich das wissen wollte.«
       - say: "»Und am Abend is er bei den Brodersens rein. Mit ’nem Kuvert in der Hand und ’nem Gesicht wie zur Beerdigung. Ich wohn drei Hütten weiter, ich seh so was.« Sie tippt an ihre Schaffnermütze. »Der Ratschlag war umsonst, Schätzchen. Wegen Jakob. Der hat mir mal beim Ofen geholfen.«"
+      - if:
+          when: { not: { flag: kennt_lene } }
+          then:
+            - say: "Sie streckt dir die Hand hin, als wäre damit ein Geschäft besiegelt. »Lene. Falls du noch mal was brauchst.«"
+            - set: kennt_lene
       - say: Fünf Stangen für Lene, der Rest für einen Kaffeemann. Kröger hat die Ware nicht verloren, er hat sie verteilt. Und hinterher ist er mit einem Kuvert zu der Frau gegangen, deren Mann er zum Dieb gemacht hat. Davon hat Anni dir nichts erzählt.
       - learn: clue_lene
       - score: 1
@@ -603,7 +639,10 @@ rules:
   - id: take_bauchladen
     on: { verb: take, object: bauchladen }
     do:
-      - say: Lene legt die Hand darauf. »Gucken kostet nix. Anfassen schon.«
+      - say:
+          - when: { flag: kennt_lene }
+            text: Lene legt die Hand darauf. »Gucken kostet nix. Anfassen schon.«
+          - text: Die Händlerin legt die Hand darauf. »Gucken kostet nix. Anfassen schon.«
 
   # -------------------------------------------------------------------------
   # P5: Tadeusz' Schweigen (tap-first redirects into the dialogue). Half of
@@ -613,7 +652,10 @@ rules:
     on: { verb: show, object: clue_untergeschoben, with: tadeusz }
     when: { not: { has: clue_zaehlheft } }
     do:
-      - say: Tadeusz liest lange in deinem Notizbuch.
+      - say:
+          - when: { flag: kennt_tadeusz }
+            text: Tadeusz liest lange in deinem Notizbuch.
+          - text: Der Wächter liest lange in deinem Notizbuch.
       - dialogue: tadeusz_gespraech
 
   - id: show_frisch_tadeusz
@@ -623,10 +665,16 @@ rules:
       - if:
           when: { has: clue_untergeschoben }
           then:
-            - say: Tadeusz liest lange in deinem Notizbuch.
+            - say:
+                - when: { flag: kennt_tadeusz }
+                  text: Tadeusz liest lange in deinem Notizbuch.
+                - text: Der Wächter liest lange in deinem Notizbuch.
             - dialogue: tadeusz_gespraech
           else:
-            - say: Tadeusz liest, dann schüttelt er den Kopf. »Ein halber Beweis, Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
+            - say:
+                - when: { flag: kennt_tadeusz }
+                  text: Tadeusz liest, dann schüttelt er den Kopf. »Ein halber Beweis, Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
+                - text: Der Wächter liest, dann schüttelt er den Kopf. »Ein halber Beweis. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
 
   - id: show_nur_kroeger_tadeusz
     on: { verb: show, object: clue_nur_kroeger, with: tadeusz }
@@ -635,10 +683,16 @@ rules:
       - if:
           when: { has: clue_untergeschoben }
           then:
-            - say: Tadeusz liest lange in deinem Notizbuch.
+            - say:
+                - when: { flag: kennt_tadeusz }
+                  text: Tadeusz liest lange in deinem Notizbuch.
+                - text: Der Wächter liest lange in deinem Notizbuch.
             - dialogue: tadeusz_gespraech
           else:
-            - say: Tadeusz liest, dann schüttelt er den Kopf. »Ein halber Beweis, Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
+            - say:
+                - when: { flag: kennt_tadeusz }
+                  text: Tadeusz liest, dann schüttelt er den Kopf. »Ein halber Beweis, Voss. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
+                - text: Der Wächter liest, dann schüttelt er den Kopf. »Ein halber Beweis. Für Ihre Polizei ist ein halber Beweis ein ganzer Dieb.«
 
   - id: show_gestaendnis_tadeusz
     on: { verb: show, object: clue_gestaendnis, with: tadeusz }
@@ -921,12 +975,17 @@ rules:
       - say:
           - when: { has: clue_gestaendnis }
             text: Kröger sieht weg. »Stecken Se das ein. Ich hab alles gesagt.«
-          - text: Kröger sieht kurz hin, dann in sein Glas. »Englische. Gibt’s an jeder Ecke.«
+          - when: { has: clue_kroeger_version }
+            text: Kröger sieht kurz hin, dann in sein Glas. »Englische. Gibt’s an jeder Ecke.«
+          - text: Der Mann sieht kurz hin, dann in sein Glas. »Englische. Gibt’s an jeder Ecke.«
 
   - id: show_kroeger
     on: { verb: show, with: kroeger }
     do:
-      - say: Kröger sieht nicht hin. »Wenn Se was wollen, reden Se mit mir.«
+      - say:
+          - when: { has: clue_kroeger_version }
+            text: Kröger sieht nicht hin. »Wenn Se was wollen, reden Se mit mir.«
+          - text: Der Mann sieht nicht hin. »Wenn Se was wollen, reden Se mit mir.«
 
   - id: give_kroeger
     on: { verb: give, with: kroeger }
@@ -964,7 +1023,9 @@ rules:
       - say:
           - when: { has: clue_zaehlheft }
             text: Tadeusz schüttelt den Kopf. »Das müssen Sie nicht mir zeigen, Voss.«
-          - text: Tadeusz sieht hin und wieder weg. »Ich habe gelernt, nichts zu sehen.«
+          - when: { flag: kennt_tadeusz }
+            text: Tadeusz sieht hin und wieder weg. »Ich habe gelernt, nichts zu sehen.«
+          - text: Der Wächter sieht hin und wieder weg. »Ich habe gelernt, nichts zu sehen.«
 
   - id: give_tadeusz
     on: { verb: give, with: tadeusz }

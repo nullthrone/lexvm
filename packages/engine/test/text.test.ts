@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fill, fmt, joinSpans, messagesFor } from "../src/messages/index.ts";
 import { initialState } from "../src/runtime.ts";
-import { inlineSpans, markup, paragraphs, renderPlain, resolveText, textBlocks } from "../src/text.ts";
+import { inlineSpans, markup, objectName, paragraphs, renderPlain, resolveText, textBlocks } from "../src/text.ts";
 import type { OutputBlock } from "../src/types.ts";
 import { makePack } from "./fixtures/runtime/helpers.ts";
 
@@ -12,6 +12,7 @@ const pack = makePack({
   objects: {
     logbook: { name: "logbook", location: "hall" },
     key: { name: "brass key", location: "hall" },
+    porter: { name: [{ when: { flag: "lit" }, text: "Graves" }, { text: "porter" }], location: "hall", npc: true },
   },
 });
 
@@ -34,7 +35,7 @@ describe("Text resolution", () => {
 
 describe("markup", () => {
   it("turns {id} into a reference with the object's name", () => {
-    expect(markup(pack, "Read the {logbook} now.")).toEqual([
+    expect(markup(pack, null, "Read the {logbook} now.")).toEqual([
       { text: "Read the " },
       { text: "logbook", ref: "logbook" },
       { text: " now." },
@@ -42,24 +43,24 @@ describe("markup", () => {
   });
 
   it("turns {id|text} into a reference with custom text", () => {
-    expect(markup(pack, "{key|Der Schlüssel} glänzt.")).toEqual([
+    expect(markup(pack, null, "{key|Der Schlüssel} glänzt.")).toEqual([
       { text: "Der Schlüssel", ref: "key" },
       { text: " glänzt." },
     ]);
   });
 
   it("leaves unknown ids and non-markup braces as raw text", () => {
-    expect(markup(pack, "A {ghost} and {key}.")).toEqual([
+    expect(markup(pack, null, "A {ghost} and {key}.")).toEqual([
       { text: "A {ghost} and " },
       { text: "brass key", ref: "key" },
       { text: "." },
     ]);
-    expect(markup(pack, "Odd { spaced } and {Upper}.")).toEqual([{ text: "Odd { spaced } and {Upper}." }]);
+    expect(markup(pack, null, "Odd { spaced } and {Upper}.")).toEqual([{ text: "Odd { spaced } and {Upper}." }]);
   });
 
   it("splits paragraphs on blank lines and keeps single newlines", () => {
     expect(paragraphs("One\nline two.\n\n  \n\nThree.\r\n\r\nFour.\n")).toEqual(["One\nline two.", "Three.", "Four."]);
-    const blocks = textBlocks(pack, "npc", "Hi {key}.\n\nBye.");
+    const blocks = textBlocks(pack, null, "npc", "Hi {key}.\n\nBye.");
     expect(blocks).toEqual([
       {
         kind: "npc",
@@ -70,11 +71,32 @@ describe("markup", () => {
   });
 
   it("joins paragraphs into one line for roomText", () => {
-    expect(inlineSpans(pack, "A {key}.\n\nShiny.")).toEqual([
+    expect(inlineSpans(pack, null, "A {key}.\n\nShiny.")).toEqual([
       { text: "A " },
       { text: "brass key", ref: "key" },
       { text: ". Shiny." },
     ]);
+  });
+});
+
+describe("name variants", () => {
+  const state = initialState(pack);
+  const lit = { ...state, flags: { lit: true } };
+
+  it("shows the name of the first variant whose when holds", () => {
+    expect(objectName(pack, state, "porter")).toBe("porter");
+    expect(objectName(pack, lit, "porter")).toBe("Graves");
+    expect(objectName(pack, state, "key")).toBe("brass key");
+    expect(objectName(pack, state, "ghost")).toBe("ghost");
+  });
+
+  it("uses the first variant without a state", () => {
+    expect(objectName(pack, null, "porter")).toBe("Graves");
+  });
+
+  it("resolves {id} references against the state", () => {
+    expect(markup(pack, state, "The {porter} nods.")[1]).toEqual({ text: "porter", ref: "porter" });
+    expect(markup(pack, lit, "The {porter} nods.")[1]).toEqual({ text: "Graves", ref: "porter" });
   });
 });
 

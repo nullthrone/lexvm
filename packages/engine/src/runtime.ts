@@ -23,7 +23,7 @@ import { fmt } from "./messages/index.ts";
 import { indexPack, type PackIndex } from "./pack-index.ts";
 import { isPresent, presentObjects } from "./presence.ts";
 import type { DialogueOption, Pack } from "./schema.ts";
-import { plainText } from "./text.ts";
+import { objectDef, objectName, plainText } from "./text.ts";
 import type {
   Command,
   GameState,
@@ -100,7 +100,7 @@ export function stepWith(pack: Pack, state: GameState, command: Command, opts: R
   if (check.option) {
     chooseOption(ctx, check.option);
   } else {
-    if (!ctx.quiet) emit(ctx, "echo", [{ text: commandLabelIn(pack, command, state.room) }]);
+    if (!ctx.quiet) emit(ctx, "echo", [{ text: commandLabelIn(pack, command, state.room, state) }]);
     runCommand(ctx, command);
   }
   ctx.state.turn++;
@@ -187,7 +187,7 @@ export function view(pack: Pack, state: GameState): View {
     if (!def || !os) return null;
     return {
       id,
-      name: def.name,
+      name: objectName(pack, state, id),
       kind: objectKind(def),
       verbs: inInventory ? inventoryObjectVerbs(ix, def, os, npcPresent) : roomObjectVerbs(ix, def, os),
     };
@@ -215,8 +215,11 @@ export function view(pack: Pack, state: GameState): View {
   if (state.dialogue) {
     const d = Object.hasOwn(pack.dialogues, state.dialogue.id) ? pack.dialogues[state.dialogue.id] : undefined;
     const options = activeOptions(pack, state);
-    dialogue = { id: state.dialogue.id, options: options.map((o) => ({ id: o.id, text: plainText(pack, o.text) })) };
-    const npc = d?.with !== undefined ? pack.objects[d.with]?.name : undefined;
+    dialogue = {
+      id: state.dialogue.id,
+      options: options.map((o) => ({ id: o.id, text: plainText(pack, state, o.text) })),
+    };
+    const npc = d?.with !== undefined && objectDef(pack, d.with) ? objectName(pack, state, d.with) : undefined;
     if (npc !== undefined) dialogue.npc = npc;
   }
 

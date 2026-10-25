@@ -28,7 +28,7 @@ import { allCatalogs, fill, type Messages, messagesFor } from "./messages/index.
 import { indexPack } from "./pack-index.ts";
 import { presentObjects } from "./presence.ts";
 import type { Pack } from "./schema.ts";
-import { plainText } from "./text.ts";
+import { nameVariants, objectName, plainText } from "./text.ts";
 import type { Command, GameState, MetaCommand, ParseResult } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -250,7 +250,10 @@ function buildTables(pack: Pack): Tables {
   };
   for (const id of ix.objectIds) {
     const def = pack.objects[id];
-    if (def) t.objects.set(id, makeVocab(t, def.name, def.synonyms ?? []));
+    // Every name variant is recognised: a player who types "Tadeusz" before
+    // he has introduced himself still means the watchman.
+    const [name = id, ...more] = def ? nameVariants(def.name) : [];
+    if (def) t.objects.set(id, makeVocab(t, name, [...more, ...(def.synonyms ?? [])]));
   }
   return t;
 }
@@ -572,13 +575,13 @@ function resolveObject(pc: PCtx, words: readonly Token[]): ObjRes {
   const only = ids[0];
   if (ids.length === 1 && only !== undefined) return { ok: true, id: only, score: best };
   if (ids.length > 1) {
-    const names = ids.map((id) => pack.objects[id]?.name ?? id);
+    const names = ids.map((id) => objectName(pack, pc.state, id));
     const list =
       names.length > 1 ? `${names.slice(0, -1).join(", ")} ${m.parse.or} ${names[names.length - 1]}` : names.join("");
     return fail(
       "ambiguous",
       fill(m.parse.ambiguous, { list }),
-      ids.map((id) => ({ id, name: pack.objects[id]?.name ?? id })),
+      ids.map((id) => ({ id, name: objectName(pack, pc.state, id) })),
     );
   }
   for (const [id, v] of t.objects) {
@@ -800,7 +803,7 @@ function parseChoice(pc: PCtx, tokens: Token[]): ParseResult {
   let best = 0;
   let ids: Array<{ id: string; name: string }> = [];
   for (const o of options) {
-    const text = plainText(pack, o.text);
+    const text = plainText(pack, state, o.text);
     const optionWords = new Set(contentWords(t, text));
     const s = words.filter((w) => optionWords.has(w)).length;
     if (s === 0 || s < best) continue;
